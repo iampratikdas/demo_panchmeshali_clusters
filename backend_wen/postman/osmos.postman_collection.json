@@ -1,0 +1,715 @@
+{
+	"info": {
+		"_postman_id": "cad7351e-89bb-4ce8-8b92-edbbc702db07",
+		"name": "osmos",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "17184086",
+		"_collection_link": "https://dark-flare-311382.postman.co/workspace/aquarious~be64127f-5cb8-4db6-9a26-330af9d405b2/collection/17184086-cad7351e-89bb-4ce8-8b92-edbbc702db07?action=share&source=collection_link&creator=17184086"
+	},
+	"item": [
+		{
+			"name": "user",
+			"item": [
+				{
+					"name": "forgotpassword",
+					"item": [
+						{
+							"name": "requestforgotpasswordotp",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"email\": \"pratikdas967@gmail.com\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}requestforgotpasswordotp",
+									"host": [
+										"{{baseUrl}}requestforgotpasswordotp"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "verifyotp",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"email\": \"pratikdas967@gmail.com\",\r\n     \"otp\": \"8484\"\r\n    //   \"password\": \"123678910\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}verifyotp",
+									"host": [
+										"{{baseUrl}}verifyotp"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "forgotpassword",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"password\": \"1234567890\"\r\n    // \"new_password\": \"12345678\"\r\n}\r\n//bearer token required here to execute",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}forgotpassword",
+									"host": [
+										"{{baseUrl}}forgotpassword"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Profile",
+					"item": [
+						{
+							"name": "userprofile",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVhdGVkX2F0IjoxNzM0Njg2ODYxLCJlbWFpbF91c2VyIjoicHJhdGlrZGFzOTY3QGdtYWlsLmNvbSIsIm5hbWUiOiJwcmF0aWsgZGFzIiwidXNlcl9pZCI6IlhpNTVGMVR6IiwicGhvbmVfbnVtYmVyIjoiOTkzMzA1NzExOSIsImVtYWlsX2NhcmVfZ2l2ZXIiOiI0NTY4OUBnbWFpbC5jb20iLCJ1c2VyX3R5cGUiOiJVc2VyIiwiaXNfYWN0aXZlIjp0cnVlLCJlbWVyZ2VuY3lfcGhvbmVfbnVtYmVyIjpudWxsLCJpYXQiOjE3MzQ2ODY4NjEsImV4cCI6MTczNDY5MDQ2MX0.26xHQmiASBdrxdApTNahrloMoGlxwewCH6NIZ-OG1CQ",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    // \"email\": \"pratikdas9678@gmail.com\", //optional\r\n    // \"email_care_giver\": \"pratikdas9s679@gmail.com\", //optional\r\n    // \"user_id\": \"sYeoK7sI\"  //optional\r\n    // \"phone_number\": \"9933057119\" //optional,\r\n    \"name\": \"pratik das\", //optional,\r\n    \"dob\": \"25-12-27\", //optional,\r\n    \"profile_image\": \"/girl_sitting_table_with_notebooks_writing_min_1_78ca3ba97c.jpg\", //optional\r\n    \"emergency_phone_number\": null //optional,\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}userprofile",
+									"host": [
+										"{{baseUrl}}userprofile"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "myprofile",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVhdGVkX2F0IjoxNzM0Njg3MjgwLCJlbWFpbF91c2VyIjoicHJhdGlrZGFzOTY3QGdtYWlsLmNvbSIsIm5hbWUiOiJwcmF0aWsgZGFzIiwidXNlcl9pZCI6IlhpNTVGMVR6IiwicGhvbmVfbnVtYmVyIjoiOTkzMzA1NzExOSIsImVtYWlsX2NhcmVfZ2l2ZXIiOiI0NTY4OUBnbWFpbC5jb20iLCJ1c2VyX3R5cGUiOiJVc2VyIiwiaXNfYWN0aXZlIjp0cnVlLCJlbWVyZ2VuY3lfcGhvbmVfbnVtYmVyIjpudWxsLCJpYXQiOjE3MzQ2ODcyODAsImV4cCI6MTczNDY5MDg4MH0._2mk1H-BCJNp3N6pv8-WQhx7RVVwQ91FAmZA9gfE1vY",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}myprofile",
+									"host": [
+										"{{baseUrl}}myprofile"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "caregiverprofile",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}caregiverprofile",
+									"host": [
+										"{{baseUrl}}caregiverprofile"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "updatecaregiverprofile",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}updatecaregiverprofile",
+									"host": [
+										"{{baseUrl}}updatecaregiverprofile"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "updatesettings",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}updatesettings",
+									"host": [
+										"{{baseUrl}}updatesettings"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "settings",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}settings",
+									"host": [
+										"{{baseUrl}}settings"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "help-support",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}help-support",
+									"host": [
+										"{{baseUrl}}help-support"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "upload-image",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "image",
+											"type": "file",
+											"src": "/C:/Users/prati/Downloads/t3.PNG"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{baseUrl}}upload-image",
+									"host": [
+										"{{baseUrl}}upload-image"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "signup",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email_care_giver\": \"45689@gmail.com\",\r\n    \"phone_number\": \"8240275078\",//optional\r\n    \"emergency_phone_number\": \"\", //optional\r\n    \"email\": \"pratikdas967@gmail.com\",\r\n    \"password\": \"123678910\",\r\n    \"user_type\": \"Admin\",\r\n    \"profile_image\" :\"/path\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseLocalUrl}}signup",
+							"host": [
+								"{{baseLocalUrl}}signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVhdGVkX2F0IjoxNzM0NTI3NjYzLCJlbWFpbF91c2VyIjoicHJhdGlrZGFzOTY3QGdtYWlsLmNvbSIsIm5hbWUiOiJwcmF0aWsgZGFzIiwidXNlcl9pZCI6InNZZW9LN3NJIiwicGhvbmVfbnVtYmVyIjoiODI0MDI3NTA3OCIsImVtYWlsX2NhcmVfZ2l2ZXIiOiI0NTY4OUBnbWFpbC5jb20iLCJ1c2VyX3R5cGUiOiJVc2VyIiwiaXNfYWN0aXZlIjp0cnVlLCJlbWVyZ2VuY3lfcGhvbmVfbnVtYmVyIjoiOTkwMDQ0MDc4NyIsImlhdCI6MTczNDUyNzY2MywiZXhwIjoxNzM0NTMxMjYzfQ.WDBCBt-WzLsSsQsG8aF54zN48-d0TKzhQPtf_iYhz14",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    //    \"email\": \"adminuser@gmail.com\",\r\n    \"email\": \"pratikdas967@gmail.com\",\r\n    \"password\": \"123678910\"\r\n    // \"password\": \"1234567890\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseLocalUrl}}login",
+							"host": [
+								"{{baseLocalUrl}}login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "pills",
+			"item": [
+				{
+					"name": "addpills",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"medicine_name\": \"Calpol\",\r\n    \"set_medicine_frequency\": \"daily\",\r\n    \"pill_time\": [\"9:00\"],\r\n    \"interval_time\":90, //optional for daily but for hourly it should be given\r\n    \"ringtone\":\"bla\",\r\n    \"alarm\": true,\r\n    \"set_reminder\": 90,\r\n    \"dossage\": 1,\r\n    \"total_pills\": 4,\r\n    \"blood_pressure_medication\": true,\r\n    \"taken_type\": \"with food\",\r\n    \"start_date\": \"2024-12-18\",\r\n    \"end_date\": \"2024-12-19\",\r\n    \"set_refull_reminder\": true,\r\n    \"pill_comp_id\": \"28895652\",\r\n    \"pill_hourly_start_time\": \"9:00\",\r\n    \"pill_hourly_end_time\": \"10:00\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseLocalUrl}}add_pill",
+							"host": [
+								"{{baseLocalUrl}}add_pill"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_pill_detail",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseLocalUrl}}get_pill_detail/CKb0w1aT",
+							"host": [
+								"{{baseLocalUrl}}get_pill_detail"
+							],
+							"path": [
+								"CKb0w1aT"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getpilllist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}pill_list",
+							"host": [
+								"{{baseUrl}}pill_list"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "pill_confirmation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    // \"taken_time\" :\"2:00\", //optional \r\n    \"status\":\"taken\" //by default value taken but required , value can be taken / skipped\r\n    // \"dossage\": \"2\" //optional\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}pill_confirmation/4lQ9hZBx/2024-12-19",
+							"host": [
+								"{{baseUrl}}pill_confirmation"
+							],
+							"path": [
+								"4lQ9hZBx",
+								"2024-12-19"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getpillbydate",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}pill_list/43041845/2024-12-19",
+							"host": [
+								"{{baseUrl}}pill_list"
+							],
+							"path": [
+								"43041845",
+								"2024-12-19"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "pill_time",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "//all are optional\r\n{\r\n  \"pill_time\": \"0:00\",\r\n  \"ringtone\": \"bla bla\",\r\n  \"alarm\": true\r\n}\r\n\r\n\r\n\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseLocalUrl}}pill_time/l5Y0Ld9V",
+							"host": [
+								"{{baseLocalUrl}}pill_time"
+							],
+							"path": [
+								"l5Y0Ld9V"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update_pill",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "//all are optional\r\n{\r\n    \"medicine_name\": \"Telsar6\",\r\n    \"set_medicine_frequency\": \"daily\",\r\n    \"pill_time\": [\r\n        \"9:00\",\r\n        \"12:00\",\r\n        \"13:00\"\r\n    ],\r\n    \"set_reminder\": \"0\",\r\n    \"dossage\": 1,\r\n    \"pill_hourly_start_time\": \"8:00\",\r\n    \"pill_hourly_end_time\": \"9:00\",\r\n    \"total_pills\": 100,\r\n    \"blood_pressure_medication\": false,\r\n    \"taken_type\": \"with food\",\r\n    \"start_date\": \"2024-12-20\",\r\n    \"end_date\": \"2024-12-21\",\r\n    \"pill_comp_id\": \"69112305\",\r\n    \"set_refull_reminder\": false\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseLocalUrl}}update_pill/l5Y0Ld9V",
+							"host": [
+								"{{baseLocalUrl}}update_pill"
+							],
+							"path": [
+								"l5Y0Ld9V"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete_pill",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}delete_pill/CKb0w1aT",
+							"host": [
+								"{{baseUrl}}delete_pill"
+							],
+							"path": [
+								"CKb0w1aT"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "add_pill_compartment",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"color_code\":\"1827AE\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseLocalUrl}}add_pill_compartment",
+							"host": [
+								"{{baseLocalUrl}}add_pill_compartment"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "pill_compartment_list",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseLocalUrl}}pill_compartment_list",
+							"host": [
+								"{{baseLocalUrl}}pill_compartment_list"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_compartment_list_count",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}get_compartment_list_count",
+							"host": [
+								"{{baseUrl}}get_compartment_list_count"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://dev.aquaninjas.in:8600/"
+		},
+		{
+			"key": "baseLocalUrl",
+			"value": "http://localhost:8600/api/",
+			"type": "string"
+		}
+	]
+}
