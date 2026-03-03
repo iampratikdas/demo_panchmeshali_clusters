@@ -67,7 +67,7 @@ export function useSubmissionForm() {
     const [backgroundImage, setBackgroundImage] = useState<string>('');
     const [coverImage, setCoverImage] = useState<string>('');
     const [destination, setDestination] = useState<'app' | 'social' | 'both' | ''>('app');
-
+    const [story_title, setStoryTitle] = useState<string>('');
     const [folders] = useAtom(workspaceFoldersAtom);
     const { toast } = useToast();
     const queryClient = useQueryClient();
@@ -133,7 +133,7 @@ export function useSubmissionForm() {
                 coverImage,
                 destination,
                 isEvent,
-
+                story_title,
             };
 
             const result = submissionSchema.safeParse(formData);
@@ -169,7 +169,7 @@ export function useSubmissionForm() {
         setBackgroundImage('');
         setCoverImage('');
         setDestination('app');
-
+        setStoryTitle('');
         // Clear file input refs
         if (backgroundInputRef.current) {
             backgroundInputRef.current.value = '';
@@ -198,6 +198,7 @@ export function useSubmissionForm() {
             destination,
             events,
             folders,
+            story_title,
             isPending: submitMutation.isPending
         },
         actions: {
@@ -216,6 +217,7 @@ export function useSubmissionForm() {
             setBackgroundImage,
             setCoverImage,
             setDestination,
+            setStoryTitle,
             handleRemoveImage,
             handleImageUpload,
             submit: () => submitMutation.mutate(),

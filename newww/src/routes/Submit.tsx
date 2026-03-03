@@ -106,51 +106,54 @@ export default function Submit() {
                                 </CardContent>
                             </Card>
 
-                            {state.newSubmission === 'new' && (
-                                <>
-                                    <CheckForApp
-                                        selectedDestination={state.destination}
-                                        setSelectedDestination={actions.setDestination}
+                            <CheckForApp
+                                selectedDestination={state.destination}
+                                setSelectedDestination={actions.setDestination}
+                            />
+                            {
+                                state.newSubmission === 'new' &&
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                    <ImageUploadField
+                                        title="Background Image"
+                                        description="Upload the background image (16:9)"
+                                        image={state.backgroundImage}
+                                        onImageUpload={(e) => actions.handleImageUpload(e, actions.setBackgroundImage, 1.77, "16:9 (Landscape)")}
+                                        onRemoveImage={() => actions.handleRemoveImage(actions.setBackgroundImage, refs.backgroundInputRef)}
+                                        inputRef={refs.backgroundInputRef}
+                                        aspectRatio="16:9 (approx 1.77:1)"
+                                        previewAspectRatio="aspect-video"
                                     />
-                                    {/* <SubmissionTypeCard
-                                        newSubmission={state.newSubmission}
-                                        setNewSubmission={actions.setNewSubmission}
-                                        type={state.type}
-                                        setType={actions.setType}
-                                        newContent={state.newContent}
-                                        setNewContent={actions.setNewContent}
-                                        episodeNumber={state.episodeNumber}
-                                        setEpisodeNumber={actions.setEpisodeNumber}
-                                        category={state.category}
-                                        setCategory={actions.setCategory}
-                                    /> */}
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                                        <ImageUploadField
-                                            title="Background Image"
-                                            description="Upload the background image (16:9)"
-                                            image={state.backgroundImage}
-                                            onImageUpload={(e) => actions.handleImageUpload(e, actions.setBackgroundImage, 1.77, "16:9 (Landscape)")}
-                                            onRemoveImage={() => actions.handleRemoveImage(actions.setBackgroundImage, refs.backgroundInputRef)}
-                                            inputRef={refs.backgroundInputRef}
-                                            aspectRatio="16:9 (approx 1.77:1)"
-                                            previewAspectRatio="aspect-video"
-                                        />
-
-                                        <ImageUploadField
-                                            title="Cover Image"
-                                            description="Upload the cover image (9:16)"
-                                            image={state.coverImage}
-                                            onImageUpload={(e) => actions.handleImageUpload(e, actions.setCoverImage, 9 / 16, "9:16 (Portrait)")}
-                                            onRemoveImage={() => actions.handleRemoveImage(actions.setCoverImage, refs.coverInputRef)}
-                                            inputRef={refs.coverInputRef}
-                                            aspectRatio="9:16 (Vertical)"
-                                            previewAspectRatio="aspect-[2/3]"
-                                            previewMaxWidth="w-32"
-                                        />
-                                    </div>
-                                </>
-                            )}
+                                    <ImageUploadField
+                                        title="Cover Image"
+                                        description="Upload the cover image (9:16)"
+                                        image={state.coverImage}
+                                        onImageUpload={(e) => actions.handleImageUpload(e, actions.setCoverImage, 9 / 16, "9:16 (Portrait)")}
+                                        onRemoveImage={() => actions.handleRemoveImage(actions.setCoverImage, refs.coverInputRef)}
+                                        inputRef={refs.coverInputRef}
+                                        aspectRatio="9:16 (Vertical)"
+                                        previewAspectRatio="aspect-[2/3]"
+                                        previewMaxWidth="w-32"
+                                    />
+                                </div>
+                            }
+                            {
+                                state.newSubmission === "new" && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Story Title</CardTitle>
+                                            <CardDescription>Enter a compelling title for your story</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <Input
+                                                placeholder={`Enter your story title...`}
+                                                value={state.story_title}
+                                                onChange={(e) => actions.setStoryTitle(e.target.value)}
+                                            />
+                                        </CardContent>
+                                    </Card>
+                                )
+                            }
                             <SubmissionTypeCard
                                 newSubmission={state.newSubmission}
                                 setNewSubmission={actions.setNewSubmission}
@@ -163,19 +166,23 @@ export default function Submit() {
                                 category={state.category}
                                 setCategory={actions.setCategory}
                             />
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Title</CardTitle>
-                                    <CardDescription>Enter a compelling title for your {state.type}</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <Input
-                                        placeholder={`Enter your ${state.type} title...`}
-                                        value={state.title}
-                                        onChange={(e) => actions.setTitle(e.target.value)}
-                                    />
-                                </CardContent>
-                            </Card>
+                            {
+                                state.newSubmission === 'Add next episode' &&
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Episode Title</CardTitle>
+                                        <CardDescription>Enter a compelling title for your {state.type}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Input
+                                            placeholder={`Enter your ${state.type} title...`}
+                                            value={state.title}
+                                            onChange={(e) => actions.setTitle(e.target.value)}
+                                        />
+                                    </CardContent>
+                                </Card>
+                            }
+
 
                             <Card>
                                 <CardHeader>
@@ -251,7 +258,7 @@ export default function Submit() {
                                 </CardContent>
                             </Card>
 
-                            {state.newSubmission === 'new' && (
+                            {/* {state.newSubmission === 'new' && (
                                 <>
                                     <SubmissionTypeCard
                                         newSubmission={state.newSubmission}
@@ -291,7 +298,7 @@ export default function Submit() {
                                         />
                                     </div>
                                 </>
-                            )}
+                            )} */}
 
                             <Card>
                                 <CardHeader>
