@@ -30,57 +30,57 @@ class ContentController {
     this.userFunc = modelfunctions.usersFunctions;
     this.contentFunc = modelfunctions.contentFunctions;
     this.voteFunc = modelfunctions.voteFunctions;
-    this.eventFunc =  modelfunctions.eventFunctions;
+    this.eventFunc = modelfunctions.eventFunctions;
     this.noticeFunc = modelfunctions.noticeFunctions;
     // this.paginationFunc = modelfunctions.pagination;
   }
 
-  async checkEvent(eid, parent_eid , uid){
-     let response_result = {
-      result : false,
+  async checkEvent(eid, parent_eid, uid) {
+    let response_result = {
+      result: false,
       message: ""
-     }
-    const eventDetail = await this.eventFunc.findOneEvent({eid: eid , parent:  parent_eid});
+    }
+    const eventDetail = await this.eventFunc.findOneEvent({ eid: eid, parent: parent_eid });
 
-    if(!eventDetail){
+    if (!eventDetail) {
       response_result.message = "This Event has improper event id along with parent id provided"
       return response_result
     }
     const contents_list = await this.voteFunc.findContentListAggregates([
-        {
-          $match: { status: "Approved", eid: parent_eid },
-        },
-        {
-          $lookup: {
-            from: "votes",
-            localField: "cont_id",   // cont_id from contents
-            foreignField: "cont_id", // cont_id from votes
-            as: "votes"
-          }
-        },
-        {
-          $addFields: {
-            voteCount: { $size: "$votes" },              // total votes
-            uids: { $map: { input: "$votes", as: "v", in: "$$v.uid" } } // extract all voter uids
-          }
-        },
-        {
-          $project: {
-            _id: 0,
-            // cont_id: 1,
-            // eid: 1,
-            // name: 1,
-            author_name: 1,
-            // content: 1,
-            voteCount: 1,
-            uid: 1,
-            // email: 1
-          }
-        },{
-         $sort: { voteCount: -1 }
+      {
+        $match: { status: "Approved", eid: parent_eid },
+      },
+      {
+        $lookup: {
+          from: "votes",
+          localField: "cont_id",   // cont_id from contents
+          foreignField: "cont_id", // cont_id from votes
+          as: "votes"
         }
-      ]);
-   
+      },
+      {
+        $addFields: {
+          voteCount: { $size: "$votes" },              // total votes
+          uids: { $map: { input: "$votes", as: "v", in: "$$v.uid" } } // extract all voter uids
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          // cont_id: 1,
+          // eid: 1,
+          // name: 1,
+          author_name: 1,
+          // content: 1,
+          voteCount: 1,
+          uid: 1,
+          // email: 1
+        }
+      }, {
+        $sort: { voteCount: -1 }
+      }
+    ]);
+
     const existingUser = await Promise.all(
       contents_list.map(async (profiles) => {
         // get the user list for this uid
@@ -90,123 +90,123 @@ class ContentController {
       })
     );
 
-    let count= 0;
-   // console.log("events==============>", contents_list) 
-    if(existingUser.length === 0){
+    let count = 0;
+    // console.log("events==============>", contents_list) 
+    if (existingUser.length === 0) {
       response_result.message = "Voting has not been started. Wait for sometime. Thank You"
     }
-    for(let members of existingUser){
-        if(members.uid === uid &&  (count+1 <= eventDetail.sh_list) ){
-         response_result.result= true
-        }
-        response_result.message = "This user is not qualified for this event or Either Previous Stage of competition is yet not released"
-        count++
+    for (let members of existingUser) {
+      if (members.uid === uid && (count + 1 <= eventDetail.sh_list)) {
+        response_result.result = true
       }
-      
-      return response_result
+      response_result.message = "This user is not qualified for this event or Either Previous Stage of competition is yet not released"
+      count++
+    }
+
+    return response_result
 
   }
 
   async submit(req, res, token_data) {
     try {
-    let {
-      type,
-      storyName,
-      eid,
-      storyContent,
-      url,
-      page_id,
-      event_content,
-      isOriginalWork,
-      parent_eid
-    } = req.body;
+      let {
+        type,
+        storyName,
+        eid,
+        storyContent,
+        url,
+        page_id,
+        event_content,
+        isOriginalWork,
+        parent_eid
+      } = req.body;
 
-    const todaysdate = moment().local().unix();
-    let result ;
-    if(eid !=""){
-       const event = await this.eventFunc.findOneEvent({ eid });
+      const todaysdate = moment().local().unix();
+      let result;
+      if (eid != "") {
+        const event = await this.eventFunc.findOneEvent({ eid });
 
-      if (!event) {
-        return res.status(404).json({ message: "Event not found" });
-      }
+        if (!event) {
+          return res.status(404).json({ message: "Event not found" });
+        }
 
-      if((!parent_eid || parent_eid === "") && event.parent != ""){
-        return res.status(404).json({ message: "Please provide the parent event eid" });
-      }
+        if ((!parent_eid || parent_eid === "") && event.parent != "") {
+          return res.status(404).json({ message: "Please provide the parent event eid" });
+        }
 
-      const now = Number(todaysdate); // make sure todaysdate is number
-      const start = Number(event.st_dt);
-      const end = Number(event.en_dt);
+        const now = Number(todaysdate); // make sure todaysdate is number
+        const start = Number(event.st_dt);
+        const end = Number(event.en_dt);
 
-      if (now > end) {
-        return res.status(400).json({ message: "Event has already ended", todaysdate: now, en_dt: end });
-      }
+        if (now > end) {
+          return res.status(400).json({ message: "Event has already ended", todaysdate: now, en_dt: end });
+        }
 
-      if (now < start) {
-        return res.status(400).json({ message: "Event has not yet started", todaysdate: now, st_dt: start });
-      }
-      
-      if(parent_eid != ""){
-        // const parentEventDetail = await this.eventFunc.findOneEvent({eid : parent_eid})
-        // if(!parentEventDetail){
-        //    return res.status(400).json({ message: "Please provide the correct Parent eid" });
-        // }
+        if (now < start) {
+          return res.status(400).json({ message: "Event has not yet started", todaysdate: now, st_dt: start });
+        }
 
-        let parentContent = await this.contentFunc.findOneEvenTContentAll({eid: parent_eid ,uid: token_data.uid, event_content: event_content});
-        console.log("parentContent======>", {eid: parent_eid ,uid: token_data.uid, event_content: event_content} , parentContent)
-        if(parentContent.length  === 0 ){
-        return res.status(400).json({
-          status: 400,
-          message: 'You have not participated the previous competition or wrong eid provided for present event or parent event'
-        })
-      }
-        result = await this.checkEvent(eid, parent_eid , token_data.uid)
-        if(!result.result){
-          return res.status(400).json({
-          status: 400,
-          message: result.message
-        })
+        if (parent_eid != "") {
+          // const parentEventDetail = await this.eventFunc.findOneEvent({eid : parent_eid})
+          // if(!parentEventDetail){
+          //    return res.status(400).json({ message: "Please provide the correct Parent eid" });
+          // }
+
+          let parentContent = await this.contentFunc.findOneEvenTContentAll({ eid: parent_eid, uid: token_data.uid, event_content: event_content });
+          console.log("parentContent======>", { eid: parent_eid, uid: token_data.uid, event_content: event_content }, parentContent)
+          if (parentContent.length === 0) {
+            return res.status(400).json({
+              status: 400,
+              message: 'You have not participated the previous competition or wrong eid provided for present event or parent event'
+            })
+          }
+          result = await this.checkEvent(eid, parent_eid, token_data.uid)
+          if (!result.result) {
+            return res.status(400).json({
+              status: 400,
+              message: result.message
+            })
+          }
         }
       }
-    }
-   
 
-    // return res.status(200).json({ message: "Testing" });
 
-   
+      // return res.status(200).json({ message: "Testing" });
 
-    page_id= page_id ? page_id : "";
-    let contents = {
-      uid: token_data.uid,
-      eid: eid,
-      cont_id: gen(10),
-      type,
-      page_id: page_id,
-      name: storyName,
-      author_name: token_data.full_name,
-      content: storyContent,
-      url: "",
-      event_content,
-      orgin_content: isOriginalWork,
-    }
-    let existingContent = await this.contentFunc.findOneEvenTContentAll({eid: eid ,uid: token_data.uid, event_content: event_content });
-    
-    console.log("existingUser=========>",page_id)
-    if(eid != ""){
- 
-      if(existingContent.length  > 0 ){
-        return res.status(200).json({
-          status: 200,
-          message: 'This User has already submitted the content for this event'
-      })
+
+
+      page_id = page_id ? page_id : "";
+      let contents = {
+        uid: token_data.uid,
+        eid: eid,
+        cont_id: gen(10),
+        type,
+        page_id: page_id,
+        name: storyName,
+        author_name: token_data.full_name,
+        content: storyContent,
+        url: "",
+        event_content,
+        orgin_content: isOriginalWork,
       }
-    }
-    
-   
-    await this.contentFunc.ContentInsert(contents);
-    return res.status(200).json({
-      message: 'Content Submitted wait for Editor to respond'
-    })
+      let existingContent = await this.contentFunc.findOneEvenTContentAll({ eid: eid, uid: token_data.uid, event_content: event_content });
+
+      console.log("existingUser=========>", page_id)
+      if (eid != "") {
+
+        if (existingContent.length > 0) {
+          return res.status(200).json({
+            status: 200,
+            message: 'This User has already submitted the content for this event'
+          })
+        }
+      }
+
+      // console.log("contents:================>", contents);
+      await this.contentFunc.ContentInsert(contents);
+      return res.status(200).json({
+        message: 'Content Submitted wait for Editor to respond'
+      })
     } catch (err) {
 
       return res.status(500).json({ message: 'Error submitting content', err });
@@ -221,17 +221,17 @@ class ContentController {
         message: 'Content Submitted wait for Editor to respond'
       })
     } catch (err) {
-     return  res.status(500).json({ message: 'Error updating content', error });
+      return res.status(500).json({ message: 'Error updating content', error });
     }
   }
 
   async listContents(req, res, token_data) {
     try {
       let totalContents;
-      let totalPages ;
-      let lists ;
+      let totalPages;
+      let lists;
       const data = req.body;
-      const {skip , limit , page} = gobalPagination.pagination(req);
+      const { skip, limit, page } = gobalPagination.pagination(req);
       console.log("token_data=============>", token_data.uid)
       if (
         (data.uid === undefined || token_data.uid !== data.uid) &&
@@ -241,15 +241,15 @@ class ContentController {
       }
 
 
-     console.log("filter===============>", {$match: {  ...data.filter }})
-      if(token_data.role === "user" ){
-        totalContents = await this.contentFunc.contentCount({ uid: token_data.uid, ...data.filter }); 
+      console.log("filter===============>", { $match: { ...data.filter } })
+      if (token_data.role === "user") {
+        totalContents = await this.contentFunc.contentCount({ uid: token_data.uid, ...data.filter });
         totalPages = Math.ceil(totalContents / limit);
         lists = await this.contentFunc.findUserEventAggregates([
           {
             $match: { uid: token_data.uid, ...data.filter }
           },
-           {
+          {
             $addFields: {
               totalMarks: {
                 $sum: {
@@ -270,7 +270,7 @@ class ContentController {
               }
             }
           },
-           {
+          {
             $project: {
               _id: 1,
               cont_id: 1,
@@ -287,20 +287,20 @@ class ContentController {
             }
           },
           {
-            $sort: data.sortBy 
+            $sort: data.sortBy
           },
 
           { $skip: skip },
           { $limit: limit }
         ]);
-        console.log("lists====================> user", lists , { uid: token_data.uid, ...data.filter })
-      }else{
-        
-        totalContents = await this.contentFunc.contentCount(data.filter); 
+        console.log("lists====================> user", lists, { uid: token_data.uid, ...data.filter })
+      } else {
+
+        totalContents = await this.contentFunc.contentCount(data.filter);
         totalPages = Math.ceil(totalContents / limit);
-        lists = await this.contentFunc.findUserEventAggregates( [
+        lists = await this.contentFunc.findUserEventAggregates([
           {
-            $match: {  ...data.filter }
+            $match: { ...data.filter }
           },
           {
             $addFields: {
@@ -340,18 +340,18 @@ class ContentController {
             }
           },
           {
-            $sort: data.sortBy 
+            $sort: data.sortBy
           },
 
           { $skip: skip },
           { $limit: limit }
         ]
         );
-         console.log("lists====================> admin", lists ,  {
-            $match: {  ...data.filter }
-          })
+        console.log("lists====================> admin", lists, {
+          $match: { ...data.filter }
+        })
       }
-     
+
       return res.status(200).json({
         message: 'Content lists fetched',
         lists: lists,
@@ -370,79 +370,79 @@ class ContentController {
   }
 
   // Now admin or editor of the publisher can give marks for the contents on that respective event
-  async addMarks(req, res , token_data){
-    
-    try{
-     const { marks , cont_id , event} = req.body;
-     
-    // const userUid = `marks.${token_data.uid}`;
-    const updateData = event?  { $set: { "marks.$.score": marks ,  status: req.body.status } }: { $set: { status: req.body.status || "Reviewing" } };
-    console.log("updateddate=============>" ,  { cont_id }, updateData )
-    //listing the contents back
-    await this.contentFunc.ContentMarksUpdate( { cont_id , "marks.uid": token_data.uid}, updateData , token_data , marks)
-    const data  = req.body;
-    const {skip , limit , page} = gobalPagination.pagination(req);
-    const totalContents = await this.contentFunc.contentCount(data.filter); 
-    const totalPages = Math.ceil(totalContents / limit);
-    let lists = await this.contentFunc.findUserEventAggregates( [
-      {
-        $match: { eid: data.filter.eid }
-      },
-      {
-        $addFields: {
-          totalMarks: {
-            $sum: {
-              $map: {
-                input: { $ifNull: ["$marks", []] },  // ensure marks is always an array
-                as: "m",
-                in: {
-                  $sum: {
-                    $map: {
-                      input: { $objectToArray: "$$m" }, // { "uid": score } -> [{k, v}]
-                      as: "kv",
-                      in: "$$kv.v" // get the score
+  async addMarks(req, res, token_data) {
+
+    try {
+      const { marks, cont_id, event } = req.body;
+
+      // const userUid = `marks.${token_data.uid}`;
+      const updateData = event ? { $set: { "marks.$.score": marks, status: req.body.status } } : { $set: { status: req.body.status || "Reviewing" } };
+      console.log("updateddate=============>", { cont_id }, updateData)
+      //listing the contents back
+      await this.contentFunc.ContentMarksUpdate({ cont_id, "marks.uid": token_data.uid }, updateData, token_data, marks)
+      const data = req.body;
+      const { skip, limit, page } = gobalPagination.pagination(req);
+      const totalContents = await this.contentFunc.contentCount(data.filter);
+      const totalPages = Math.ceil(totalContents / limit);
+      let lists = await this.contentFunc.findUserEventAggregates([
+        {
+          $match: { eid: data.filter.eid }
+        },
+        {
+          $addFields: {
+            totalMarks: {
+              $sum: {
+                $map: {
+                  input: { $ifNull: ["$marks", []] },  // ensure marks is always an array
+                  as: "m",
+                  in: {
+                    $sum: {
+                      $map: {
+                        input: { $objectToArray: "$$m" }, // { "uid": score } -> [{k, v}]
+                        as: "kv",
+                        in: "$$kv.v" // get the score
+                      }
                     }
                   }
                 }
               }
             }
           }
+        },
+        {
+          $project: {
+            _id: 0,
+            cont_id: 1,
+            eid: 1,
+            name: 1,
+            content: 1,
+            totalMarks: 1,
+            uid: 1,
+            status: 1,
+            author_name: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            marks: 1
+          }
+        },
+
+        {
+          $sort: data.sortBy
+        },
+        { $skip: skip },
+        { $limit: limit }
+      ]);
+      return res.status(200).json({
+        message: 'Content lists fetched',
+        lists: lists,
+        pagination: {
+          totalContents,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          next: lists.length === 0 ? false : page === totalPages ? false : true
         }
-      },
-      {
-        $project: {
-          _id: 0,
-          cont_id: 1,
-          eid: 1,
-          name: 1,
-          content: 1,
-          totalMarks: 1,
-          uid: 1,
-          status: 1,
-          author_name: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          marks: 1
-        }
-      },
-      
-      {
-        $sort: data.sortBy 
-      },
-      { $skip: skip },
-      { $limit: limit }
-    ] );
-     return res.status(200).json({
-            message: 'Content lists fetched',
-            lists: lists,
-            pagination: {
-              totalContents,
-              totalPages,
-              currentPage: page,
-              pageSize: limit,
-              next: lists.length === 0 ? false : page === totalPages ? false : true
-            }
-          })
+      })
     } catch (err) {
       console.log("error=====>", err);
       return res.status(500).json({ message: 'Error Fetching content', err });
@@ -452,80 +452,80 @@ class ContentController {
   }
 
   async fetchEventOneContent(req, res, token_data) {
-  try {
-    const now = moment();
-    const { eid, cont_id } = req.query;
+    try {
+      const now = moment();
+      const { eid, cont_id } = req.query;
 
-    if (!cont_id) {
-      return res.status(400).json({
-        status: 400,
-        message: "Please provide content id",
-      });
-    }
+      if (!cont_id) {
+        return res.status(400).json({
+          status: 400,
+          message: "Please provide content id",
+        });
+      }
 
-    const contentCheck = await this.contentFunc.findOneEvenTContentOne({ cont_id });
+      const contentCheck = await this.contentFunc.findOneEvenTContentOne({ cont_id });
 
-    if (!contentCheck) {
-      return res.status(200).json({
-        status: 200,
-        message: "Please provide correct content id",
-        lists: {},
-      });
-    }
+      if (!contentCheck) {
+        return res.status(200).json({
+          status: 200,
+          message: "Please provide correct content id",
+          lists: {},
+        });
+      }
 
-    //  Case 1: eid is empty but cont_id present
-    if (!eid) {
+      //  Case 1: eid is empty but cont_id present
+      if (!eid) {
+        return res.status(200).json({
+          status: 200,
+          message: "Content is fetched",
+          lists: [contentCheck],
+        });
+      }
+
+      //  Case 2: eid is present
+      const eventCheck = await this.eventFunc.findOneEvent({ eid });
+      console.log("eventcheck========>", eventCheck);
+
+      if (eventCheck?.result) {
+        // assuming `result` means event ended
+        return res.status(200).json({
+          status: 200,
+          message: "This event has already ended. Thanks for your contribution.",
+          lists: {},
+        });
+      }
+
+
+      const lists = await this.contentFunc.findUserEventAggregates([
+        { $match: { eid, cont_id } },
+        { $unwind: "$marks" },
+        { $match: { "marks.uid": token_data.uid } },
+      ]);
+
+      if (lists && lists.length > 0) {
+        return res.status(200).json({
+          status: 200,
+          message: "Content is fetched",
+          lists,
+        });
+      }
+
+
       return res.status(200).json({
         status: 200,
         message: "Content is fetched",
         lists: [contentCheck],
       });
-    }
-
-    //  Case 2: eid is present
-    const eventCheck = await this.eventFunc.findOneEvent({ eid });
-    console.log("eventcheck========>", eventCheck);
-
-    if (eventCheck?.result) {
-      // assuming `result` means event ended
-      return res.status(200).json({
-        status: 200,
-        message: "This event has already ended. Thanks for your contribution.",
-        lists: {},
+    } catch (err) {
+      console.log("error=====>", err);
+      return res.status(500).json({
+        message: "Error fetching content",
+        error: err.message || err,
       });
     }
-
-    
-    const lists = await this.contentFunc.findUserEventAggregates([
-      { $match: { eid, cont_id } },
-      { $unwind: "$marks" },
-      { $match: { "marks.uid": token_data.uid } },
-    ]);
-
-    if (lists && lists.length > 0) {
-      return res.status(200).json({
-        status: 200,
-        message: "Content is fetched",
-        lists,
-      });
-    }
-
-
-    return res.status(200).json({
-      status: 200,
-      message: "Content is fetched",
-      lists: [contentCheck],
-    });
-  } catch (err) {
-    console.log("error=====>", err);
-    return res.status(500).json({
-      message: "Error fetching content",
-      error: err.message || err,
-    });
   }
-}
 
-  
+
   // async fetchEventOneContent(req, res, token_data){
   //   try {
   //       let now = moment();
@@ -553,7 +553,7 @@ class ContentController {
   //        return res
   //           .status(200)
   //           .json({ status: 200, message: "This event was already end. Thanks for contribution", lists: {} });
-        
+
 
   //       let lists = await this.contentFunc.findUserEventAggregates( [
   //         {
@@ -561,12 +561,12 @@ class ContentController {
   //         },{$unwind: "$marks"},
   //           {
   //             $match : {
-                
+
   //                 "marks.uid": token_data.uid
-                
+
   //             }
   //           }
-          
+
   //       ] )
   //       if(lists.length > 0 ){
   //         return res.status(200).json({
@@ -579,31 +579,31 @@ class ContentController {
   //       }
 
 
-       
+
   //   }catch (err) {
   //     console.log("error=====>", err);
   //     return res.status(500).json({ message: 'Error Fetching content', err });
   //   }
-   
+
   // }
 
   //<<<<<===================================================== Notice Methods =================================================================>>>>
-  async createNotice(req, res, token_data){
-    if(req.body.notice_create){
+  async createNotice(req, res, token_data) {
+    if (req.body.notice_create) {
       await this.noticeFunc.insertNotice(req.body.data);
     }
-    
-    
-    let def= await this.userFunc.userList(req.body.mail.filter,req.body.mail.projections,req.body.mail.limit, req.body.mail.skip);
+
+
+    let def = await this.userFunc.userList(req.body.mail.filter, req.body.mail.projections, req.body.mail.limit, req.body.mail.skip);
     // let to =["pratikdas967@gmail.com", "pratikdasnew967@gmail.com"];
 
-     let to =def.map(items=>items.email)
+    let to = def.map(items => items.email)
     // console.log("check==========>",  def.map(items=>items.email))
     let mailOptions = {
-        from: process.env.EMAIL_USER,
-        to,
-        subject: req.body.mail.subject,
-        html: `
+      from: process.env.EMAIL_USER,
+      to,
+      subject: req.body.mail.subject,
+      html: `
         <!DOCTYPE html>
         <html lang="bn">
           <head>
@@ -686,31 +686,31 @@ class ContentController {
           </body>
         </html>
         `
-      };
-     try {
-       if(req.body.send_mail){
+    };
+    try {
+      if (req.body.send_mail) {
         await transporter.sendMail(mailOptions);
       }
-        // console.log(`Email sent to ${name} (${to})`, state);
-      } catch (error) {
-        console.error(`Failed to send email to ${to}: ${error.message}`);
-      }
-    
+      // console.log(`Email sent to ${name} (${to})`, state);
+    } catch (error) {
+      console.error(`Failed to send email to ${to}: ${error.message}`);
+    }
+
     let lists = await this.noticeFunc.findAllNotice({});
     return res.status(200).json({
-        message: 'Notice lists fetched',
-        lists: lists
+      message: 'Notice lists fetched',
+      lists: lists
     })
   }
-  async allNotice(req, res, token_data){
+  async allNotice(req, res, token_data) {
     // await this.contentFunc.insertNotice(data);
     let lists = await this.noticeFunc.findAllNotice({});
     return res.status(200).json({
-        message: 'Notice lists fetched',
-        lists: lists
+      message: 'Notice lists fetched',
+      lists: lists
     })
   }
-   async certificateFetch(req, res, token_data) {
+  async certificateFetch(req, res, token_data) {
     const { eid } = req.query;
     let message = "";
     let certificateData = {};
@@ -724,7 +724,7 @@ class ContentController {
         .status(400)
         .json({ status: 400, message: "Please provide correct id for the event", data: {} });
     }
- 
+
     // check participation
     let participateCheck = await this.contentFunc.findOneEvenTContentOne({ eid, uid: token_data.uid });
     if (!participateCheck) {
@@ -850,7 +850,7 @@ class ContentController {
     let count = 0;
 
     for (let member of existingUsers) {
-        console.log("count=====================>", count)
+      console.log("count=====================>", count)
 
       if (!member) {
         count++;
@@ -858,26 +858,26 @@ class ContentController {
       }
 
       const { full_name: name, uid } = member;
-       if (eventSiblingsCheck.length > 0) {
+      if (eventSiblingsCheck.length > 0) {
 
-          if (count + 1 <= eventCheck.sh_list) {
-            if(eventSiblingsCheck[0].result && uid === token_data.uid){
-              setParticipationData(name, uid, count +1);
-
-              break;
-            }
-            message = "You are still in the competition for the next round";
-            // count++;
-          } else if (uid === token_data.uid) {
+        if (count + 1 <= eventCheck.sh_list) {
+          if (eventSiblingsCheck[0].result && uid === token_data.uid) {
             setParticipationData(name, uid, count + 1);
+
             break;
           }
-         }else{
-            if (uid === token_data.uid) {
-            setParticipationData(name, uid, count + 1);
-            break;
-          }
-         }
+          message = "You are still in the competition for the next round";
+          // count++;
+        } else if (uid === token_data.uid) {
+          setParticipationData(name, uid, count + 1);
+          break;
+        }
+      } else {
+        if (uid === token_data.uid) {
+          setParticipationData(name, uid, count + 1);
+          break;
+        }
+      }
 
       count++;
     }

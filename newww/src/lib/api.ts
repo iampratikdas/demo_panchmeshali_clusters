@@ -4,8 +4,10 @@ import type { Event, CreateEventData } from '../types/event';
 import type { User, CreateUserData, EmailData } from '../types/user';
 import type { Chat, ChatMessage, SendMessageData } from '../types/chat';
 import type { Notification } from '../types/notification';
-
+import axios from 'axios';
 // Mock notifications data storage
+const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmdWxsX25hbWUiOiJSaW1wYSDwn4y7IiwiZW1haWwiOiJyaW1wYWJheWVuODQwQGdtYWlsLmNvbSIsInBoX2NvdW50cnlfY29kZSI6IiIsInBob25lX251bWJlciI6Ijg3NjgxOTQxNTciLCJyb2xlIjoidXNlciIsImlhdCI6MTc3MjU2MDUwNiwiZXhwIjoxNzc2MTYwNTA2fQ.HA08PfqUmQb7TAfriinu-EWmMr_THVwuPhOyV26NwfQ"
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 const mockNotifications: Notification[] = [
     {
         id: 'notif1',
@@ -335,25 +337,28 @@ export const submitContent = async (
     formData: any
 ): Promise<any> => {
     // await delay(1000);
-    console.log("formData:================>", formData);
-    // const newContent: Content = {
-    //     id: `${mockContents.length + 1}`,
-    //     type,
-    //     title,
-    //     content,
-    //     status: 'Submitted',
-    //     createdAt: new Date().toISOString(),
-    //     updatedAt: new Date().toISOString(),
-    //     authorId: 'user1',
-    //     authorName: 'John Doe',
-    //     ...(type === 'story'
-    //         ? { wordCount: content.split(/\s+/).length, genre: 'General' }
-    //         : { lines: content.split('\n').length, style: 'Free Verse' }
-    //     ),
-    // } as Content;
-
-    // mockContents.unshift(newContent);
-    // return newContent;
+    const form_data = {
+        type: formData.type,
+        storyName: formData.title,
+        eid: formData.selectedEventId ?? "",
+        storyContent: formData.content,
+        url: formData.selectedFolder ?? "",
+        page_id: formData.selectedPublisher ?? "",
+        event_content: formData.newContent ?? false,
+        isOriginalWork: formData.isOriginal ?? false,
+        parent_eid: formData.parentEid ?? "",
+        // content: formData.content ?? "",
+        episodeNumber: formData.episodeNumber ?? "",
+        destination: formData.destination ?? ""
+    }
+    console.log("formData:================>", form_data);
+    const response = await axios.post(`${API_BASE_URL}/submit_contents`, form_data, {
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${TOKEN}`
+        },
+    });
+    return response.data;
 };
 
 export const addComment = async (

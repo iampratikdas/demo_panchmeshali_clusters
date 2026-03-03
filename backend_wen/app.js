@@ -14,7 +14,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const session = require('express-session');
 const fetch = require('node-fetch');
-const cron= require('node-cron'); 
+const cron = require('node-cron');
 
 
 
@@ -52,10 +52,10 @@ class Server {
         this.app.use(limiter);
         this.app.use("/public", express.static(publicPath));
         this.app.use(cors({
-            origin: ["*"],
+            origin: "*",
             methods: ['GET', 'POST', 'PUT', 'DELETE'],
             allowedHeaders: ['Content-Type', 'Authorization'],
-            credentials: true,
+            // credentials: true,
         }));
         // Schedule a task to run every minute
         // cron.schedule("*/10 * * * *", () => {
@@ -68,20 +68,20 @@ class Server {
 
         passport.deserializeUser((user, done) => done(null, user));
 
-        passport.use('google-admin',new GoogleStrategy({
-            clientID: process.env.GOOGLE_CLIENT_ID ,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET ,
+        passport.use('google-admin', new GoogleStrategy({
+            clientID: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:8600/api/auth/google/callback/mobile',
         },
             (accessToken, refreshToken, profile, done) => {
                 // Here you can save or find the user in your database
-              
+
                 return done(null, profile);
             }
         ));
-        passport.use('google',new GoogleStrategy({
-            clientID: process.env.GOOGLE_CLIENT_ID ,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET ,
+        passport.use('google', new GoogleStrategy({
+            clientID: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:8600/api/auth/google/callback',
         },
             (accessToken, refreshToken, profile, done) => {
@@ -92,14 +92,14 @@ class Server {
         ));
 
         this.app.get('/api/auth/google',
-            passport.authenticate('google', { scope: ['profile', 'email' ] })
-        , (req, res, next)=> next(req)
+            passport.authenticate('google', { scope: ['profile', 'email'] })
+            , (req, res, next) => next(req)
         );
         this.app.get('/api/auth/google/mobile',
-            passport.authenticate('google-admin', { scope: ['profile', 'email' ,  ] })
+            passport.authenticate('google-admin', { scope: ['profile', 'email',] })
         );
 
-      
+
 
         this.app.use(bodyParser.json());
         this.app.use(bodyParser.urlencoded({ extended: true }));

@@ -132,7 +132,8 @@ export function useSubmissionForm() {
                 backgroundImage,
                 coverImage,
                 destination,
-                isEvent
+                isEvent,
+
             };
 
             const result = submissionSchema.safeParse(formData);
@@ -141,7 +142,7 @@ export function useSubmissionForm() {
                 // We could show toast errors here if we wanted
             }
 
-            return submitContent(type, title, content, selectedPublisher, isOriginal, backgroundImage, coverImage);
+            return submitContent(formData);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['contents'] });

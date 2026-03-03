@@ -112,7 +112,7 @@ export default function Submit() {
                                         selectedDestination={state.destination}
                                         setSelectedDestination={actions.setDestination}
                                     />
-                                    <SubmissionTypeCard
+                                    {/* <SubmissionTypeCard
                                         newSubmission={state.newSubmission}
                                         setNewSubmission={actions.setNewSubmission}
                                         type={state.type}
@@ -123,7 +123,7 @@ export default function Submit() {
                                         setEpisodeNumber={actions.setEpisodeNumber}
                                         category={state.category}
                                         setCategory={actions.setCategory}
-                                    />
+                                    /> */}
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                         <ImageUploadField
