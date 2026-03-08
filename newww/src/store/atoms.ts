@@ -6,6 +6,7 @@ export const currentUserAtom = atom({
     id: 'user1',
     name: 'John Doe',
     email: 'john@example.com',
+    isAdmin: true,   // set false to test writer-only view
 });
 
 // UI state
