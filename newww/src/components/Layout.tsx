@@ -16,6 +16,8 @@ import {
     Users,
     MessageSquare,
     FolderOpen,
+    SpellCheck2,
+    Trophy,
     Loader2
 } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -38,6 +40,8 @@ const navItems = [
     { to: '/users', label: 'Users', icon: Users },
     { to: '/chats', label: 'Chats', icon: MessageSquare, badge: 2 },
     { to: '/workspace', label: 'Workspace', icon: FolderOpen },
+    { to: '/proofread', label: 'Proof Read Room', icon: SpellCheck2 },
+    { to: '/rankings', label: 'Rank the Contents', icon: Trophy },
 ];
 
 const projectItems = [
@@ -96,6 +100,14 @@ export function Layout({ children }: LayoutProps) {
         if (pathname.startsWith('/settings')) return {
             title: 'Settings',
             image: 'https://images.unsplash.com/photo-1494783367193-149034c05e8f?q=80&w=2940&auto=format&fit=crop'
+        };
+        if (pathname.startsWith('/proofread')) return {
+            title: 'Proof Read Room',
+            image: 'https://images.unsplash.com/photo-1456324504439-367cee3b3c32?q=80&w=2940&auto=format&fit=crop'
+        };
+        if (pathname.startsWith('/rankings')) return {
+            title: 'Rank the Contents',
+            image: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=2940&auto=format&fit=crop'
         };
         return {
             title: 'Dashboard',

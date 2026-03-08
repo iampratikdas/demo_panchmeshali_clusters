@@ -10,6 +10,8 @@ import Events from './routes/Events';
 import Users from './routes/Users';
 import Chats from './routes/Chats';
 import Workspace from './routes/Workspace';
+import ProofReadRoom from './routes/ProofReadRoom';
+import Rankings from './routes/Rankings';
 import { Layout } from './components/Layout';
 import './index.css';
 
@@ -77,6 +79,18 @@ const workspaceRoute = createRoute({
   component: Workspace,
 });
 
+const proofreadRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/proofread',
+  component: ProofReadRoom,
+});
+
+const rankingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/rankings',
+  component: Rankings,
+});
+
 // Create router
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -87,6 +101,8 @@ const routeTree = rootRoute.addChildren([
   usersRoute,
   chatsRoute,
   workspaceRoute,
+  proofreadRoute,
+  rankingsRoute,
   settingsRoute,
 ]);
 
