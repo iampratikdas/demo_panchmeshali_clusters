@@ -27,6 +27,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect } from 'react';
 import { NotificationDropdown } from './NotificationDropdown';
 import { Banner } from './Banner';
+import { BookPreviewList } from './BookPreviewList';
 
 interface LayoutProps {
     children: ReactNode;
@@ -211,7 +212,10 @@ export function Layout({ children }: LayoutProps) {
                                 );
                             })}
 
-                            <div className="pt-6">
+                            {/* ── Book Previews widget ── */}
+                            <BookPreviewList />
+
+                            <div className="pt-4">
                                 <div className="px-3 mb-2">
                                     <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider">More</h3>
                                 </div>
