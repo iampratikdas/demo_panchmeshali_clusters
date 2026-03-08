@@ -20,7 +20,8 @@
 12. [Types (`src/types/`)](#types)
 13. [Constants & Data](#constants--data)
 14. [Submission Wizard Logic](#submission-wizard-logic)
-15. [Event Flags Reference](#event-flags-reference)
+15. [Workspace Features](#workspace-features)
+16. [Event Flags Reference](#event-flags-reference)
 
 ---
 
@@ -33,7 +34,8 @@
 - **Create and manage Events** (writing competitions, book challenges).
 - **Manage Users** — view, ban, and communicate with writers.
 - **Chat** with individual writers in real time.
-- **Organize a Workspace** — folder/file tree for stored content.
+- **Organize a Workspace** — folder/file tree; submitted content is **automatically saved** to the workspace root as a story/poem file.
+- **Preview & Edit** workspace content — clicking a story/poem card opens a rich read/edit modal with the full content body and metadata.
 - Receive **Notifications** about submissions, approvals, and messages.
 
 ---
@@ -161,7 +163,8 @@ All routes are registered in `src/App.tsx` using `@tanstack/react-router`. Every
 | `StatusBadge.tsx` | Color-coded badge for content status: `Approved` (green), `Under Review` (yellow), `Submitted` (blue), `Rejected` (red). |
 | `StorageBar.tsx` | Visual storage usage bar for the Workspace. |
 | `ShareModal.tsx` | Modal for sharing a content link. |
-| `FileGrid.tsx` | Grid view of files in the Workspace. |
+| `FileGrid.tsx` | Grid view of workspace files. Story/poem cards show a purple `BookOpen` icon, a `Content Submission` / `Event Submission` badge, and an excerpt. Clicking a story/poem card opens `ContentPreviewModal`; regular files (pdf, docx, txt) use the download action. |
+| `ContentPreviewModal.tsx` | Full-screen bottom-sheet modal (mobile) / centred modal (desktop) for previewing and editing workspace story/poem files. Shows rendered HTML content + metadata sidebar. Has an **Edit mode** with `RichTextEditor` for the body and editable inputs for Title, Author, Category, Publisher, Event, Type, and Status. Saves changes back to `workspaceFilesAtom`. |
 | `FolderGrid.tsx` | Grid view of folders in the Workspace. |
 | `FolderTree.tsx` | Recursive tree view of the folder hierarchy in the Workspace. |
 | `CreateFolderModal.tsx` | Modal dialog for creating a new workspace folder. |
@@ -204,7 +207,7 @@ Located in `src/ui/`. These are low-level, reusable UI building blocks following
 
 ### `src/hooks/useSubmissionForm.ts`
 
-The central form state hook for the entire Submit page. Manages all form fields, image upload validation, and the content submission mutation.
+The central form state hook for the entire Submit page. Manages all form fields, image upload validation, the content submission mutation, and **auto-saving the submitted content to the workspace root**.
 
 **Returns:**
 
@@ -237,6 +240,21 @@ The central form state hook for the entire Submit page. Manages all form fields,
 **Key `actions`:** `setType`, `setTitle`, `setContent`, `setIsEvent`, `setSelectedEventId`, `setSelectedPublisher`, `setNewSubmission`, `setCategory`, `setEpisodeNumber`, `setIsOriginal`, `setDestination`, `handleImageUpload`, `handleRemoveImage`, `submit`, `resetForm`
 
 **Image validation (`handleImageUpload`):** Reads the uploaded image, calculates the aspect ratio, and rejects it with a toast + alert if it doesn't match the target ratio within a ±0.05 tolerance.
+
+**Workspace auto-save (`onSuccess`):** After a successful API submission, a new `WorkspaceFile` is automatically prepended to `workspaceFilesAtom` with `folderId: 'root'`. The file includes:
+
+| Field | Source |
+|---|---|
+| `name` | `story_title` or `title` |
+| `type` | `'poem'` if `type === 'poem'`, otherwise `'story'` |
+| `fullContent` | Full HTML content from `RichTextEditor` |
+| `excerpt` | First 120 chars of plain text (HTML tags stripped) |
+| `category` | Selected category |
+| `publisher` | Selected publisher (if any) |
+| `author` | Always `'You'` (admin) |
+| `status` | Always `'Pending'` initially |
+| `eventName` | Matched event name (for event submissions) |
+| `contentType` | `'Event Submission'` or `'Content Submission'` |
 
 ---
 
@@ -324,7 +342,13 @@ Uses [Jotai](https://jotai.org/) for global state atoms.
 |---|---|---|
 | `sidebarOpenAtom` | `boolean` | Whether the sidebar is open. Defaults to `true` on desktop, `false` on mobile. |
 | `currentUserAtom` | `{ name: string }` | Currently logged-in admin user info (currently static). |
-| `workspaceFoldersAtom` | `WorkspaceFolder[]` | Folder tree for the Workspace page. |
+| `workspaceFoldersAtom` | `WorkspaceFolder[]` | Folder tree for the Workspace page. Seeded from `src/data/folderData.ts`. |
+| `workspaceFilesAtom` | `WorkspaceFile[]` | All files in the workspace, keyed by `folderId`. Pre-seeded with a dummy story (`'The Lost Kingdom'`) in the root folder. **Updated by `useSubmissionForm` on every successful submission** — the new file is prepended to the list with `folderId: 'root'`. |
+| `currentFolderAtom` | `string` | ID of the currently open folder. Defaults to `'root'`. |
+| `storageQuotaAtom` | `StorageQuota` | Mock storage usage data (total, used, percentage). |
+| `selectedFilesAtom` | `string[]` | IDs of currently selected files (for multi-select operations). |
+| `contentFilterAtom` | `ContentStatus \| 'all'` | Active status filter on the Content List page. |
+| `currentPageAtom` | `number` | Current pagination page for the Content List. |
 
 **`src/lib/queryClient.ts`** — Exports the singleton `QueryClient` instance configured for `@tanstack/react-query`.
 
@@ -344,7 +368,32 @@ All domain model interfaces live in `src/types/`.
 | `chat.ts` | `Chat`, `ChatMessage`, `SendMessageData` |
 | `notification.ts` | `Notification` |
 | `api.ts` | `PaginatedResponse<T>`, `AIQualityResponse`, `AIProofreadResponse` |
-| `workspace.ts` | `WorkspaceFolder`, `WorkspaceFile` |
+| `workspace.ts` | `WorkspaceFolder`, `WorkspaceFile`, `StorageQuota`, `ShareSettings`, `EmailTheme`, `BreadcrumbItem` |
+
+### Key Type: `WorkspaceFile` _(extended)_
+
+```ts
+interface WorkspaceFile {
+  id: string;
+  name: string;             // Submission / story title
+  folderId: string;         // 'root' for auto-saved submissions
+  type: 'doc' | 'docx' | 'pdf' | 'txt' | 'story' | 'poem';
+  size: number;             // bytes
+  createdAt: string;
+  modifiedAt: string;
+  sharedWith?: string[];    // email addresses
+  downloadUrl?: string;
+  // Rich submission metadata (set on submit & editable in preview modal)
+  contentType?: string;     // 'Content Submission' | 'Event Submission'
+  excerpt?: string;         // First 120 chars of plain text content
+  fullContent?: string;     // Full HTML body (from RichTextEditor)
+  category?: string;
+  publisher?: string;
+  author?: string;
+  status?: string;          // 'Pending' | 'Reviewing' | 'Approved' | 'Rejected'
+  eventName?: string;       // Populated for event submissions
+}
+```
 
 ### Key Type: `Event`
 
@@ -414,6 +463,66 @@ The `/submit` route contains two independent multi-step wizards, toggled by a Ta
 | 0 | Event | An event must be selected from the list |
 | 1 | Write | Conditional on event flags (see below) |
 | 2 | Review | Must confirm original authorship to Submit |
+
+---
+
+## Workspace Features
+
+The `/workspace` route is a Google Drive-inspired file browser. All logic lives in `Workspace.tsx` and uses Jotai atoms for state.
+
+### Folder Operations
+| Action | Handler | Notes |
+|---|---|---|
+| Create folder | `handleCreateFolder` | Adds to `workspaceFoldersAtom` with a random color |
+| Rename folder | `handleRenameFolder` / `confirmRenameFolder` | Updates `name` + `modifiedAt` |
+| Delete folder | `handleDeleteFolder` | Blocked if folder has children or files |
+
+### File Operations
+| Action | Handler | Notes |
+|---|---|---|
+| Upload file | `handleUploadFile` | Opens native file picker; adds to `workspaceFilesAtom` |
+| Download file | `handleDownloadFile` | Alert only (mock); not available for story/poem files |
+| Share file | `handleShareFile` | Opens `ShareModal` |
+| Delete file | `handleDeleteFile` | Opens `DeleteConfirmModal` |
+| **Preview content** | Card click / context menu | Opens `ContentPreviewModal` for `story`/`poem` files |
+
+### Auto-saved Submissions
+
+Every successful form submission from the `/submit` page prepends a `WorkspaceFile` with `folderId: 'root'` to `workspaceFilesAtom` via `useSubmissionForm` `onSuccess`. The file is immediately visible in the Workspace root.
+
+### Content Preview Modal (`ContentPreviewModal.tsx`)
+
+A mobile-first modal for viewing and editing story/poem workspace files.
+
+**View Mode:**
+- Renders `fullContent` HTML using `dangerouslySetInnerHTML` inside a `.prose` container
+- Shows metadata grid: Type, Category, Publisher, Author, Event, Submitted, Updated, Size
+- On mobile: metadata is a collapsible accordion
+- On desktop: metadata always visible in a 2–3 column grid
+
+**Edit Mode** (triggered by "Edit" button):
+- `RichTextEditor` (Tiptap) for the content body
+- Editable inputs for: Title, Author, Category, Publisher, Event
+- Dropdowns for: Type (`story/poem/doc/txt/pdf`), Status (`Pending/Reviewing/Approved/Rejected`)
+- On mobile: a dedicated sticky `Cancel` / `Save changes` bar appears below the header
+- On desktop: Cancel/Save buttons are inline in the header
+- **Save** writes to `workspaceFilesAtom` and recomputes `excerpt` from the updated `fullContent`
+- **Cancel** discards all draft changes
+
+### File Card Rendering (`FileGrid.tsx`)
+
+| File Type | Icon | Colour | Actions |
+|---|---|---|---|
+| `story` | `BookOpen` | Purple | Preview modal (no download) |
+| `poem` | `BookOpen` | Pink | Preview modal (no download) |
+| `pdf` | `FileText` | Red | Download, Share, Delete |
+| `docx` / `doc` | `FileText` | Blue | Download, Share, Delete |
+| `txt` | `FileText` | Grey | Download, Share, Delete |
+
+Story/poem cards additionally show:
+- A **purple `Content Submission` / `Event Submission` badge**
+- An **excerpt** (first 120 characters of plain text)
+- A **"Click to preview"** hover overlay on desktop
 
 ---
 
