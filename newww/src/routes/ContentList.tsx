@@ -17,7 +17,7 @@ export default function ContentList() {
     const [filter, setFilter] = useAtom(contentFilterAtom);
     const [currentPage, setCurrentPage] = useAtom(currentPageAtom);
     const [searchQuery, setSearchQuery] = useState('');
-    const pageSize = 6;
+    const pageSize = 2;
 
     const { data, isLoading } = useQuery({
         queryKey: ['contents', currentPage, filter],
@@ -114,7 +114,7 @@ export default function ContentList() {
                         </div>
                     )}
 
-                    {data && data.totalPages > 1 && !searchQuery && (
+                    {data && (
                         <Pagination
                             currentPage={currentPage}
                             totalPages={data.totalPages}

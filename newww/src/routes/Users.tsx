@@ -19,7 +19,7 @@ export default function Users() {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc'); // Default: newest first
-    const pageSize = 6;
+    const pageSize = 1;
 
     const [formData, setFormData] = useState<CreateUserData>({
         fullName: '',
@@ -321,14 +321,12 @@ export default function Users() {
                         </div>
                     )}
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
-                        />
-                    )}
+                    {/* Pagination — always visible */}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={Math.max(1, totalPages)}
+                        onPageChange={setCurrentPage}
+                    />
                 </>
             )}
         </div>

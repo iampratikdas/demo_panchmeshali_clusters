@@ -17,7 +17,7 @@ export default function Events() {
     const [categoryInput, setCategoryInput] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 6;
+    const pageSize = 1;
 
     const [formData, setFormData] = useState<Omit<CreateEventData, 'team' | 'categories'>>({
         name: '',
@@ -509,14 +509,12 @@ export default function Events() {
                         </div>
                     )}
 
-                    {/* Pagination */}
-                    {totalPages > 1 && (
-                        <Pagination
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={setCurrentPage}
-                        />
-                    )}
+                    {/* Pagination — always visible */}
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={Math.max(1, totalPages)}
+                        onPageChange={setCurrentPage}
+                    />
                 </>
             )}
         </div>
