@@ -1,4 +1,4 @@
-import { Loader2, Send, FileText, CalendarDays, ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { Loader2, Send, FileText, CalendarDays, ChevronRight, ChevronLeft, Check, PlusCircle, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useSubmissionForm } from '../hooks/useSubmissionForm';
 import { CONTENT_TYPES } from '../constants/submission';
@@ -98,9 +98,10 @@ interface NavButtonsProps {
     isPending?: boolean;
     isOriginal?: boolean;
     submitLabel?: string;
+    disableNext?: boolean;
 }
 
-function NavButtons({ step, totalSteps, onBack, onNext, onSubmit, onDraft, isPending, isOriginal, submitLabel }: NavButtonsProps) {
+function NavButtons({ step, totalSteps, onBack, onNext, onSubmit, onDraft, isPending, isOriginal, submitLabel, disableNext }: NavButtonsProps) {
     const isLastStep = step === totalSteps - 1;
 
     return (
@@ -140,6 +141,7 @@ function NavButtons({ step, totalSteps, onBack, onNext, onSubmit, onDraft, isPen
                 ) : (
                     <Button
                         onClick={onNext}
+                        disabled={disableNext}
                         className="w-full sm:w-auto min-h-[44px] gap-2"
                     >
                         Next
@@ -334,6 +336,13 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
                         isPending={state.isPending}
                         isOriginal={state.isOriginal}
                         submitLabel={`Submit ${contentTypeLabel}`}
+                        disableNext={
+                            (step === 0 && state.newSubmission === 'new' && !state.selectedPublisher) ||
+                            (step === 1 && (
+                                !state.type ||
+                                (state.newSubmission === 'new' && (!state.story_title || !state.category))
+                            ))
+                        }
                     />
                 </CardContent>
             </Card>
@@ -349,15 +358,37 @@ const EVENT_STEPS: Step[] = [
     { label: 'Review', description: 'Confirm & submit' },
 ];
 
+interface Episode {
+    id: number;
+    title: string;
+    content: string;
+}
+
 interface EventWizardProps {
     state: ReturnType<typeof useSubmissionForm>['state'];
     actions: ReturnType<typeof useSubmissionForm>['actions'];
     eventSubmissionOptions: { value: string; label: string }[];
+    selectedEvent?: ReturnType<typeof useSubmissionForm>['state']['events'] extends (infer E)[] | undefined ? E : never;
 }
 
-function EventWizard({ state, actions, eventSubmissionOptions }: EventWizardProps) {
+function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: EventWizardProps) {
     const [step, setStep] = useState(0);
     const total = EVENT_STEPS.length;
+
+    // Multi-episode mode: episode_wise AND for_book both true
+    const isEpisodeMode = !!(selectedEvent as any)?.episode_wise && !!(selectedEvent as any)?.for_book;
+
+    // Local episodes list – starts with one empty episode
+    const [episodes, setEpisodes] = useState<Episode[]>([{ id: Date.now(), title: '', content: '' }]);
+
+    const addEpisode = () =>
+        setEpisodes(prev => [...prev, { id: Date.now(), title: '', content: '' }]);
+
+    const removeEpisode = (id: number) =>
+        setEpisodes(prev => prev.length > 1 ? prev.filter(ep => ep.id !== id) : prev);
+
+    const updateEpisode = (id: number, field: 'title' | 'content', value: string) =>
+        setEpisodes(prev => prev.map(ep => ep.id === id ? { ...ep, [field]: value } : ep));
 
     const goNext = () => setStep(s => Math.min(s + 1, total - 1));
     const goBack = () => setStep(s => Math.max(s - 1, 0));
@@ -395,34 +426,95 @@ function EventWizard({ state, actions, eventSubmissionOptions }: EventWizardProp
 
                     {/* Step 2 – Write */}
                     {step === 1 && (
-                        <div className="space-y-4">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Title</CardTitle>
-                                    <CardDescription>Enter a compelling title for your {state.type}</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <Input
-                                        placeholder={`Enter your ${state.type} title...`}
-                                        value={state.title}
-                                        onChange={(e) => actions.setTitle(e.target.value)}
-                                    />
-                                </CardContent>
-                            </Card>
+                        <div className="space-y-6">
+                            {isEpisodeMode ? (
+                                /* ── Multi-episode mode ── */
+                                <>
+                                    {episodes.map((ep, index) => (
+                                        <Card key={ep.id} className="border border-border shadow-sm">
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <CardTitle className="text-base">Episode {index + 1}</CardTitle>
+                                                        <CardDescription>Enter the title and content for this episode</CardDescription>
+                                                    </div>
+                                                    {episodes.length > 1 && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
+                                                            onClick={() => removeEpisode(ep.id)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div>
+                                                    <p className="text-sm font-medium mb-1.5">Episode Title</p>
+                                                    <Input
+                                                        placeholder="Enter episode title..."
+                                                        value={ep.title}
+                                                        onChange={(e) => updateEpisode(ep.id, 'title', e.target.value)}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium mb-1.5">Content</p>
+                                                    <RichTextEditor
+                                                        content={ep.content}
+                                                        onChange={(val) => updateEpisode(ep.id, 'content', val)}
+                                                        placeholder="Write episode content..."
+                                                    />
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
 
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Content</CardTitle>
-                                    <CardDescription>Write your {state.type} below</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <RichTextEditor
-                                        content={state.content}
-                                        onChange={actions.setContent}
-                                        placeholder={`Start writing your ${state.type}...`}
-                                    />
-                                </CardContent>
-                            </Card>
+                                    {/* Add episode button */}
+                                    <div className="flex justify-center">
+                                        <Button
+                                            variant="outline"
+                                            className="gap-2 min-h-[44px] border-dashed border-2 px-6 text-primary hover:bg-primary/5 hover:border-primary transition-all"
+                                            onClick={addEpisode}
+                                        >
+                                            <PlusCircle className="h-5 w-5" />
+                                            Add episode
+                                        </Button>
+                                    </div>
+                                </>
+                            ) : (
+                                /* ── Normal mode ── */
+                                <>
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Title</CardTitle>
+                                            <CardDescription>Enter a compelling title for your {state.type}</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <Input
+                                                placeholder={`Enter your ${state.type} title...`}
+                                                value={state.title}
+                                                onChange={(e) => actions.setTitle(e.target.value)}
+                                            />
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Content</CardTitle>
+                                            <CardDescription>Write your {state.type} below</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <RichTextEditor
+                                                content={state.content}
+                                                onChange={actions.setContent}
+                                                placeholder={`Start writing your ${state.type}...`}
+                                            />
+                                        </CardContent>
+                                    </Card>
+                                </>
+                            )}
                         </div>
                     )}
 
@@ -445,6 +537,7 @@ function EventWizard({ state, actions, eventSubmissionOptions }: EventWizardProp
                         isPending={state.isPending}
                         isOriginal={state.isOriginal}
                         submitLabel="Submit to Event"
+                        disableNext={step === 0 && !state.selectedEventId}
                     />
                 </CardContent>
             </Card>
@@ -529,6 +622,7 @@ export default function Submit() {
                         state={state}
                         actions={actions}
                         eventSubmissionOptions={eventSubmissionOptions}
+                        selectedEvent={selectedEvent}
                     />
                 </TabsContent>
             </Tabs>

@@ -12,6 +12,7 @@ export interface Event {
     w_count: number;                // Word count limit
     categories: string[];           // Event categories
     episode_wise: boolean;          // If false: only show "new submission", If true: also show "next episode"
+    for_book?: boolean;             // If true (along with episode_wise): show multi-episode input UI
     createdAt: string;              // ISO timestamp
     updatedAt: string;              // ISO timestamp
     __v: number;                    // Version key (MongoDB)
@@ -19,6 +20,7 @@ export interface Event {
     result: boolean;                // Results released status
     type: string;                   // Event type (e.g., "vote")
 }
+
 
 export interface CreateEventData {
     name: string;
