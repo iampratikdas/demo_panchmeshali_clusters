@@ -70,6 +70,22 @@ export const workspaceFilesAtom = atom<WorkspaceFile[]>([
         createdAt: '2025-01-15T12:00:00Z',
         modifiedAt: '2025-01-20T15:30:00Z',
     },
+    {
+        id: 'story-root-1',
+        name: 'The Lost Kingdom',
+        folderId: 'root',
+        type: 'story',
+        size: 8240,
+        createdAt: '2025-11-15T10:30:00Z',
+        modifiedAt: '2025-11-18T14:20:00Z',
+        contentType: 'Content Submission',
+        excerpt: 'Once upon a time, in a land far away, there existed a kingdom that was lost to the sands of time…',
+        fullContent: `<p>Once upon a time, in a land far away, there existed a kingdom that was lost to the sands of time. The rivers ran gold at dawn, and the great forests hummed with ancient songs no living ear had heard in centuries.</p><p>A young wanderer named Aryan stumbled upon its ruins one stormy evening, guided only by a map his grandmother had stitched into the lining of her old shawl. What he found was not ruins alone — but a door, glowing faintly, etched with words in a language older than memory.</p><p>He pressed his hand to the door and whispered the only word he knew in that tongue: <em>Aashay</em> — meaning hope.</p><p>The door opened.</p>`,
+        category: 'Fantasy',
+        publisher: 'Panchmeshali Publishers',
+        author: 'Pratik Das',
+        status: 'Pending',
+    },
 ]);
 
 export const currentFolderAtom = atom<string>('root');

@@ -11,13 +11,23 @@ export interface WorkspaceFile {
     id: string;
     name: string;
     folderId: string;
-    type: 'doc' | 'docx' | 'pdf' | 'txt';
+    type: 'doc' | 'docx' | 'pdf' | 'txt' | 'story' | 'poem';
     size: number; // in bytes
     createdAt: string;
     modifiedAt: string;
     sharedWith?: string[]; // email addresses
     downloadUrl?: string; // mock URL for download
+    contentType?: string; // e.g. 'Event Submission', 'Content Submission'
+    excerpt?: string;     // short preview of body content
+    // Rich content fields (for preview modal)
+    fullContent?: string; // full HTML content body
+    category?: string;
+    publisher?: string;
+    author?: string;
+    status?: string;
+    eventName?: string;   // if this was an event submission
 }
+
 
 export interface StorageQuota {
     total: number; // Total storage in bytes
