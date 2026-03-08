@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { Pagination } from '../components/Pagination';
-import { Calendar, Users, Clock, Plus, CheckCircle, XCircle, Search, Trophy, FileText } from 'lucide-react';
+import { Calendar, Users, Plus, CheckCircle, XCircle, Search, Trophy, FileText } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 
 export default function Events() {
@@ -30,6 +30,8 @@ export default function Events() {
         sh_list: 0,
         logo: '',
         type: 'vote',
+        episode_wise: false,
+        for_book: false,
     });
     const [team, setTeam] = useState<string[]>([]);
     const [categories, setCategories] = useState<string[]>([]);
@@ -64,6 +66,8 @@ export default function Events() {
             sh_list: 0,
             logo: '',
             type: 'vote',
+            episode_wise: false,
+            for_book: false,
         });
         setTeam([]);
         setCategories([]);
@@ -258,18 +262,49 @@ export default function Events() {
                                 />
                             </div>
 
-                            {/* Active Status */}
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    id="active"
-                                    checked={formData.active}
-                                    onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                                    className="h-4 w-4"
-                                />
-                                <label htmlFor="active" className="text-sm font-medium">
-                                    Event is Active
-                                </label>
+                            {/* Toggles: Active / Episode Wise / For Book */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                                    <input
+                                        type="checkbox"
+                                        id="active"
+                                        checked={formData.active}
+                                        onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                                        className="h-4 w-4 accent-primary"
+                                    />
+                                    <div>
+                                        <label htmlFor="active" className="text-sm font-medium cursor-pointer">Event is Active</label>
+                                        <p className="text-xs text-muted-foreground">Visible to participants</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                                    <input
+                                        type="checkbox"
+                                        id="episode_wise"
+                                        checked={formData.episode_wise}
+                                        onChange={(e) => setFormData({ ...formData, episode_wise: e.target.checked })}
+                                        className="h-4 w-4 accent-primary"
+                                    />
+                                    <div>
+                                        <label htmlFor="episode_wise" className="text-sm font-medium cursor-pointer">Episode Wise</label>
+                                        <p className="text-xs text-muted-foreground">Allow episode submissions</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                                    <input
+                                        type="checkbox"
+                                        id="for_book"
+                                        checked={formData.for_book}
+                                        onChange={(e) => setFormData({ ...formData, for_book: e.target.checked })}
+                                        className="h-4 w-4 accent-primary"
+                                    />
+                                    <div>
+                                        <label htmlFor="for_book" className="text-sm font-medium cursor-pointer">For Book</label>
+                                        <p className="text-xs text-muted-foreground">Enable multi-episode book mode</p>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Team Members */}
@@ -406,8 +441,8 @@ export default function Events() {
                                         </div>
                                     </div>
 
-                                    {/* Word Count & Type */}
-                                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                    {/* Word Count, Type & Flags */}
+                                    <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                                         <div className="flex items-center gap-1">
                                             <FileText className="h-4 w-4" />
                                             <span>{event.w_count} words</span>
@@ -417,6 +452,12 @@ export default function Events() {
                                             <span>{event.sh_list} shortlist</span>
                                         </div>
                                         <Badge variant="outline" className="text-xs">{event.type}</Badge>
+                                        {event.episode_wise && (
+                                            <Badge variant="secondary" className="text-xs">Episode Wise</Badge>
+                                        )}
+                                        {event.for_book && (
+                                            <Badge variant="secondary" className="text-xs">For Book</Badge>
+                                        )}
                                     </div>
 
                                     {/* Parent Event */}

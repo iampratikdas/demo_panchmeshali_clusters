@@ -35,4 +35,6 @@ export interface CreateEventData {
     categories: string[];
     logo: string;
     type: string;
+    episode_wise: boolean;          // Whether episode-wise submissions are allowed
+    for_book: boolean;              // Whether multi-episode book-mode is enabled
 }

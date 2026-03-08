@@ -177,7 +177,7 @@ const mockEvents: Event[] = [
             "তন্দ্রা নাথ ",
             "সুনন্দা শেঠ "
         ],
-        "episode_wise": true, // if false then show episode wise submission .
+        "episode_wise": false, // if false then show episode wise submission .
         //  in dropdwon of Is this a new submission or an update to an existing submission?
         //  in dropdown only new submission but if it is true then also add next  episode in option
 
