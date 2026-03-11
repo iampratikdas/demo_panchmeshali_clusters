@@ -232,3 +232,55 @@ body {
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/* ── Book Reader prose styles ──────────────────────────── */
+.book-prose p {
+  margin-bottom: 1.2em;
+  text-align: justify;
+  text-indent: 1.8em;
+}
+.book-prose p:first-child {
+  text-indent: 0;
+}
+.book-prose h1, .book-prose h2, .book-prose h3 {
+  font-family: Georgia, serif;
+  font-weight: 700;
+  margin-top: 1.6em;
+  margin-bottom: 0.6em;
+  color: #1a1a1a;
+  text-align: center;
+  text-indent: 0;
+}
+.book-prose h1 { font-size: 1.5rem; }
+.book-prose h2 { font-size: 1.25rem; }
+.book-prose h3 { font-size: 1.1rem; }
+.book-prose blockquote {
+  border-left: 3px solid #c9a84c;
+  padding: 0.5em 1.2em;
+  margin: 1.2em 0;
+  font-style: italic;
+  color: #555;
+  background: rgba(201,168,76,0.06);
+  border-radius: 0 6px 6px 0;
+}
+.book-prose ul, .book-prose ol {
+  margin: 1em 0 1em 1.5em;
+}
+.book-prose li {
+  margin-bottom: 0.4em;
+}
+.book-prose strong { color: #111; }
+.book-prose em { font-style: italic; }
+.book-prose hr {
+  border: none;
+  border-top: 1px solid #e5c87a;
+  margin: 2em auto;
+  width: 60%;
+}
+
+/* Poem variant: centred, no justify, no indent */
+.book-prose--poem p {
+  text-align: center;
+  text-indent: 0;
+  line-height: 2;
+}

@@ -12,6 +12,7 @@ import Chats from './routes/Chats';
 import Workspace from './routes/Workspace';
 import ProofReadRoom from './routes/ProofReadRoom';
 import Rankings from './routes/Rankings';
+import PublishPreview from './routes/PublishPreview';
 import { Layout } from './components/Layout';
 import './index.css';
 
@@ -91,6 +92,12 @@ const rankingsRoute = createRoute({
   component: Rankings,
 });
 
+const publishPreviewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/publish-preview',
+  component: PublishPreview,
+});
+
 // Create router
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -103,6 +110,7 @@ const routeTree = rootRoute.addChildren([
   workspaceRoute,
   proofreadRoute,
   rankingsRoute,
+  publishPreviewRoute,
   settingsRoute,
 ]);
 

@@ -18,7 +18,8 @@ import {
     FolderOpen,
     SpellCheck2,
     Trophy,
-    Loader2
+    Loader2,
+    Newspaper
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useAtom } from 'jotai';
@@ -43,6 +44,7 @@ const navItems = [
     { to: '/workspace', label: 'Workspace', icon: FolderOpen },
     { to: '/proofread', label: 'Proof Read Room', icon: SpellCheck2 },
     { to: '/rankings', label: 'Rank the Contents', icon: Trophy },
+    { to: '/publish-preview', label: 'Book Publish Preview', icon: Newspaper },
 ];
 
 const projectItems = [
