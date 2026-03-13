@@ -13,6 +13,7 @@ import Workspace from './routes/Workspace';
 import ProofReadRoom from './routes/ProofReadRoom';
 import Rankings from './routes/Rankings';
 import PublishPreview from './routes/PublishPreview';
+import Login from './routes/Login';
 import { Layout } from './components/Layout';
 import './index.css';
 
@@ -97,22 +98,24 @@ const publishPreviewRoute = createRoute({
   path: '/publish-preview',
   component: PublishPreview,
 });
+const rootRoutelogin = createRootRoute();
 
-// Create router
-const routeTree = rootRoute.addChildren([
-  indexRoute,
-  submitRoute,
-  contentListRoute,
-  contentDetailRoute,
-  eventsRoute,
-  usersRoute,
-  chatsRoute,
-  workspaceRoute,
-  proofreadRoute,
-  rankingsRoute,
-  publishPreviewRoute,
-  settingsRoute,
+const authRootRoute = createRoute({
+  getParentRoute: () => rootRoutelogin,
+  path: 'auth',
+  component: () => <Outlet />,
+});
+
+const loginRoute = createRoute({
+  getParentRoute: () => authRootRoute,
+  path: 'login',
+  component: Login,
+});
+
+const routeTree = rootRoutelogin.addChildren([
+  authRootRoute.addChildren([loginRoute]),
 ]);
+
 
 const router = createRouter({ routeTree });
 
