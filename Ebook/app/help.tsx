@@ -23,9 +23,9 @@ export default function HelpScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        
+
         <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
-        
+
         {FAQS.map((faq, index) => (
           <View key={index} style={styles.faqCard}>
             <View style={styles.faqHeader}>

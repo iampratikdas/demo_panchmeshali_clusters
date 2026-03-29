@@ -13,7 +13,7 @@ export default function AccountScreen() {
   const MENU_ITEMS = [
     { id: '1', title: 'Settings', icon: 'settings', route: '/settings' },
     { id: '2', title: 'Language', icon: 'language', route: '/language' },
-    { id: '3', title: 'Help & Support', icon: 'help-outline', route: '/help' },
+    { id: '3', title: 'Help & Support', icon: 'help-outline', route: '/Help' },
     { id: '4', title: 'Contact Us', icon: 'mail-outline', route: '/contact' },
   ];
 
@@ -21,7 +21,7 @@ export default function AccountScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
-        
+
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Account</Text>
@@ -42,9 +42,9 @@ export default function AccountScreen() {
         {/* Menu Items */}
         <View style={styles.menuContainer}>
           {MENU_ITEMS.map((item) => (
-            <TouchableOpacity 
-              key={item.id} 
-              style={styles.menuItem} 
+            <TouchableOpacity
+              key={item.id}
+              style={styles.menuItem}
               onPress={() => item.route ? router.push(item.route as any) : null}
             >
               <View style={styles.menuIconContainer}>

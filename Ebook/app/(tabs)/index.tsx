@@ -35,6 +35,8 @@ export default function HomeScreen() {
   const screenWidth = Dimensions.get('window').width;
   const flatListRef = useRef<FlatList>(null);
   const tabsScrollRef = useRef<ScrollView>(null);
+  const mainScrollRef = useRef<ScrollView>(null);
+  const isFirstRender = useRef(true);
 
   const handleCategoryPress = (cat: string) => {
     setActiveCategory(cat);
@@ -49,6 +51,12 @@ export default function HomeScreen() {
         setActiveCategory(CATEGORIES[index]);
         // Scroll the top tabs automatically based on an approximation
         tabsScrollRef.current?.scrollTo({ x: index * 80, animated: true });
+        
+        if (!isFirstRender.current) {
+          mainScrollRef.current?.scrollTo({ y: 190, animated: true });
+        } else {
+          isFirstRender.current = false;
+        }
       }
     }
   }).current;
@@ -90,7 +98,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
+      <ScrollView ref={mainScrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.container}>
         
         {/* Featured Section */}
         <TouchableOpacity style={styles.featuredCard} onPress={() => handleBookPress(FEATURED_BOOK.id)}>
