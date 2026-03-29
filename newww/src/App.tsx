@@ -111,10 +111,26 @@ const loginRoute = createRoute({
   path: 'login',
   component: Login,
 });
+// Create router
+const authTree = authRootRoute.addChildren([loginRoute]);
+const mainRoutes = [
+  indexRoute,
+  submitRoute,
+  contentListRoute,
+  contentDetailRoute,
+  eventsRoute,
+  usersRoute,
+  chatsRoute,
+  workspaceRoute,
+  proofreadRoute,
+  rankingsRoute,
+  publishPreviewRoute,
+  settingsRoute,
+];
 
-const routeTree = rootRoutelogin.addChildren([
-  authRootRoute.addChildren([loginRoute]),
-]);
+const routeTree = localStorage.getItem('token')
+  ? rootRoute.addChildren([...mainRoutes, authTree])
+  : rootRoutelogin.addChildren([authTree]);
 
 
 const router = createRouter({ routeTree });

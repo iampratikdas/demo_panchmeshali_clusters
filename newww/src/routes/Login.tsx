@@ -1,7 +1,11 @@
 import React from 'react';
 import { BookOpen, KeyRound, Mail } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 const Login: React.FC = () => {
+    const { t } = useTranslation();
+
     return (
         <div className="min-h-screen bg-[#0f172a] text-white flex flex-col items-center justify-center p-4 relative overflow-hidden font-serif">
             {/* Background Starry/Dot effect - subtle and dark */}
@@ -13,6 +17,7 @@ const Login: React.FC = () => {
                 }}
                 aria-hidden="true"
             />
+            <LanguageSwitcher />
 
             {/* Main Login Card */}
             <div className="z-10 bg-[#1e2336]/80 backdrop-blur-md border border-slate-700/50 rounded-3xl p-8 w-full max-w-md shadow-2xl">
@@ -22,11 +27,11 @@ const Login: React.FC = () => {
                     <div className="w-12 h-12 rounded-full border border-slate-500 flex items-center justify-center mb-4">
                         <BookOpen className="w-6 h-6 text-slate-300" />
                     </div>
-                    <h1 className="text-3xl font-medium tracking-wide mb-2 text-slate-100">The Folio</h1>
-                    <p className="text-slate-400 italic font-serif text-sm">Step into your next chapter</p>
+                    <h1 className="text-3xl font-medium tracking-wide mb-2 text-slate-100">{t('login.brandName')}</h1>
+                    <p className="text-slate-400 italic font-serif text-sm">{t('login.subtitle')}</p>
 
                     <div className="mt-6 uppercase text-[10px] tracking-widest text-slate-500 font-sans">
-                        Library Portal
+                        {t('login.libraryPortal')}
                     </div>
                 </div>
 
@@ -36,7 +41,7 @@ const Login: React.FC = () => {
                     {/* Email Field */}
                     <div className="space-y-1.5">
                         <label htmlFor="email" className="block text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                            Email Address
+                            {t('login.emailLabel')}
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -46,7 +51,7 @@ const Login: React.FC = () => {
                                 type="email"
                                 id="email"
                                 className="block w-full pl-10 pr-3 py-3 rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 transition-shadow text-sm"
-                                placeholder="your.name@thefolio.com"
+                                placeholder={t('login.emailPlaceholder')}
                                 required
                             />
                         </div>
@@ -56,10 +61,10 @@ const Login: React.FC = () => {
                     <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                             <label htmlFor="password" className="block text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                                Access Key
+                                {t('login.passwordLabel')}
                             </label>
                             <a href="#" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
-                                Forgotten?
+                                {t('login.forgotten')}
                             </a>
                         </div>
                         <div className="relative">
@@ -70,7 +75,7 @@ const Login: React.FC = () => {
                                 type="password"
                                 id="password"
                                 className="block w-full pl-10 pr-3 py-3 rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 transition-shadow text-sm"
-                                placeholder="••••••••"
+                                placeholder={t('login.passwordPlaceholder')}
                                 required
                             />
                         </div>
@@ -81,7 +86,7 @@ const Login: React.FC = () => {
                         type="submit"
                         className="w-full bg-white text-slate-900 font-medium py-3 rounded-xl hover:bg-slate-100 transition-colors flex items-center justify-center space-x-2 mt-2"
                     >
-                        <span>Unlock the Archives</span>
+                        <span>{t('login.unlockBtn')}</span>
                         <BookOpen className="w-4 h-4 ml-1" />
                     </button>
                 </form>
@@ -89,7 +94,7 @@ const Login: React.FC = () => {
                 {/* Divider */}
                 <div className="mt-8 mb-6 relative flex items-center font-sans tracking-widest text-[10px] uppercase text-slate-500">
                     <div className="flex-grow border-t border-slate-700/80"></div>
-                    <span className="flex-shrink-0 mx-4">Endless Stories</span>
+                    <span className="flex-shrink-0 mx-4">{t('login.endlessStories')}</span>
                     <div className="flex-grow border-t border-slate-700/80"></div>
                 </div>
 
@@ -118,21 +123,21 @@ const Login: React.FC = () => {
                         />
                         <path d="M1 1h22v22H1z" fill="none" />
                     </svg>
-                    <span>Sign in with Google</span>
+                    <span>{t('login.googleSignIn')}</span>
                 </button>
 
                 {/* Footer Link */}
                 <div className="text-center font-sans text-xs text-slate-500">
-                    New wanderer? <a href="#" className="text-slate-300 font-medium hover:text-white transition-colors">Begin your journey</a>
+                    {t('login.newWanderer')} <a href="#" className="text-slate-300 font-medium hover:text-white transition-colors">{t('login.beginJourney')}</a>
                 </div>
             </div>
 
             {/* Quote Footer - Only visible if screen is tall enough, or scrolls into view */}
             <div className="w-full max-w-md mt-12 text-center text-slate-400">
-                <p className="italic mb-4">"A room without books is like a body<br />without a soul."</p>
+                <p className="italic mb-4">{t('login.quoteText')}</p>
                 <p className="uppercase text-[10px] tracking-widest text-slate-500 font-sans flex items-center justify-center">
                     <span className="w-6 border-t border-slate-700 mr-2"></span>
-                    Marcus Tullius Cicero
+                    {t('login.quoteAuthor')}
                     <span className="w-6 border-t border-slate-700 ml-2"></span>
                 </p>
 

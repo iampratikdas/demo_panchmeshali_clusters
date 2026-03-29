@@ -1,0 +1,24 @@
+{
+    "login": {
+        "brandName": "দ্য ফোলিও",
+        "subtitle": "আপনার পরবর্তী অধ্যায়ে পা রাখুন",
+        "libraryPortal": "গ্রন্থাগার পোর্টাল",
+        "emailLabel": "ইমেল ঠিকানা",
+        "emailPlaceholder": "your.name@thefolio.com",
+        "passwordLabel": "অ্যাক্সেস কী",
+        "forgotten": "ভুলে গেছেন?",
+        "passwordPlaceholder": "••••••••",
+        "unlockBtn": "আর্কাইভ আনলক করুন",
+        "endlessStories": "অফুরন্ত গল্প",
+        "googleSignIn": "গুগল দিয়ে সাইন ইন করুন",
+        "newWanderer": "নতুন পথচারী?",
+        "beginJourney": "আপনার যাত্রা শুরু করুন",
+        "quoteText": "\"বই ছাড়া ঘর আত্মার ছাড়া শরীরের মতো।\"",
+        "quoteAuthor": "মার্কাস টুলিয়াস সিসেরো"
+    },
+    "languageSelector": {
+        "english": "English",
+        "hindi": "हिंदी",
+        "bangla": "বাংলা"
+    }
+}

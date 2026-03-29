@@ -1,0 +1,24 @@
+{
+    "login": {
+        "brandName": "द फोलियो",
+        "subtitle": "अपने अगले अध्याय में कदम रखें",
+        "libraryPortal": "पुस्तकालय पोर्टल",
+        "emailLabel": "ईमेल पता",
+        "emailPlaceholder": "your.name@thefolio.com",
+        "passwordLabel": "पहुंच कुंजी",
+        "forgotten": "भूल गए?",
+        "passwordPlaceholder": "••••••••",
+        "unlockBtn": "अभिलेखागार अनलॉक करें",
+        "endlessStories": "अनंत कहानियाँ",
+        "googleSignIn": "Google के साथ साइन इन करें",
+        "newWanderer": "नए पथिक?",
+        "beginJourney": "अपनी यात्रा शुरू करें",
+        "quoteText": "\"किताबों के बिना कमरा आत्मा के बिना शरीर के समान है।\"",
+        "quoteAuthor": "मार्कस टुलियस सिसरो"
+    },
+    "languageSelector": {
+        "english": "English",
+        "hindi": "हिंदी",
+        "bangla": "বাংলা"
+    }
+}

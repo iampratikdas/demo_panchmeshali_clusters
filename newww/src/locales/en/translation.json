@@ -1,0 +1,24 @@
+{
+    "login": {
+        "brandName": "The Folio",
+        "subtitle": "Step into your next chapter",
+        "libraryPortal": "Library Portal",
+        "emailLabel": "Email Address",
+        "emailPlaceholder": "your.name@thefolio.com",
+        "passwordLabel": "Access Key",
+        "forgotten": "Forgotten?",
+        "passwordPlaceholder": "••••••••",
+        "unlockBtn": "Unlock the Archives",
+        "endlessStories": "Endless Stories",
+        "googleSignIn": "Sign in with Google",
+        "newWanderer": "New wanderer?",
+        "beginJourney": "Begin your journey",
+        "quoteText": "\"A room without books is like a body without a soul.\"",
+        "quoteAuthor": "Marcus Tullius Cicero"
+    },
+    "languageSelector": {
+        "english": "English",
+        "hindi": "हिंदी",
+        "bangla": "বাংলা"
+    }
+}
