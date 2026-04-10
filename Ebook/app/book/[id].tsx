@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import RenderHtml from 'react-native-render-html';
 import { useState, useRef } from 'react';
 import { DUMMY_STORY_PAGES } from '@/constants/dummy-story';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const BOOK_DETAILS: any = {
   '1': { id: '1', title: 'The Psychology of Money', author: 'Morgan Housel', cover: 'https://picsum.photos/seed/money/200/300', rating: 4.4, pages: 262, language: 'Eng', audio: '2h14m', synopsis: 'Read is a gas station janitor in the United States with a meager income and no economics background. On the other hand, a business executive at Merrill Lynch and a graduate of Harvard University had a vastly different approach to money.\n\nMoney is not just about what you know, but how you behave. Getting wealthy is one thing, but staying wealthy is another. The financial behavior of the two is narrated as the story that builds the book.' },
@@ -16,13 +17,14 @@ const BOOK_DETAILS: any = {
 };
 
 export default function BookReaderScreen() {
+  const inset = useSafeAreaInsets();
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const [currentPage, setCurrentPage] = useState(1);
   const scrollViewRef = useRef<ScrollView>(null);
   const totalPages = DUMMY_STORY_PAGES.length;
-  
+
   const book = BOOK_DETAILS[id as string] || BOOK_DETAILS['default'];
 
   const handleNext = () => {
@@ -40,10 +42,10 @@ export default function BookReaderScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { marginTop: inset.top, marginBottom: inset.bottom }]} >
       <StatusBar barStyle="dark-content" />
       <View style={styles.container}>
-        
+
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
@@ -104,7 +106,7 @@ export default function BookReaderScreen() {
               }}
             />
           </View>
-          
+
           <View style={{ height: 160 }} />
         </ScrollView>
 
@@ -127,7 +129,7 @@ export default function BookReaderScreen() {
             <TouchableOpacity style={styles.controlIconBtn}>
               <MaterialIcons name="bookmark" size={24} color="#f4c242" />
             </TouchableOpacity>
-            
+
             <View style={styles.pagePill}>
               <TouchableOpacity onPress={handlePrev} disabled={currentPage === 1}>
                 <MaterialIcons name="chevron-left" size={24} color={currentPage > 1 ? "#fff" : "#555"} />
