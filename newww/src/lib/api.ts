@@ -4,10 +4,26 @@ import type { Event, CreateEventData } from '../types/event';
 import type { User, CreateUserData, EmailData } from '../types/user';
 import type { Chat, ChatMessage, SendMessageData } from '../types/chat';
 import type { Notification } from '../types/notification';
+
 import axios from 'axios';
 // Mock notifications data storage
 const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmdWxsX25hbWUiOiJSaW1wYSDwn4y7IiwiZW1haWwiOiJyaW1wYWJheWVuODQwQGdtYWlsLmNvbSIsInBoX2NvdW50cnlfY29kZSI6IiIsInBob25lX251bWJlciI6Ijg3NjgxOTQxNTciLCJyb2xlIjoidXNlciIsImlhdCI6MTc3MjU2MDUwNiwiZXhwIjoxNzc2MTYwNTA2fQ.HA08PfqUmQb7TAfriinu-EWmMr_THVwuPhOyV26NwfQ"
 const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+
+export const apiCaller = async (data: any, url: string) => {
+    try {
+        const response = await axios.post(`${API_BASE_URL}${url}`, { ...data });
+        return response.data;
+    } catch (error) {
+        // console.error('Error logging in:', error);
+        return error
+    }
+}
+
+
+
+/////////////////////////////////////////////////Mock API's///////////////////////////////////////////////////////////////////////
 const mockNotifications: Notification[] = [
     {
         id: 'notif1',

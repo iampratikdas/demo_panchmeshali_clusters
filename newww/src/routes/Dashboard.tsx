@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { fetchContents } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
@@ -12,14 +13,17 @@ import {
 import { useAtom } from 'jotai';
 import { currentUserAtom } from '../store/atoms';
 import { cn } from '../lib/utils';
-
+import { useSounds } from '../utils/Sounds';
 export default function Dashboard() {
+    const { bootPlay } = useSounds();
     const [user] = useAtom(currentUserAtom);
     const { data, isLoading } = useQuery({
         queryKey: ['contents'],
         queryFn: () => fetchContents(1, 100),
     });
-
+    // useEffect(() => {
+    //     bootPlay();
+    // }, []);
     if (isLoading) {
         return <LoadingSkeleton />;
     }

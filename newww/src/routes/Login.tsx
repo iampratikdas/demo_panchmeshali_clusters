@@ -1,10 +1,46 @@
-import React from 'react';
-import { BookOpen, KeyRound, Mail } from 'lucide-react';
+import React, { useState } from 'react';
+import { BookOpen, KeyRound, Mail, BookLock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from '@tanstack/react-router'
+import { ToastContainer, toast, Zoom, Slide } from 'react-toastify';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
-
+// import CustomToaster from '../components/CustomToaster';
+import { apiCaller } from '../lib/api';
+import apiJson from '../lib/apiJson';
+import { useSounds } from '../utils/Sounds';
 const Login: React.FC = () => {
+    const { successPlay, errorPlay, buttonPlay } = useSounds();
+    const location = useNavigate()
+    const [typing, setTyping] = useState(false);
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    // const [success, setSuccess] = useState(false)
+    // const [error, setError] = useState(false)
     const { t } = useTranslation();
+    // const navigate = useNavigate();
+    const handleSubmit = (e: any) => {
+        e.preventDefault();
+        if (email && password) {
+            // localStorage.setItem("token", "test");
+            // setSuccess(true);
+
+            apiCaller({ email, password }, apiJson.loginUser.url).then((res) => {
+                if (res.status === 200) {
+                    toast.success("Login Successful");
+                    successPlay()
+                    console.log("response======================>", res)
+                    localStorage.setItem("token", res.data.tokenAdvanced);
+                    window.location.href = "/"
+                } else {
+                    // setError(true)
+                    errorPlay()
+                    toast.error("Login Failed");
+                }
+            })
+
+        }
+    }
+    // console.log("response======================>", error, { ...error ? {} : { style: { top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "max-content", margin: 0, padding: 0 } } });
 
     return (
         <div className="min-h-screen bg-[#0f172a] text-white flex flex-col items-center justify-center p-4 relative overflow-hidden font-serif">
@@ -25,7 +61,7 @@ const Login: React.FC = () => {
                 {/* Header Section */}
                 <div className="flex flex-col items-center mb-8">
                     <div className="w-12 h-12 rounded-full border border-slate-500 flex items-center justify-center mb-4">
-                        <BookOpen className="w-6 h-6 text-slate-300" />
+                        {typing ? <BookLock className="w-6 h-6 text-slate-300" /> : <BookOpen className="w-6 h-6 text-slate-300" />}
                     </div>
                     <h1 className="text-3xl font-medium tracking-wide mb-2 text-slate-100">{t('login.brandName')}</h1>
                     <p className="text-slate-400 italic font-serif text-sm">{t('login.subtitle')}</p>
@@ -36,7 +72,7 @@ const Login: React.FC = () => {
                 </div>
 
                 {/* Form Section */}
-                <form className="space-y-5 font-sans">
+                <form className="space-y-5 font-sans" onSubmit={handleSubmit}>
 
                     {/* Email Field */}
                     <div className="space-y-1.5">
@@ -50,6 +86,8 @@ const Login: React.FC = () => {
                             <input
                                 type="email"
                                 id="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 className="block w-full pl-10 pr-3 py-3 rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 transition-shadow text-sm"
                                 placeholder={t('login.emailPlaceholder')}
                                 required
@@ -74,8 +112,11 @@ const Login: React.FC = () => {
                             <input
                                 type="password"
                                 id="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                                 className="block w-full pl-10 pr-3 py-3 rounded-xl bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 transition-shadow text-sm"
                                 placeholder={t('login.passwordPlaceholder')}
+                                onKeyUp={() => setTyping(!typing)}
                                 required
                             />
                         </div>
@@ -84,7 +125,8 @@ const Login: React.FC = () => {
                     {/* Login Button */}
                     <button
                         type="submit"
-                        className="w-full bg-white text-slate-900 font-medium py-3 rounded-xl hover:bg-slate-100 transition-colors flex items-center justify-center space-x-2 mt-2"
+                        onClick={() => buttonPlay()}
+                        className="w-full cursor-pointer bg-white text-slate-900 font-medium py-3 rounded-xl hover:bg-slate-100 transition-colors flex items-center justify-center space-x-2 mt-2"
                     >
                         <span>{t('login.unlockBtn')}</span>
                         <BookOpen className="w-4 h-4 ml-1" />
@@ -101,7 +143,7 @@ const Login: React.FC = () => {
                 {/* Google Login */}
                 <button
                     type="button"
-                    className="w-full bg-[#2a3143] hover:bg-[#32394d] text-slate-200 border border-slate-600/50 py-3 rounded-xl transition-colors flex items-center justify-center space-x-3 font-sans text-sm mb-6"
+                    className="w-full cursor-pointer bg-[#2a3143] hover:bg-[#32394d] text-slate-200 border border-slate-600/50 py-3 rounded-xl transition-colors flex items-center justify-center space-x-3 font-sans text-sm mb-6"
                 >
                     {/* Simple custom Google Icon since Lucide doesn't have brand icons */}
                     <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -146,6 +188,24 @@ const Login: React.FC = () => {
                     <BookOpen className="w-3 h-3" />
                 </div>
             </div>
+
+            <ToastContainer
+                position={"bottom-right"}
+                // {...error ? { style: { top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "max-content", margin: 0, padding: 0 } } : {}}
+                autoClose={3000}
+                hideProgressBar={true}
+                newestOnTop={true}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="dark"
+                toastClassName="bg-[#1e2336] text-slate-200 border border-slate-700/80 rounded-xl shadow-2xl font-sans text-sm tracking-wide"
+                transition={Slide}
+            />
+
+
         </div>
     );
 };
