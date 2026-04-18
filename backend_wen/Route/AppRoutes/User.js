@@ -70,10 +70,7 @@ class User {
         router.use("/upload-image", (req, res, next) => MethodValidate(req, res, next, "POST"), multer().single("image"), (req, res) => userController.uploadImage(req, res));
 
         //+++++++++++++++++++++++++++++NewApis+++++++++++++++++++++++++++++++++++++++++
-        router.get("/publisher_lists/:uid", (req, res, next) => MethodValidate(req, res, next, "GET"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && userController.publisherlists(req, res, token_data)));
-        router.post("/add_publisher_users/:uid", (req, res, next) => MethodValidate(req, res, next, "POST"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && userController.addpublisher(req, res, token_data)));
-        router.post("/update_publisher_users/:uid", (req, res, next) => MethodValidate(req, res, next, "POST"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && userController.updatepublisher(req, res, token_data)));
-        router.post("/delete_publisher_users/:uid", (req, res, next) => MethodValidate(req, res, next, "POST"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && userController.deletepublisher(req, res, token_data)));
+
         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
