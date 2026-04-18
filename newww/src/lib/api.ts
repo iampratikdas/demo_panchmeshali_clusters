@@ -4,7 +4,7 @@ import type { Event, CreateEventData } from '../types/event';
 import type { User, CreateUserData, EmailData } from '../types/user';
 import type { Chat, ChatMessage, SendMessageData } from '../types/chat';
 import type { Notification } from '../types/notification';
-
+import apiJson from '../lib/apiJson';
 import axios from 'axios';
 // Mock notifications data storage
 const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmdWxsX25hbWUiOiJSaW1wYSDwn4y7IiwiZW1haWwiOiJyaW1wYWJheWVuODQwQGdtYWlsLmNvbSIsInBoX2NvdW50cnlfY29kZSI6IiIsInBob25lX251bWJlciI6Ijg3NjgxOTQxNTciLCJyb2xlIjoidXNlciIsImlhdCI6MTc3MjU2MDUwNiwiZXhwIjoxNzc2MTYwNTA2fQ.HA08PfqUmQb7TAfriinu-EWmMr_THVwuPhOyV26NwfQ"
@@ -360,21 +360,20 @@ export const submitContent = async (
         eid: formData.selectedEventId ?? "",
         storyContent: formData.content,
         url: formData.selectedFolder ?? "",
-        page_id: formData.selectedPublisher ?? "",
+        // page_id: formData.selectedPublisher ?? "",
         event_content: formData.newContent ?? false,
         isOriginalWork: formData.isOriginal ?? false,
-        parent_eid: formData.parentEid ?? "",
+        // parent_eid: formData.parentEid ?? "",
+        category: formData.category ?? "",
+        coverImage: formData.coverImage ?? "",
+        backgroundImage: formData.backgroundImage ?? "",
         // content: formData.content ?? "",
         episodeNumber: formData.episodeNumber ?? "",
+        publisher: formData.publisher ?? "",
         destination: formData.destination ?? ""
     }
     console.log("formData:================>", form_data);
-    const response = await axios.post(`${API_BASE_URL}/submit_contents`, form_data, {
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${TOKEN}`
-        },
-    });
+    const response = await axios.post(`${API_BASE_URL}${apiJson.submitContents.url}`, { ...form_data }, { headers: apiJson.submitContents.headers });
     return response.data;
 };
 

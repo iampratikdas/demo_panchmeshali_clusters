@@ -135,6 +135,7 @@ export function useSubmissionForm() {
                 destination,
                 isEvent,
                 story_title,
+                publisher: selectedPublisher,
             };
 
             const result = submissionSchema.safeParse(formData);

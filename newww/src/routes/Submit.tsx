@@ -110,7 +110,7 @@ function NavButtons({ step, totalSteps, onBack, onNext, onSubmit, onDraft, isPen
                 variant="outline"
                 onClick={onBack}
                 disabled={step === 0}
-                className="w-full sm:w-auto min-h-[44px] gap-2"
+                className="w-full sm:w-auto min-h-[44px] gap-2 cursor-pointer"
             >
                 <ChevronLeft className="h-4 w-4" />
                 Back
@@ -122,7 +122,7 @@ function NavButtons({ step, totalSteps, onBack, onNext, onSubmit, onDraft, isPen
                         variant="outline"
                         onClick={onDraft}
                         disabled={!isOriginal || isPending}
-                        className="w-full sm:w-auto min-h-[44px] gap-2"
+                        className="w-full sm:w-auto min-h-[44px] gap-2 cursor-pointer"
                     >
                         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                         Save as Draft
@@ -133,7 +133,7 @@ function NavButtons({ step, totalSteps, onBack, onNext, onSubmit, onDraft, isPen
                     <Button
                         onClick={onSubmit}
                         disabled={!isOriginal || isPending}
-                        className="w-full sm:w-auto min-h-[44px] gap-2"
+                        className="w-full sm:w-auto min-h-[44px] gap-2 cursor-pointer"
                     >
                         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                         {submitLabel ?? 'Submit'}
@@ -142,7 +142,7 @@ function NavButtons({ step, totalSteps, onBack, onNext, onSubmit, onDraft, isPen
                     <Button
                         onClick={onNext}
                         disabled={disableNext}
-                        className="w-full sm:w-auto min-h-[44px] gap-2"
+                        className="w-full sm:w-auto min-h-[44px] gap-2 cursor-pointer"
                     >
                         Next
                         <ChevronRight className="h-4 w-4" />
