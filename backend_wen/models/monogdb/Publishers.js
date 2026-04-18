@@ -1,60 +1,38 @@
 const { required } = require('joi');
 const mongoose = require('mongoose');
 const moment = require("moment");
-const contentSchema = new mongoose.Schema({
-  uid: {
-    type: String,
+const publisherSchema = new mongoose.Schema({
+  uids: {
+    type: [String],
     required: true,
-  },
-  token: {
-    type: String,
-  },
-  type: {
-    type: String,
-    // enum: ['story', 'media'],
-    // default: 'story'
+    unique: true
   },
   name: {
-    type: String,
-  },
-  author_name: {
-    type: String
-  },
-  status: {
-    type: String,
-    default: "Pending"
-  },
-  content: {
-    type: String
-  },
-  marks: {
-    type: Array
-  },
-  url: {
-    type: String
-  },
-  eid: {
-    //this is for event id
-    type: String
-  },
-
-  event_content: {
-    type: Boolean,
-  },
-  orgin_content: {
-    type: Boolean,
-    required: true
-  },
-  cont_id: {
     type: String,
     required: true,
     trim: true
   },
-  page_id: {
+  description: {
     type: String,
-    default: ''
-    // required: true,
-    // trim: true
+    default: ""
+  },
+  email: {
+    type: String,
+    lowercase: true,
+    trim: true,
+    default: ""
+  },
+  phone: {
+    type: String,
+    default: ""
+  },
+  logo_url: {
+    type: String,
+    default: ""
+  },
+  status: {
+    type: String,
+    default: "Pending" // e.g. Pending, Active, Inactive
   },
   createdAt: {
     type: String,
@@ -67,6 +45,6 @@ const contentSchema = new mongoose.Schema({
 });
 
 async function Publisherschema(db) {
-  return db.model('Publishers', contentSchema)
+  return db.model('Publishers', publisherSchema)
 }
 module.exports = Publisherschema;
