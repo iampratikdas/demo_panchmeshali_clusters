@@ -7,12 +7,14 @@ const ContentController = require("../controllers/ContentController.js");
 const VotingController = require("../controllers/VotingController.js");
 const EventController = require("../controllers/EventController.js");
 const PublisherController = require("../controllers/PublisherController.js");
+const FolderController = require("../controllers/FolderController.js");
 
 const User = require("./AppRoutes/User.js")
 const Content = require("./AppRoutes/ContentRoutes.js")
 const Voting = require("./AppRoutes/VotingRoutes.js");
 const Events = require("./AppRoutes/EventRoutes.js")
 const Publisher = require("./AppRoutes/PublisherRoutes.js")
+const Folder = require("./AppRoutes/FolderRoutes.js")
 const GlobalModelFunctions = require("../resuable_functions/mongodb/GlobalModelFunctions.js")
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -31,6 +33,7 @@ class Route {
         this.initializeVotingRoutes(new VotingController(this.userFunc));  //voting routes initializer
         this.initializeEventsRoutes(new EventController(this.userFunc));  //event routes initializer
         this.initializePublisherRoutes(new PublisherController(this.userFunc));  //publisher routes initializer
+        this.initializeFolderRoutes(new FolderController(this.userFunc));  //folder routes initializer
     }
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -61,6 +64,12 @@ class Route {
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     initializePublisherRoutes(publisherController) {
         new Publisher().Routes(this.router, publisherController, this.userFunc)
+    }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //This Route is for Folder Controller
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    initializeFolderRoutes(folderController) {
+        new Folder().Routes(this.router, folderController, this.userFunc)
     }
 
 }

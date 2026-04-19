@@ -4,6 +4,7 @@ const VoteFunctions = require("../mongodb/VoteFunctions")
 const EventFunctions = require("../mongodb/EventFunctions");
 const NoticeFunctions = require("../mongodb/NoticeFunctions")
 const PublisherFunctions = require("./PublishersFunctions")
+const FolderFunctions = require("./FolderFunctions")
 class GlobalModelFunctions {
         modelsFunctions() {
 
@@ -14,6 +15,7 @@ class GlobalModelFunctions {
                         eventFunctions: new EventFunctions(),
                         noticeFunctions: new NoticeFunctions(),
                         publisherFunctions: new PublisherFunctions(),
+                        folderFunctions: new FolderFunctions(),
                         // pagination: pagination()
                 };
         }

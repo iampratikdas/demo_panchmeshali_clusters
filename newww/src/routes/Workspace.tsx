@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import {
     workspaceFoldersAtom,
@@ -15,22 +15,44 @@ import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import {
     FolderPlus,
     ChevronDown,
-    ChevronRight, // Added back for breadcrumbs
+    ChevronRight,
     Search,
-    Upload // Keeping Upload for the button
+    Upload,
+    RefreshCw,
+    AlertCircle,
 } from 'lucide-react';
 import { FolderGrid } from '../components/FolderGrid';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input'; // Keeping Input for Search
+import { Input } from '../ui/input';
 import type { EmailTheme, WorkspaceFile } from '../types/workspace';
 import { motion } from 'framer-motion';
+import {
+    useAllFolders,
+    useCreateFolder,
+    useRenameFolder,
+    useDeleteFolder,
+} from '../hooks/useFolders';
 
 export default function Workspace() {
+    // ── Jotai atoms (synced from API) ─────────────────────────────────────────
     const [folders, setFolders] = useAtom(workspaceFoldersAtom);
     const [files, setFiles] = useAtom(workspaceFilesAtom);
     const [currentFolder, setCurrentFolder] = useAtom(currentFolderAtom);
 
-    // Modal states
+    // ── API hooks ─────────────────────────────────────────────────────────────
+    const { data: apiFolders, isLoading: foldersLoading, isError: foldersError, refetch } = useAllFolders();
+    const createFolderMutation = useCreateFolder();
+    const renameFolderMutation = useRenameFolder();
+    const deleteFolderMutation = useDeleteFolder();
+
+    // Sync API folders → jotai atom so FolderTree / FolderGrid keep working
+    useEffect(() => {
+        if (apiFolders && apiFolders.length > 0) {
+            setFolders(apiFolders);
+        }
+    }, [apiFolders, setFolders]);
+
+    // ── Modal states ──────────────────────────────────────────────────────────
     const [createFolderModal, setCreateFolderModal] = useState<{ isOpen: boolean; parentId: string }>({
         isOpen: false,
         parentId: 'root'
@@ -57,8 +79,9 @@ export default function Workspace() {
     });
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [apiError, setApiError] = useState<string | null>(null);
 
-    // Get breadcrumb path
+    // ── Breadcrumb navigation ─────────────────────────────────────────────────
     const getBreadcrumbs = () => {
         const breadcrumbs = [];
         let folderId: string | null = currentFolder;
@@ -77,19 +100,19 @@ export default function Workspace() {
     };
 
     const breadcrumbs = getBreadcrumbs();
-    // const currentFolderData = folders.find(f => f.id === currentFolder); // Unused for now in new design
 
-    // Folder operations
-    const handleCreateFolder = (folderName: string) => {
-        const newFolder = {
-            id: `folder-${Date.now()}`,
-            name: folderName,
-            parentId: createFolderModal.parentId,
-            createdAt: new Date().toISOString(),
-            modifiedAt: new Date().toISOString(),
-            color: ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444'][Math.floor(Math.random() * 5)]
-        };
-        setFolders([...folders, newFolder]);
+    // ── Folder operations (wired to real API) ─────────────────────────────────
+
+    const handleCreateFolder = async (folderName: string) => {
+        setApiError(null);
+        try {
+            await createFolderMutation.mutateAsync({
+                name: folderName,
+                parentId: createFolderModal.parentId,
+            });
+        } catch (err: any) {
+            setApiError(err?.message ?? 'Failed to create folder');
+        }
     };
 
     const handleRenameFolder = (folderId: string) => {
@@ -103,33 +126,42 @@ export default function Workspace() {
         });
     };
 
-    const confirmRenameFolder = (newName: string) => {
-        if (newName && newName.trim()) {
-            setFolders(folders.map(f =>
-                f.id === renameModal.folderId
-                    ? { ...f, name: newName.trim(), modifiedAt: new Date().toISOString() }
-                    : f
-            ));
+    const confirmRenameFolder = async (newName: string) => {
+        if (!newName || !newName.trim()) return;
+        setApiError(null);
+        try {
+            await renameFolderMutation.mutateAsync({
+                folder_id: renameModal.folderId,
+                name: newName.trim(),
+            });
+        } catch (err: any) {
+            setApiError(err?.message ?? 'Failed to rename folder');
         }
     };
 
-    const handleDeleteFolder = (folderId: string) => {
-        // Check if folder has children
+    const handleDeleteFolder = async (folderId: string) => {
+        // Check if folder has children in local state
         const hasChildren = folders.some(f => f.parentId === folderId) ||
             files.some(f => f.folderId === folderId);
 
         if (hasChildren) {
-            alert('Cannot delete folder with contents. Please delete all files and subfolders first.');
+            setApiError('Cannot delete folder with contents. Please remove all files and sub-folders first.');
             return;
         }
 
-        setFolders(folders.filter(f => f.id !== folderId));
-        if (currentFolder === folderId) {
-            setCurrentFolder('root');
+        setApiError(null);
+        try {
+            await deleteFolderMutation.mutateAsync(folderId);
+            if (currentFolder === folderId) {
+                setCurrentFolder('root');
+            }
+        } catch (err: any) {
+            setApiError(err?.message ?? 'Failed to delete folder');
         }
     };
 
-    // File operations
+    // ── File operations (unchanged — files still use local state) ─────────────
+
     const handleUploadFile = () => {
         const input = document.createElement('input');
         input.type = 'file';
@@ -182,17 +214,16 @@ export default function Workspace() {
         }
     };
 
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (deleteModal.type === 'file') {
             setFiles(files.filter(f => f.id !== deleteModal.id));
         } else {
-            handleDeleteFolder(deleteModal.id);
+            await handleDeleteFolder(deleteModal.id);
         }
     };
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             {/* Header */}
             <div className="flex flex-col gap-4 mb-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -230,7 +261,8 @@ export default function Workspace() {
                             <ChevronDown className="h-5 w-5 text-gray-500" />
                         )}
                     </div>
-                    {/* Search and Upload */}
+
+                    {/* Search, Refresh, and Upload */}
                     <div className="flex items-center gap-3 flex-1 justify-end">
                         <div className="relative max-w-md w-full hidden md:block">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -242,6 +274,16 @@ export default function Workspace() {
                                 className="pl-10 bg-gray-50 border-transparent focus:bg-white transition-colors"
                             />
                         </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => { setApiError(null); refetch(); }}
+                            className="flex items-center gap-2 shadow-sm"
+                            disabled={foldersLoading}
+                            title="Refresh folders"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${foldersLoading ? 'animate-spin' : ''}`} />
+                        </Button>
                         <Button onClick={handleUploadFile} className="flex items-center gap-2 shadow-sm">
                             <Upload className="h-4 w-4" />
                             <span className="hidden sm:inline">New</span>
@@ -249,6 +291,7 @@ export default function Workspace() {
                     </div>
                 </div>
 
+                {/* Filter chips */}
                 <div className="flex items-center gap-2 overflow-x-auto pb-2">
                     <div className="flex items-center gap-2 bg-white rounded-full border px-3 py-1.5 shadow-sm hover:bg-gray-50 cursor-pointer transition-colors whitespace-nowrap">
                         <span className="text-sm font-medium text-gray-700">Type</span>
@@ -267,18 +310,29 @@ export default function Workspace() {
                         <ChevronDown className="h-4 w-4 text-gray-500" />
                     </div>
                 </div>
-            </div>
 
-            {/* Breadcrumb Navigation - Optional/Hidden if at Root to match image roughly, but useful to keep. 
-                For now, I'll keep it but style it subtly or maybe hide it if currentFolder is root? 
-                The user image shows chips "Type", "People", "Modified" where breadcrumbs might be. 
-                I'll keep the breadcrumb logic but perhaps move it or style it. 
-                Actually, the image shows "My Drive" header -> Chips -> Folders. 
-            */}
+                {/* API error banner */}
+                {(apiError || foldersError) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-2 text-sm"
+                    >
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        <span>{apiError ?? 'Failed to load folders from server. Showing cached data.'}</span>
+                        <button
+                            onClick={() => setApiError(null)}
+                            className="ml-auto text-red-500 hover:text-red-700 font-bold"
+                        >
+                            ×
+                        </button>
+                    </motion.div>
+                )}
+            </div>
 
             {/* Main Content Area */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Sidebar - Folder Tree (Keeping existing sidebar for navigation) */}
+                {/* Sidebar - Folder Tree */}
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -291,25 +345,33 @@ export default function Workspace() {
                                 size="sm"
                                 onClick={() => setCreateFolderModal({ isOpen: true, parentId: currentFolder })}
                                 className="h-8 w-8 p-0"
+                                disabled={createFolderMutation.isPending}
                             >
                                 <FolderPlus className="h-4 w-4" />
                             </Button>
                         </div>
-                        <FolderTree
-                            onCreateFolder={(parentId) => setCreateFolderModal({ isOpen: true, parentId })}
-                            onRenameFolder={handleRenameFolder}
-                            onDeleteFolder={(folderId) => {
-                                const folder = folders.find(f => f.id === folderId);
-                                if (folder) {
-                                    setDeleteModal({
-                                        isOpen: true,
-                                        type: 'folder',
-                                        id: folderId,
-                                        name: folder.name
-                                    });
-                                }
-                            }}
-                        />
+                        {foldersLoading ? (
+                            <div className="flex items-center justify-center py-6 text-gray-400 text-sm gap-2">
+                                <RefreshCw className="h-4 w-4 animate-spin" />
+                                Loading folders…
+                            </div>
+                        ) : (
+                            <FolderTree
+                                onCreateFolder={(parentId) => setCreateFolderModal({ isOpen: true, parentId })}
+                                onRenameFolder={handleRenameFolder}
+                                onDeleteFolder={(folderId) => {
+                                    const folder = folders.find(f => f.id === folderId);
+                                    if (folder) {
+                                        setDeleteModal({
+                                            isOpen: true,
+                                            type: 'folder',
+                                            id: folderId,
+                                            name: folder.name
+                                        });
+                                    }
+                                }}
+                            />
+                        )}
                         <div className="mt-4 pt-4 border-t">
                             <StorageBar />
                         </div>
@@ -327,20 +389,28 @@ export default function Workspace() {
                         <div className="flex items-center justify-between mb-3">
                             <h2 className="text-sm font-medium text-gray-600">Name ↑</h2>
                         </div>
-                        <FolderGrid
-                            onRename={handleRenameFolder}
-                            onDelete={(folderId) => {
-                                const folder = folders.find(f => f.id === folderId);
-                                if (folder) {
-                                    setDeleteModal({
-                                        isOpen: true,
-                                        type: 'folder',
-                                        id: folderId,
-                                        name: folder.name
-                                    });
-                                }
-                            }}
-                        />
+                        {foldersLoading ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                {[...Array(8)].map((_, i) => (
+                                    <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />
+                                ))}
+                            </div>
+                        ) : (
+                            <FolderGrid
+                                onRename={handleRenameFolder}
+                                onDelete={(folderId) => {
+                                    const folder = folders.find(f => f.id === folderId);
+                                    if (folder) {
+                                        setDeleteModal({
+                                            isOpen: true,
+                                            type: 'folder',
+                                            id: folderId,
+                                            name: folder.name
+                                        });
+                                    }
+                                }}
+                            />
+                        )}
                     </div>
 
                     {/* Files Section */}

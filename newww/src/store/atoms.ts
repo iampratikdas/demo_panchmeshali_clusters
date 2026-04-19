@@ -22,7 +22,7 @@ import type { WorkspaceFolder, WorkspaceFile, StorageQuota } from '../types/work
 
 import { initialFolders } from '../data/folderData';
 
-export const workspaceFoldersAtom = atom<WorkspaceFolder[]>(initialFolders);
+export const workspaceFoldersAtom = atom<WorkspaceFolder[]>([]);
 
 export const workspaceFilesAtom = atom<WorkspaceFile[]>([
     {
