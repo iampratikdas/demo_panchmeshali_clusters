@@ -3,11 +3,13 @@
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 const moment = require("moment");
 const Contentschema = require("../../models/monogdb/Contents");
+const Categoryschema = require("../../models/monogdb/Categories");
 const Setup = require("../../db/mongodb/setupDatabase");
 class ContentFunctions {
     constructor() {
         (async () => {
             this.contentmodel = await Contentschema(await Setup.getConnection());
+            this.categoryModel = await Categoryschema(await Setup.getConnection());
         })()
     }
 
@@ -32,7 +34,6 @@ class ContentFunctions {
     }
     async ContentInsert(contentData) {
         try {
-            // console.log("contents----------------------->", contentData)
             return await this.contentmodel.insertOne(contentData);
         } catch (error) {
             console.error("Error inserting content:", error);
@@ -43,25 +44,35 @@ class ContentFunctions {
         try {
             return await this.contentmodel.updateOne({ ...data }, { $set: { name: contentData } });
         } catch (error) {
-            //console.error("Error inserting content:", error);
             throw new Error("Failed to update content");
         }
     }
     async ContentMarksUpdate(contentData, data, token_data, marks) {
         try {
-
             return await this.contentmodel.updateOne(contentData, data).then(async (rs) => {
                 if (rs.matchedCount === 0) {
-                    // console.log("contentdata============>",   rs)
                     await this.contentmodel.updateOne({ cont_id: contentData.cont_id }, { $push: { marks: { uid: token_data.uid, score: marks } } })
                 }
             });
         } catch (error) {
-            console.error("Error inserting content:", error);
+            console.error("Error updating content marks:", error);
             throw new Error("Failed to update content");
         }
     }
-}
 
+    // Category Hooks
+    async findOneCategory(query) {
+        return await this.categoryModel.findOne(query).lean();
+    }
+    
+    async insertCategory(data) {
+        try {
+            return await this.categoryModel.create(data);
+        } catch (error) {
+            console.error("Error inserting category:", error);
+            throw new Error("Failed to insert category", error);
+        }
+    }
+}
 
 module.exports = ContentFunctions

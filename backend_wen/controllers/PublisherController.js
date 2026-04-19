@@ -39,19 +39,19 @@ class PublisherController {
             if (!uid) {
                 return res.status(400).json({ status: 400, message: "Missing uid parameter", data: {} });
             }
-            
+
             const assignedPublishers = await this.publisherFunc.getAssignedPublishers(uid);
 
             // Format the output: list of publishers with the writer UID attached
             const formattedData = assignedPublishers.map(ap => {
                 if (ap.publisher_details) {
-                     return {
-                         ...ap.publisher_details,
-                         writer_uid: ap.writer_uid,
-                         assignment_status: ap.status,
-                         requested_by: ap.requested_by,
-                         assignment_id: ap._id
-                     };
+                    return {
+                        ...ap.publisher_details,
+                        writer_uid: ap.writer_uid,
+                        assignment_status: ap.status,
+                        requested_by: ap.requested_by,
+                        assignment_id: ap._id
+                    };
                 }
                 return ap;
             }).filter(item => item.uid); // Keep only valid publishers
@@ -59,8 +59,8 @@ class PublisherController {
             return res
                 .status(200)
                 .json({
-                    status: 200, 
-                    message: "Lists of assigned publishers fetched successfully", 
+                    status: 200,
+                    message: "Lists of assigned publishers fetched successfully",
                     data: formattedData
                 });
         } catch (error) {
@@ -71,28 +71,84 @@ class PublisherController {
         }
     }
 
+    async createCompany(req, res, user_data) {
+        try {
+
+            const body = req.body;
+            // Target UID maps to the user token initiator 
+            const uid = body.uids;
+
+            if (!body.name) {
+                return res.status(400).json({ status: 400, message: "Company name is required", data: {} });
+            }
+            if (user_data.role != "admin") {
+                return res.status(400).json({ status: 400, message: "You are not admin", data: {} });
+            }
+            if (!body.email) {
+                return res.status(400).json({ status: 400, message: "Company email is required", data: {} });
+            }
+            if (!body.phone) {
+                return res.status(400).json({ status: 400, message: "Company phone is required", data: {} });
+            }
+
+            const existingCompany = await this.publisherFunc.findOnePublisher({ email: body.email });
+            if (existingCompany) {
+                return res.status(409).json({ status: 409, message: "Publisher company already exists for this user", data: {} });
+            }
+
+            const companyData = {
+                pid: gen(10),
+                uids: uid,
+                name: body.name,
+                description: body.description || "",
+                email: body.email,
+                phone: body.phone,
+                logo_url: body.logo_url || "",
+                status: "Pending" // Starts at Pending, Admin approves later or Active if preferred
+            };
+
+            await this.publisherFunc.insertPublisher(companyData);
+
+            return res.status(201).json({
+                status: 201, message: "Publisher company created successfully", data: companyData
+            });
+
+        } catch (error) {
+            console.error("Error creating publisher company:", error);
+            res.status(500).json({ status: 500, message: "Internal server error", data: {} });
+        }
+    }
+
     async addpublisher(req, res, token_data) {
         try {
             const targetUid = req.params.uid;
             const requesterUid = token_data.uid;
-            const requestedBy = req.body.requested_by; // Should be "Publisher" or "Writer"
+            const requestedBy = token_data.role; // Should be "Publisher" or "Writer"
 
             if (!targetUid || !requesterUid || !requestedBy) {
                 return res.status(400).json({ status: 400, message: "Missing target UID or requested_by in body", data: {} });
             }
 
-            if (!["Publisher", "Writer"].includes(requestedBy)) {
+            if (!["publisher", "writer", 'both'].includes(requestedBy)) {
                 return res.status(400).json({ status: 400, message: "requested_by must be 'Publisher' or 'Writer'", data: {} });
             }
 
             let publisher_uid, writer_uid;
 
-            if (requestedBy === "Publisher") {
+            if (requestedBy === "publisher") {
                 publisher_uid = requesterUid;
                 writer_uid = targetUid;
             } else {
                 publisher_uid = targetUid;
                 writer_uid = requesterUid;
+            }
+            // We verify that the target user's role is different from the requester's role
+            const targetUser = await this.userFunc.findOneUserByUid(targetUid);
+            if (!targetUser) {
+                return res.status(404).json({ status: 404, message: "Target user not found", data: {} });
+            }
+            if (token_data.role === targetUser.role) {
+                return res.status(409).json({ status: 409, message: `Cannot create assigned relationship! Both users are ${token_data.role}`, data: {} });
             }
 
             // Check if request already exists
@@ -127,36 +183,40 @@ class PublisherController {
         try {
             const targetUid = req.params.uid;
             const requesterUid = token_data.uid;
-            
+            const request_type = req.body.request_type
+
             // Accept either `role` or `requested_by` indicating who is initiating the removal
-            const role = req.body.role || req.body.requested_by; 
+            const role = token_data.role;
 
             if (!targetUid || !requesterUid || !role) {
                 return res.status(400).json({ status: 400, message: "Missing target UID or role in body", data: {} });
             }
 
-            if (!["Publisher", "Writer"].includes(role)) {
+            if (!["publisher", "writer"].includes(role)) {
                 return res.status(400).json({ status: 400, message: "role must be 'Publisher' or 'Writer'", data: {} });
             }
 
             let publisher_uid, writer_uid;
-            if (role === "Publisher") {
+            if (role === "publisher") {
                 publisher_uid = requesterUid;
                 writer_uid = targetUid;
             } else {
                 publisher_uid = targetUid;
                 writer_uid = requesterUid;
             }
-
-            const deleteResult = await this.publisherFunc.deleteAssignedPublisher({ publisher_uid, writer_uid });
-            if (deleteResult.deletedCount === 0) {
-                return res.status(404).json({ status: 404, message: "Assignment not found", data: {} });
+            const existingRequest = await this.publisherFunc.findAssignedPublisher({ publisher_uid, writer_uid });
+            if (existingRequest) {
+                return res.status(409).json({ status: 409, message: "Request already exists between this publisher and writer", data: {} });
             }
-
+            const deleteResult = await this.publisherFunc.updateAssignedPublisher({ publisher_uid, writer_uid }, { status: request_type });
+            // if (deleteResult.deletedCount === 0) {
+            //     return res.status(404).json({ status: 404, message: "Assignment not found", data: {} });
+            // }
+            console.log("deleteResult=============>", deleteResult)
             return res
                 .status(200)
                 .json({
-                    status: 200, message: "Successfully removed", data: {}
+                    status: 200, message: `Successfully ${request_type}`, data: {}
                 });
         } catch (error) {
             console.error("Error during updatepublisher/remove:", error);
@@ -165,23 +225,23 @@ class PublisherController {
                 .json({ status: 500, message: "Internal server error", data: {} });
         }
     }
-    async deletepublisher(req, res) {
-        try {
+    // async deletepublisher(req, res) {
+    //     try {
 
-            return res
-                .status(201)
-                .json({
-                    status: 201, message: "Contents list fetched", data: {
+    //         return res
+    //             .status(201)
+    //             .json({
+    //                 status: 201, message: "Contents list fetched", data: {
 
-                    }
-                });
-        } catch (error) {
-            console.error("Error during signup:", error);
-            res
-                .status(500)
-                .json({ status: 500, message: "Internal server error", data: {} });
-        }
-    }
+    //                 }
+    //             });
+    //     } catch (error) {
+    //         console.error("Error during signup:", error);
+    //         res
+    //             .status(500)
+    //             .json({ status: 500, message: "Internal server error", data: {} });
+    //     }
+    // }
 }
 
 module.exports = PublisherController;

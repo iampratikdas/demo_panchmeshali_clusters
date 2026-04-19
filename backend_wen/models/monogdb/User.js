@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema({
   badge: {
     type: Array
   },
-   type: {
+  type: {
     type: Array
   },
 
@@ -44,7 +44,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'user', 'manager'],
+    enum: ['admin', 'user', 'manager', 'publisher', 'both'],
     default: 'user'
   },
   skills: {

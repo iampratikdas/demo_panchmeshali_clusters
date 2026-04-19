@@ -885,6 +885,86 @@ class ContentController {
     return res.status(200).json({ status: 200, message, data: certificateData });
   }
 
+  // <<<<<<=================== Category Methods ==========================>>>>>
+  async createCategoryByPublisher(req, res, token_data) {
+    try {
+      const { name } = req.body;
+      if (!name) {
+        return res.status(400).json({ status: 400, message: "Category name is required", data: {} });
+      }
+
+      let isGlobal = false;
+      let pid = "";
+
+      // Admins & Managers create global categories
+      if (token_data.role === "admin" || token_data.role === "manager") {
+        isGlobal = true;
+      } else if (token_data.role === "publisher") {
+        isGlobal = false;
+        pid = token_data.uid; // Bound exclusively to this publisher
+      }
+
+      const lowerName = name.toLowerCase();
+
+      // Check if category already exists identically based on context
+      const query = { name: lowerName };
+      if (!isGlobal) {
+        query.pid = pid; // check locally for publisher
+      } else {
+        query.is_global = true; // check globally for admins
+      }
+
+      const existingCategory = await this.contentFunc.findOneCategory(query);
+
+      if (existingCategory) {
+        return res.status(409).json({ status: 409, message: "Category already exists", data: {} });
+      }
+
+      await this.contentFunc.insertCategory({
+        name: lowerName,
+        is_global: isGlobal,
+        pid: pid,
+        created_by: token_data.uid
+      });
+
+      return res.status(201).json({ status: 201, message: "Category created successfully", data: { name: lowerName, is_global: isGlobal } });
+
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ status: 500, message: "Internal Server Error", data: {} });
+    }
+  }
+
+  async createCategoryByUser(req, res, token_data) {
+    try {
+      const { name } = req.body;
+      if (!name) {
+         return res.status(400).json({ status: 400, message: "Category name is required", data: {} });
+      }
+
+      const lowerName = name.toLowerCase();
+
+      // Writers create global categories uniquely if they don't exist
+      const existingCategory = await this.contentFunc.findOneCategory({ name: lowerName, is_global: true });
+      if (existingCategory) {
+         return res.status(200).json({ status: 200, message: "Category already exists in global pool", data: { name: existingCategory.name } });
+      }
+
+      // Automatically construct it globally
+      await this.contentFunc.insertCategory({
+         name: lowerName,
+         is_global: true,
+         pid: "", 
+         created_by: token_data.uid
+      });
+
+      return res.status(201).json({ status: 201, message: "Global category auto-generated successfully", data: { name: lowerName } });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ status: 500, message: "Internal Server Error", data: {} });
+    }
+  }
 }
 
 module.exports = ContentController;

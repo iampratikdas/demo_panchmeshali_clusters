@@ -455,3 +455,49 @@
  *       200:
  *         description: Success
  */
+
+/**
+ * @swagger
+ * /create_publisher_company:
+ *   post:
+ *     summary: Create a publisher company
+ *     tags: [Publisher]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               uids:
+ *                 type: Array
+ *                 example: [212121 , 13ffcgrr5]
+ *               name:
+ *                 type: string
+ *                 example: My publishing corp
+ *               description:
+ *                 type: string
+ *                 example: A company publishing books
+ *               email:
+ *                 type: string
+ *                 example: contact@publishingcorp.local
+ *               phone:
+ *                 type: string
+ *                 example: +1234567890
+ *               logo_url:
+ *                 type: string
+ *                 example: https://logo.local/img.png
+ *     responses:
+ *       201:
+ *         description: Publisher company created successfully
+ *       400:
+ *         description: Company name is required
+ *       401:
+ *         description: Unauthorized. Required user_type publisher
+ *       409:
+ *         description: Publisher company already exists for this user
+ *       500:
+ *         description: Internal server error
+ */

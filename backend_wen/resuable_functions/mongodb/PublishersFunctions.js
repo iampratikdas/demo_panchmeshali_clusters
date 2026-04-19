@@ -54,9 +54,9 @@ class PublishersFunctions {
         }
     }
 
-    async deleteAssignedPublisher(query) {
+    async updateAssignedPublisher(filter, update_feild) {
         try {
-            return await this.assignedPublishersModel.deleteOne(query);
+            return await this.assignedPublishersModel.updateOne(filter, update_feild);
         } catch (error) {
             console.error("Error deleting assigned publisher request:", error);
             throw new Error("Failed to delete assigned publisher request");

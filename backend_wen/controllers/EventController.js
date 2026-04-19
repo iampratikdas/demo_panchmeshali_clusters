@@ -23,226 +23,318 @@ const transporter = nodemailer.createTransport({
 });
 
 class EventController {
-  
+
   constructor(module) {
     console.log("Events controller is active now==========>");
     this.userFunc = module.usersFunctions;
     this.contentFunc = module.contentFunctions;
     this.voteFunc = module.voteFunctions;
-    this.eventFunc =  module.eventFunctions;
+    this.eventFunc = module.eventFunctions;
   }
-  
- async eventLists(req, res, token_data) {
-  try {
-    // fetch all events from DB
-    const events = await this.eventFunc.findAllEvents(); 
 
-    // Build map: parentEid -> childEvents[]
-    const childMap = {};
-    events.forEach(ev => {
-      const parentKey = ev.parent || ''; // blank string for no parent
-      if (!childMap[parentKey]) {
-        childMap[parentKey] = [];
-      }
-      childMap[parentKey].push(ev);
-    });
-
-    // Recursive function to attach children to an event
-    function attachChildren(event) {
-      const children = childMap[event.eid] || [];
-      return {
-        ...event,
-        siblings: children.map(child => attachChildren(child)) // recurse
-      };
-    }
-
-    // Start from root (events with no parent)
-    const rootEvents = childMap[''] || [];
-
-    const finalList = rootEvents.map(parentEvent => attachChildren(parentEvent));
-
-    return res.status(200).json({
-      message: "Event list fetched successfully",
-      data: finalList
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      message: "Internal Server Error",
-      error: err.message
-    });
-  }
-}
-
-async eventListsUsers(req, res){
+  async eventLists(req, res, token_data) {
     try {
-      const events = await this.eventFunc.findAllEvents(); 
+      // fetch all events from DB
+      const events = await this.eventFunc.findAllEvents();
+
+      // Build map: parentEid -> childEvents[]
+      const childMap = {};
+      events.forEach(ev => {
+        const parentKey = ev.parent || ''; // blank string for no parent
+        if (!childMap[parentKey]) {
+          childMap[parentKey] = [];
+        }
+        childMap[parentKey].push(ev);
+      });
+
+      // Recursive function to attach children to an event
+      function attachChildren(event) {
+        const children = childMap[event.eid] || [];
+        return {
+          ...event,
+          siblings: children.map(child => attachChildren(child)) // recurse
+        };
+      }
+
+      // Start from root (events with no parent)
+      const rootEvents = childMap[''] || [];
+
+      const finalList = rootEvents.map(parentEvent => attachChildren(parentEvent));
+
       return res.status(200).json({
-            message: "Event list fetched successfully",
-            data: events
-          });
-    }catch(err){
-       console.error(err);
+        message: "Event list fetched successfully",
+        data: finalList
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({
+        message: "Internal Server Error",
+        error: err.message
+      });
+    }
+  }
+
+  async eventListsUsers(req, res) {
+    try {
+      const events = await this.eventFunc.findAllEvents();
+      return res.status(200).json({
+        message: "Event list fetched successfully",
+        data: events
+      });
+    } catch (err) {
+      console.error(err);
       res.status(500).send('Error processing the data.');
     }
-}
+  }
 
 
 
   //Create Events
   async createEvents(req, res, token_data) {
-  try {
-    const {
-      eid,
-      name,
-      description,
-      active,
-      created_by,
-      team,
-      st_dt,
-      en_dt,
-      sh_list,
-      w_count,
-      categories,
-      type
-    } = req.body;
+    try {
+      const {
+        eid,
+        name,
+        description,
+        active,
+        created_by,
+        team,
+        st_dt,
+        en_dt,
+        sh_list,
+        w_count,
+        paid,
+        paid_amt,
+        categories,
+        type
+      } = req.body;
 
-    // Check if parent param present
-    const parentId = req.query.parent || null;
+      // Check if parent param present
+      const parentId = req.query.parent || null;
 
-    // If parent param exists, verify if event exists
-    let parentEvent = null;
-    if (parentId) {
-      parentEvent = await this.eventFunc.findOneEvent({ eid: parentId });
-      if (!parentEvent) {
-        return res.status(404).json({
-          message: "Parent event not found",
-        });
+      // If parent param exists, verify if event exists
+      let parentEvent = null;
+      if (parentId) {
+        parentEvent = await this.eventFunc.findOneEvent({ eid: parentId });
+        if (!parentEvent) {
+          return res.status(404).json({
+            message: "Parent event not found",
+          });
+        }
       }
-    }
-    const data = {
-      eid,
-      name,
-      description,
-      active,
-      created_by: created_by || token_data?.uid, // if you want to use token_data
-      team,
-      st_dt: st_dt || moment().unix(),
-      en_dt: en_dt || moment().unix(),
-      sh_list, // number of short listing candidates on that events
-      w_count,
-      type: type || "vote",
-      categories,
-      parent: parentEvent ? parentEvent.eid : "", // if parent exist set else empty
-      createdAt: moment().unix(),
-      updatedAt: moment().unix(),
-    }
-    await this.eventFunc.insertEvent(data)
+      const data = {
+        eid,
+        name,
+        description,
+        active,
+        created_by: created_by || token_data?.uid, // if you want to use token_data
+        team,
+        paid,
+        paid_amt,
+        st_dt: st_dt || moment().unix(),
+        en_dt: en_dt || moment().unix(),
+        sh_list, // number of short listing candidates on that events
+        w_count,
+        type: type || "vote",
+        categories,
+        parent: parentEvent ? parentEvent.eid : "", // if parent exist set else empty
+        createdAt: moment().unix(),
+        updatedAt: moment().unix(),
+      }
+      await this.eventFunc.insertEvent(data)
 
-    return res.status(201).json({
-      message: "Event created successfully",
-      data,
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      message: "Internal Server Error",
-      error: err.message,
-    });
+      return res.status(201).json({
+        message: "Event created successfully",
+        data,
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({
+        message: "Internal Server Error",
+        error: err.message,
+      });
+    }
   }
-}
 
 
 
-// UPDATE EVENT
-async updatedEvents(req, res, token_data) {
-  try {
-    const eid = req.query.eid; 
-    if (!eid) {
-      return res.status(400).json({ message: "Event ID is required" });
+  // UPDATE EVENT
+  async updatedEvents(req, res, token_data) {
+    try {
+      const eid = req.query.eid;
+      if (!eid) {
+        return res.status(400).json({ message: "Event ID is required" });
+      }
+
+      // find if event exists
+      const eventExist = await this.eventFunc.findOneEvent({ eid });
+      if (!eventExist) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      // prepare updated data
+      const {
+        name,
+        description,
+        active,
+        team,
+        st_dt,
+        en_dt,
+        sh_list,
+        w_count,
+        categories,
+        // parent,
+      } = req.body;
+
+      const updatedData = {
+        ...(name !== undefined && { name }),
+        ...(description !== undefined && { description }),
+        ...(active !== undefined && { active }),
+        ...(team !== undefined && { team }),
+        ...(st_dt !== undefined && { st_dt }),
+        ...(en_dt !== undefined && { en_dt }),
+        ...(sh_list !== undefined && { sh_list }),
+        ...(w_count !== undefined && { w_count }),
+        ...(categories !== undefined && { categories }),
+        // ...(parent !== undefined && { parent }),
+        updatedAt: moment().unix(),
+      };
+
+      // update event
+      const updatedEvent = await this.eventFunc.updateEvent({ eid }, updatedData);
+
+      return res.status(200).json({
+        message: "Event updated successfully",
+        data: updatedEvent,
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({
+        message: "Internal Server Error",
+        error: err.message,
+      });
     }
-
-    // find if event exists
-    const eventExist = await this.eventFunc.findOneEvent({ eid });
-    if (!eventExist) {
-      return res.status(404).json({ message: "Event not found" });
-    }
-
-    // prepare updated data
-    const {
-      name,
-      description,
-      active,
-      team,
-      st_dt,
-      en_dt,
-      sh_list,
-      w_count,
-      categories,
-      // parent,
-    } = req.body;
-
-    const updatedData = {
-      ...(name !== undefined && { name }),
-      ...(description !== undefined && { description }),
-      ...(active !== undefined && { active }),
-      ...(team !== undefined && { team }),
-      ...(st_dt !== undefined && { st_dt }),
-      ...(en_dt !== undefined && { en_dt }),
-      ...(sh_list !== undefined && { sh_list }),
-      ...(w_count !== undefined && { w_count }),
-      ...(categories !== undefined && { categories }),
-      // ...(parent !== undefined && { parent }),
-      updatedAt: moment().unix(),
-    };
-
-    // update event
-    const updatedEvent = await this.eventFunc.updateEvent({ eid }, updatedData);
-
-    return res.status(200).json({
-      message: "Event updated successfully",
-      data: updatedEvent,
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      message: "Internal Server Error",
-      error: err.message,
-    });
   }
-}
 
-// DELETE EVENT
-async deletEvents(req, res, token_data) {
-  try {
-    const eid = req.query.eid ; // event id
-    if (!eid) {
-      return res.status(400).json({ message: "Event ID is required" });
+  // DELETE EVENT
+  async deletEvents(req, res, token_data) {
+    try {
+      const eid = req.query.eid; // event id
+      if (!eid) {
+        return res.status(400).json({ message: "Event ID is required" });
+      }
+
+      // find event first
+      const eventExist = await this.eventFunc.findOneEvent({ eid });
+      if (!eventExist) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      // delete event (hard delete)
+      await this.eventFunc.deleteEvent({ eid });
+
+      return res.status(200).json({
+        message: "Event deleted successfully",
+        eid,
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({
+        message: "Internal Server Error",
+        error: err.message,
+      });
     }
-
-    // find event first
-    const eventExist = await this.eventFunc.findOneEvent({ eid });
-    if (!eventExist) {
-      return res.status(404).json({ message: "Event not found" });
-    }
-
-    // delete event (hard delete)
-    await this.eventFunc.deleteEvent({ eid });
-
-    return res.status(200).json({
-      message: "Event deleted successfully",
-      eid,
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      message: "Internal Server Error",
-      error: err.message,
-    });
   }
-}
 
+  async requestForEvent(req, res, token_data) {
+    try {
+      const { eid } = req.body;
+      const writer_uid = token_data.uid;
 
+      if (!eid) {
+        return res.status(400).json({ status: 400, message: "Event ID (eid) is required", data: {} });
+      }
+
+      // Verify event exists to derive Publisher ID (pid)
+      const eventExist = await this.eventFunc.findOneEvent({ eid });
+      if (!eventExist) {
+        return res.status(404).json({ status: 404, message: "Event not found", data: {} });
+      }
+
+      // The publisher ID (pid) is bound to the user who created the event
+      const pid = eventExist.created_by;
+      if (!pid) {
+        return res.status(400).json({ status: 400, message: "Event does not have a tied publisher", data: {} });
+      }
+
+      // Verify no existing request exists
+      const existingRequest = await this.eventFunc.findOneEventRequest({ eid, writer_uid });
+      if (existingRequest) {
+        return res.status(409).json({ status: 409, message: "You have already applied for this event", data: {} });
+      }
+
+      const requestData = {
+        eid,
+        writer_uid,
+        pid,
+        status: "Pending" // Initial phase
+      };
+
+      await this.eventFunc.insertEventRequest(requestData);
+
+      return res.status(201).json({
+        status: 201, message: "Successfully requested to participate in event", data: requestData
+      });
+
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ status: 500, message: "Internal Server Error", data: {} });
+    }
+  }
+
+  async updateEventRequestStatus(req, res, token_data) {
+    try {
+      // Publisher accepts or rejects the pending event application
+      const { request_id, status } = req.body;
+      const publisher_uid = token_data.uid;
+
+      if (!request_id || !status) {
+        return res.status(400).json({ status: 400, message: "request_id and status are required", data: {} });
+      }
+
+      if (!["Accepted", "Rejected"].includes(status)) {
+        return res.status(400).json({ status: 400, message: "Status must be Accepted or Rejected", data: {} });
+      }
+
+      // Verify request exists
+      const existingRequest = await this.eventFunc.findOneEventRequest({ _id: request_id });
+      if (!existingRequest) {
+        return res.status(404).json({ status: 404, message: "Event participation request not found", data: {} });
+      }
+
+      // Validate that the request actually belongs to this Publisher's domain (unless Admin is processing)
+      if (token_data.role !== "admin" && token_data.role !== "manager") {
+        if (existingRequest.created_by !== publisher_uid) {
+          return res.status(403).json({ status: 403, message: "Unauthorized. You do not own this event.", data: {} });
+        }
+      }
+
+      if (existingRequest.status !== "Pending") {
+        return res.status(409).json({ status: 409, message: `Request is already ${existingRequest.status}`, data: {} });
+      }
+
+      // Process update
+      await this.eventFunc.updateEventRequest({ _id: request_id }, { status });
+
+      return res.status(200).json({
+        status: 200, message: `Event participation request ${status} successfully`, data: {}
+      });
+
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ status: 500, message: "Internal Server Error", data: {} });
+    }
+  }
 }
 
 module.exports = EventController;
