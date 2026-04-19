@@ -1,5 +1,5 @@
 import { useAtom } from 'jotai';
-import { workspaceFilesAtom, currentFolderAtom } from '../store/atoms';
+import { currentFolderAtom } from '../store/atoms';
 import type { WorkspaceFile } from '../types/workspace';
 import { FileText, Download, Share2, Trash2, MoreVertical, BookOpen, Eye } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -8,13 +8,13 @@ import { useState } from 'react';
 import { ContentPreviewModal } from './ContentPreviewModal';
 
 interface FileGridProps {
+    files?: WorkspaceFile[];
     onDownload?: (fileId: string) => void;
     onShare?: (fileId: string) => void;
     onDelete?: (fileId: string) => void;
 }
 
-export function FileGrid({ onDownload, onShare, onDelete }: FileGridProps) {
-    const [files] = useAtom(workspaceFilesAtom);
+export function FileGrid({ files = [], onDownload, onShare, onDelete }: FileGridProps) {
     const [currentFolder] = useAtom(currentFolderAtom);
     const [activeMenu, setActiveMenu] = useState<string | null>(null);
     const [previewFile, setPreviewFile] = useState<WorkspaceFile | null>(null);

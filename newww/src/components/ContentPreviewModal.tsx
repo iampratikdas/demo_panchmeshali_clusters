@@ -6,8 +6,6 @@ import {
 import type { WorkspaceFile } from '../types/workspace';
 import { cn } from '../lib/utils';
 import { useState, useEffect } from 'react';
-import { useAtom } from 'jotai';
-import { workspaceFilesAtom } from '../store/atoms';
 import { RichTextEditor } from './RichTextEditor';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -55,7 +53,6 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 }
 
 export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewModalProps) {
-    const [, setFiles] = useAtom(workspaceFilesAtom);
 
     const [editMode, setEditMode] = useState(false);
     const [detailsOpen, setDetailsOpen] = useState(false);
@@ -79,21 +76,8 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
         setDraft(prev => ({ ...prev, [key]: val }));
 
     const handleSave = () => {
-        setFiles(prev =>
-            prev.map(f =>
-                f.id === file.id
-                    ? {
-                        ...f,
-                        ...draft,
-                        modifiedAt: new Date().toISOString(),
-                        // recompute excerpt from fullContent
-                        excerpt: draft.fullContent
-                            ? draft.fullContent.replace(/<[^>]+>/g, '').slice(0, 120) + '…'
-                            : f.excerpt,
-                    }
-                    : f
-            )
-        );
+        // TODO: wire to PATCH /api/workspace_update_file when implemented
+        // For now just exit edit mode with local draft changes visible
         setEditMode(false);
     };
 

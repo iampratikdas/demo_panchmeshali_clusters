@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { submitContent, fetchEvents } from '../lib/api';
 import { useAtom } from 'jotai';
-import { workspaceFoldersAtom, workspaceFilesAtom } from '../store/atoms';
+import { workspaceFoldersAtom } from '../store/atoms';
 import { useToast } from '../hooks/useToast';
 import { z } from 'zod';
 
@@ -69,7 +69,6 @@ export function useSubmissionForm() {
     const [destination, setDestination] = useState<'app' | 'social' | 'both' | ''>('app');
     const [story_title, setStoryTitle] = useState<string>('');
     const [folders] = useAtom(workspaceFoldersAtom);
-    const [, setFiles] = useAtom(workspaceFilesAtom);
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
@@ -148,31 +147,6 @@ export function useSubmissionForm() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['contents'] });
-
-            // Save submission as a WorkspaceFile in the root folder
-            const fileName = story_title || title || 'Untitled Submission';
-            const fileType = (type === 'poem' ? 'poem' : 'story') as 'story' | 'poem';
-            const rawText = content.replace(/<[^>]+>/g, ''); // strip HTML tags
-            const newFile = {
-                id: `submission-${Date.now()}`,
-                name: fileName,
-                folderId: 'root',
-                type: fileType,
-                size: new Blob([rawText]).size,
-                createdAt: new Date().toISOString(),
-                modifiedAt: new Date().toISOString(),
-                contentType: isEvent ? 'Event Submission' : 'Content Submission',
-                excerpt: rawText.slice(0, 120) + (rawText.length > 120 ? '…' : ''),
-                fullContent: content,
-                category,
-                publisher: selectedPublisher || undefined,
-                author: 'You',
-                status: 'Pending',
-                eventName: isEvent
-                    ? events?.find(e => e.eid === selectedEventId)?.name
-                    : undefined,
-            };
-            setFiles(prev => [newFile, ...prev]);
 
             toast({
                 title: 'Success!',

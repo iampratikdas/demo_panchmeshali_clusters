@@ -5,6 +5,7 @@ const EventFunctions = require("../mongodb/EventFunctions");
 const NoticeFunctions = require("../mongodb/NoticeFunctions")
 const PublisherFunctions = require("./PublishersFunctions")
 const FolderFunctions = require("./FolderFunctions")
+const WorkspaceFileFunctions = require("./WorkspaceFileFunctions")
 class GlobalModelFunctions {
         modelsFunctions() {
 
@@ -16,6 +17,7 @@ class GlobalModelFunctions {
                         noticeFunctions: new NoticeFunctions(),
                         publisherFunctions: new PublisherFunctions(),
                         folderFunctions: new FolderFunctions(),
+                        workspaceFileFunctions: new WorkspaceFileFunctions(),
                         // pagination: pagination()
                 };
         }
