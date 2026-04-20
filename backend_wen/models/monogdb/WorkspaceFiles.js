@@ -48,11 +48,21 @@ const workspaceFileSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    // File extension: 'pdf' | 'docx'
+    // File extension: 'pdf' | 'docx' | 'json'
     ext: {
         type: String,
         required: true,
-        enum: ['pdf', 'docx'],
+        enum: ['pdf', 'docx', 'json'],
+    },
+    // True if this is a submitted content file (JSON text)
+    is_content: {
+        type: Boolean,
+        default: false,
+    },
+    // For contents, a short raw text preview
+    excerpt: {
+        type: String,
+        default: '',
     },
     // Size in bytes — used for storage quota calculation
     size_bytes: {

@@ -292,6 +292,59 @@ class FolderController {
     }
 
     // ────────────────────────────────────────────────────────────────────────
+    // POST /api/workspace_update_content   — Body: { file_id, title, content }
+    // ────────────────────────────────────────────────────────────────────────
+    async updateContent(req, res, token_data) {
+        try {
+            const { file_id, title, content } = req.body;
+            if (!file_id) return res.status(400).json({ status: 400, message: 'file_id is required.', data: {} });
+
+            const fileRecord = await this.userFunc.workspaceFileFunctions.findById(file_id);
+            if (!fileRecord) return res.status(404).json({ status: 404, message: 'File not found.', data: {} });
+            if (fileRecord.uid !== token_data.uid) return res.status(403).json({ status: 403, message: 'Forbidden.', data: {} });
+            if (fileRecord.ext !== 'json') return res.status(400).json({ status: 400, message: 'Not a JSON content file.', data: {} });
+
+            const jsonData = Buffer.from(JSON.stringify({ title, content }));
+            const newSize = jsonData.length;
+            const sizeDiff = newSize - fileRecord.size_bytes;
+
+            // Optional: check quota if size increased
+            if (sizeDiff > 0) {
+                const storageInfo = await this.userFunc.workspaceFileFunctions.getStorageInfo(token_data.uid);
+                if (storageInfo.used_bytes + sizeDiff > STORAGE_LIMIT_BYTES) {
+                    return res.status(402).json({
+                        status: 402,
+                        message: 'Storage full. You have to pay to continue saving files.',
+                        exceeded: true,
+                    });
+                }
+            }
+
+            // Write to physical file
+            const physicalPath = path.join(__dirname, '..', 'public', 'workspace', fileRecord.stored_name);
+            fs.writeFileSync(physicalPath, jsonData);
+
+            // Update db record
+            const rawText = content ? content.replace(/<[^>]+>/g, '').substring(0, 150) : '';
+            await this.userFunc.workspaceFileFunctions.updateFile(file_id, token_data.uid, {
+                size_bytes: newSize,
+                excerpt: rawText,
+                original_name: title || fileRecord.original_name,
+                updatedAt: String(moment().unix())
+            });
+
+            return res.status(200).json({
+                status: 200,
+                message: 'Content updated successfully.',
+                data: {}
+            });
+        } catch (error) {
+            console.error('updateContent error:', error);
+            return res.status(500).json({ status: 500, message: error.message || 'Internal server error.', data: {} });
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
     // GET /api/workspace_storage   — No body needed
     // Returns the user's current storage usage calculated from DB documents
     // ────────────────────────────────────────────────────────────────────────

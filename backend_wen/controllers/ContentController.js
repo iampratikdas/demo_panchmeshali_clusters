@@ -176,6 +176,9 @@ class ContentController {
 
 
       page_id = page_id ? page_id : "";
+      
+      const folder_id = url || "root";
+      
       let contents = {
         uid: token_data.uid,
         eid: eid,
@@ -185,7 +188,7 @@ class ContentController {
         name: storyName,
         author_name: token_data.full_name,
         content: storyContent,
-        url: "",
+        url: folder_id, // Save the destination folder in the `url` field
         event_content,
         orgin_content: isOriginalWork,
       }
@@ -201,6 +204,49 @@ class ContentController {
           })
         }
       }
+
+      // ── Workspace Integration: Save as JSON file ──
+      // Calculate filesize
+      const jsonData = Buffer.from(JSON.stringify({ title: storyName, content: storyContent }));
+      const fileSize = jsonData.length;
+      const STORAGE_LIMIT_BYTES = 10 * 1024 * 1024;
+      
+      const storageInfo = await this.userFunc.workspaceFileFunctions.getStorageInfo(token_data.uid);
+      if (storageInfo.used_bytes + fileSize > STORAGE_LIMIT_BYTES) {
+          return res.status(402).json({
+              status: 402,
+              message: 'Storage full. You have to pay to continue saving files to the workspace.',
+              exceeded: true,
+          });
+      }
+
+      // Create physical JSON file
+      const uploadDir = path.join(__dirname, '../../public/workspace');
+      if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      const uniqueName = `${Date.now()}_${Math.round(Math.random() * 1e6)}.json`;
+      const physicalPath = path.join(uploadDir, uniqueName);
+      fs.writeFileSync(physicalPath, jsonData);
+
+      // Extract a short excerpt (strip basic HTML tags for preview)
+      const rawText = storyContent ? storyContent.replace(/<[^>]+>/g, '').substring(0, 150) : '';
+
+      // Insert WorkspaceFile record
+      const wsFileRecord = {
+          uid: token_data.uid,
+          folder_id: folder_id,
+          original_name: storyName,
+          stored_name: uniqueName,
+          file_path: `/public/workspace/${uniqueName}`,
+          mime_type: 'application/json',
+          ext: 'json',
+          size_bytes: fileSize,
+          is_content: true,
+          excerpt: rawText
+      };
+      await this.userFunc.workspaceFileFunctions.insertFile(wsFileRecord);
+
 
       // console.log("contents:================>", contents);
       await this.contentFunc.ContentInsert(contents);

@@ -90,6 +90,19 @@ class WorkspaceFileFunctions {
             throw new Error('Failed to delete file record');
         }
     }
+
+    /** Update file details (for content edits) */
+    async updateFile(file_id, uid, updateData) {
+        try {
+            return await this.fileModel.updateOne(
+                { file_id, uid },
+                { $set: updateData }
+            );
+        } catch (error) {
+            console.error('Error updating workspace file:', error);
+            throw new Error('Failed to update file record');
+        }
+    }
 }
 
 module.exports = WorkspaceFileFunctions;
