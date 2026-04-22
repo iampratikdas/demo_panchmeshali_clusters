@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUsers, createUser, banUser, removeUser, sendEmail } from '../lib/api';
-import type { CreateUserData, EmailData, User } from '../types/user';
+import type { EmailData, User } from '../types/user';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -10,6 +10,7 @@ import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { Pagination } from '../components/Pagination';
 import { Users as UsersIcon, Plus, Mail, Ban, Trash2, CheckCircle2, XCircle, Search, ArrowUpDown } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
+import type { CreateUserData } from '../types/user';
 
 export default function Users() {
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -19,21 +20,34 @@ export default function Users() {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc'); // Default: newest first
-    const pageSize = 1;
+    // const pageSize = 1;
+    const [pageSize, setPageSize] = useState(10);
 
-    const [formData, setFormData] = useState<CreateUserData>({
-        fullName: '',
+    const [formData, setFormData] = useState<User>({
+        full_name: '',
         email: '',
-        password: '',
+        password: '', // In real app, this would be hashed
+        isActive: false,
+        createdAt: '',
+        lastLogin: '',
+        role: '',
+        ph_country_code: '',
+        phone_number: '',
+        // status: boolean;
+        address: '',
     });
 
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
-    const { data: users, isLoading } = useQuery({
-        queryKey: ['users'],
-        queryFn: fetchUsers,
+    const { data: fetchResponse, isLoading, error: fetchUserError, isError } = useQuery({
+        queryKey: ['users', currentPage, pageSize],
+        queryFn: () => fetchUsers(currentPage, pageSize),
     });
+    console.log("fetchUserError============>", fetchUserError, isError);
+
+    const users: User[] = fetchResponse?.data || [];
+    const serverTotalPages = fetchResponse?.pagination?.totalPages || 1;
 
     const createMutation = useMutation({
         mutationFn: (data: CreateUserData) => createUser(data),
@@ -41,7 +55,19 @@ export default function Users() {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             toast({ title: 'Success!', description: 'User created successfully.' });
             setShowCreateForm(false);
-            setFormData({ fullName: '', email: '', password: '' });
+            setFormData({
+                full_name: '',
+                email: '',
+                password: '', // In real app, this would be hashed
+                isActive: false,
+                createdAt: '',
+                // lastLogin: '',
+                role: '',
+                ph_country_code: '',
+                phone_number: '',
+                // status: boolean;
+                address: '',
+            });
         },
         onError: (error: Error) => {
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -87,13 +113,13 @@ export default function Users() {
 
     const selectAllUsers = () => {
         if (users) {
-            const allIds = users.map(u => u.id);
+            const allIds = users.map(u => u.uid || '');
             setSelectedUsers(allIds);
         }
     };
 
     const handleSendEmail = (recipients: string[]) => {
-        const emailList = users?.filter(u => recipients.includes(u.id)).map(u => u.email) || [];
+        const emailList = users?.filter(u => recipients.includes(u?.uid || '')).map(u => u.email) || [];
         emailMutation.mutate({
             to: emailList,
             subject: emailData.subject,
@@ -101,25 +127,20 @@ export default function Users() {
         });
     };
 
-    // Client-side filtering, sorting, and pagination
+    // Client-side filtering & sorting on the current paginated result
     const filteredAndSortedUsers = users
-        ? users
-            .filter(user =>
-                user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                user.email.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-            .sort((a, b) => {
-                const dateA = new Date(a.createdAt).getTime();
-                const dateB = new Date(b.createdAt).getTime();
-                return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-            })
-        : [];
+        .filter(user =>
+            user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0).getTime();
+            const dateB = new Date(b.createdAt || 0).getTime();
+            return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        });
 
-    const totalPages = Math.ceil(filteredAndSortedUsers.length / pageSize);
-    const paginatedUsers = filteredAndSortedUsers.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-    );
+    const totalPages = Math.max(1, serverTotalPages);
+    const paginatedUsers = filteredAndSortedUsers;
 
     // Reset to page 1 when search changes
     const handleSearchChange = (value: string) => {
@@ -131,7 +152,14 @@ export default function Users() {
         setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
         setCurrentPage(1);
     };
-
+    if (isError) {
+        return <div className="flex items-center justify-center h-screen">
+            <div className="text-center">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">Error</h1>
+                <p className="text-sm sm:text-base text-muted-foreground">{fetchUserError?.message}</p>
+            </div>
+        </div>
+    }
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
@@ -156,7 +184,7 @@ export default function Users() {
                         <form onSubmit={handleCreateUser} className="space-y-4">
                             <div>
                                 <label className="text-sm font-medium mb-2 block">Full Name</label>
-                                <Input required value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} placeholder="e.g., John Doe" />
+                                <Input required value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} placeholder="e.g., John Doe" />
                             </div>
                             <div>
                                 <label className="text-sm font-medium mb-2 block">Email</label>
@@ -259,17 +287,17 @@ export default function Users() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {paginatedUsers.map((user: User) => (
-                            <Card key={user.id} className={`hover:shadow-lg transition-shadow ${selectedUsers.includes(user.id) ? 'border-primary' : ''}`}>
+                            <Card key={user.uid} className={`hover:shadow-lg transition-shadow ${selectedUsers.includes(user.uid || '') ? 'border-primary' : ''}`}>
                                 <CardHeader>
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="flex items-start gap-3 flex-1">
-                                            <input type="checkbox" checked={selectedUsers.includes(user.id)} onChange={() => toggleUserSelection(user.id)} className="mt-1 h-4 w-4" />
+                                            <input type="checkbox" checked={selectedUsers.includes(user.uid || '')} onChange={() => toggleUserSelection(user.uid || '')} className="mt-1 h-4 w-4" />
                                             <div className="flex-1">
-                                                <CardTitle className="text-lg">{user.fullName}</CardTitle>
+                                                <CardTitle className="text-lg">{user.full_name}</CardTitle>
                                                 <CardDescription className="mt-1">{user.email}</CardDescription>
                                             </div>
                                         </div>
-                                        {user.status === 'active' ? (
+                                        {user.isActive ? (
                                             <Badge className="bg-green-500 flex-shrink-0">
                                                 <CheckCircle2 className="h-3 w-3 mr-1" />
                                                 Active
@@ -284,25 +312,25 @@ export default function Users() {
                                 </CardHeader>
                                 <CardContent className="space-y-3">
                                     <div className="text-sm text-muted-foreground">
-                                        <p>ID: {user.id}</p>
+                                        <p>ID: {user.uid}</p>
                                         <p>Joined: {new Date(user.createdAt).toLocaleDateString()}</p>
                                         {user.lastLogin && <p>Last login: {new Date(user.lastLogin).toLocaleDateString()}</p>}
                                     </div>
 
                                     <div className="flex gap-2 flex-wrap">
-                                        <Button variant="outline" size="sm" onClick={() => handleSendEmail([user.id])}>
+                                        <Button variant="outline" size="sm" onClick={() => handleSendEmail([user.uid || ''])}>
                                             <Mail className="h-4 w-4 mr-2" />
                                             Email
                                         </Button>
-                                        {user.status === 'active' ? (
-                                            <Button variant="outline" size="sm" onClick={() => banMutation.mutate(user.id)} disabled={banMutation.isPending}>
+                                        {user.isActive ? (
+                                            <Button variant="outline" size="sm" onClick={() => banMutation.mutate(user.uid || '')} disabled={banMutation.isPending}>
                                                 <Ban className="h-4 w-4 mr-2" />
                                                 Ban
                                             </Button>
                                         ) : (
                                             <Badge variant="outline">Banned</Badge>
                                         )}
-                                        <Button variant="destructive" size="sm" onClick={() => removeMutation.mutate(user.id)} disabled={removeMutation.isPending}>
+                                        <Button variant="destructive" size="sm" onClick={() => removeMutation.mutate(user.uid || '')} disabled={removeMutation.isPending}>
                                             <Trash2 className="h-4 w-4 mr-2" />
                                             Remove
                                         </Button>

@@ -26,8 +26,10 @@ export interface ApiWorkspaceFile {
     stored_name: string;
     file_path: string;
     mime_type: string;
-    ext: 'pdf' | 'docx';
+    ext: 'pdf' | 'docx' | 'json';
     size_bytes: number;
+    is_content?: boolean;
+    excerpt?: string;
     is_deleted: boolean;
     createdAt: string;
     updatedAt: string;
@@ -99,6 +101,18 @@ export async function apiDeleteWorkspaceFile(file_id: string): Promise<StorageIn
     const json = await res.json();
     if (json.status !== 200) throw new Error(json.message);
     return json.storage as StorageInfo;
+}
+
+/** Update file content/title */
+export async function apiUpdateWorkspaceContent(file_id: string, title?: string, content?: string): Promise<ApiWorkspaceFile> {
+    const res = await fetch(`${BASE}/workspace_update_content`, {
+        method: 'POST',
+        headers: authJsonHeaders(),
+        body: JSON.stringify({ file_id, title, content }),
+    });
+    const json = await res.json();
+    if (json.status !== 200) throw new Error(json.message);
+    return json.data as ApiWorkspaceFile;
 }
 
 /** Get current storage usage (calculated from MongoDB document sizes) */

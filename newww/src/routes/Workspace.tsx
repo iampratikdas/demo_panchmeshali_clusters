@@ -10,6 +10,7 @@ import { CreateFolderModal } from '../components/CreateFolderModal';
 import { RenameFolderModal } from '../components/RenameFolderModal';
 import { ShareModal } from '../components/ShareModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
+import { ContentPreviewModal } from '../components/ContentPreviewModal';
 import {
     FolderPlus,
     ChevronDown,
@@ -24,6 +25,7 @@ import {
     MoreVertical,
     BadgeDollarSign,
     Loader2,
+    BookOpen,
 } from 'lucide-react';
 import { FolderGrid } from '../components/FolderGrid';
 import { Button } from '../ui/button';
@@ -59,6 +61,7 @@ function formatDate(ts: string): string {
 const EXT_COLORS: Record<string, string> = {
     pdf: 'text-red-500',
     docx: 'text-blue-500',
+    json: 'text-purple-600 bg-purple-50',
 };
 
 export default function Workspace() {
@@ -70,6 +73,7 @@ export default function Workspace() {
     const [apiError, setApiError] = useState<string | null>(null);
     const [payAlert, setPayAlert] = useState(false); // "You have to pay" modal
     const [fileMenuOpen, setFileMenuOpen] = useState<string | null>(null);
+    const [previewFile, setPreviewFile] = useState<any | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // ── Modals ────────────────────────────────────────────────────────────────
@@ -448,10 +452,27 @@ export default function Workspace() {
                                         transition={{ delay: index * 0.04 }}
                                         className="glass-card rounded-xl p-4 hover:shadow-lg transition-all group relative"
                                     >
-                                        {/* Icon + menu */}
-                                        <div className="flex items-start justify-between mb-3">
+                                        <div 
+                                            className={`flex items-start justify-between mb-3 ${file.ext === 'json' ? 'cursor-pointer' : ''}`}
+                                            onClick={() => {
+                                                if (file.ext === 'json') {
+                                                    // Mapping ApiWorkspaceFile to WorkspaceFile for the Modal
+                                                    setPreviewFile({
+                                                        id: file.file_id,
+                                                        name: file.original_name,
+                                                        folderId: file.folder_id,
+                                                        type: 'story',
+                                                        size: file.size_bytes,
+                                                        createdAt: file.createdAt,
+                                                        modifiedAt: file.updatedAt,
+                                                        excerpt: file.excerpt,
+                                                        fullContentUrl: file.file_path, // We will fetch it in the modal
+                                                    });
+                                                }
+                                            }}
+                                        >
                                             <div className={`p-3 rounded-lg bg-gray-100 ${EXT_COLORS[file.ext] ?? 'text-gray-500'}`}>
-                                                <FileText className="h-6 w-6" />
+                                                {file.ext === 'json' ? <BookOpen className="h-6 w-6" /> : <FileText className="h-6 w-6" />}
                                             </div>
 
                                             <div className="relative">
@@ -470,15 +491,37 @@ export default function Workspace() {
                                                             animate={{ opacity: 1, scale: 1 }}
                                                             className="absolute right-0 top-8 z-20 bg-white rounded-lg shadow-xl border border-gray-100 py-1 min-w-[140px]"
                                                         >
-                                                            <a
-                                                                href={`${import.meta.env.VITE_API_URL?.replace('/api', '')}${file.file_path}`}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="w-full px-3 py-2 text-sm text-left hover:bg-primary/10 flex items-center gap-2 transition-colors text-gray-900"
-                                                                onClick={() => setFileMenuOpen(null)}
-                                                            >
-                                                                <Download className="h-4 w-4" /> Download
-                                                            </a>
+                                                            {file.ext === 'json' ? (
+                                                                <button
+                                                                    className="w-full px-3 py-2 text-sm text-left hover:bg-purple-50 text-purple-600 flex items-center gap-2 transition-colors inline-block text-left"
+                                                                    onClick={() => {
+                                                                        setFileMenuOpen(null);
+                                                                        setPreviewFile({
+                                                                            id: file.file_id,
+                                                                            name: file.original_name,
+                                                                            folderId: file.folder_id,
+                                                                            type: 'story',
+                                                                            size: file.size_bytes,
+                                                                            createdAt: file.createdAt,
+                                                                            modifiedAt: file.updatedAt,
+                                                                            excerpt: file.excerpt,
+                                                                            fullContentUrl: file.file_path,
+                                                                        });
+                                                                    }}
+                                                                >
+                                                                    <BookOpen className="h-4 w-4" /> View & Edit
+                                                                </button>
+                                                            ) : (
+                                                                <a
+                                                                    href={`${import.meta.env.VITE_API_URL?.replace('/api', '')}${file.file_path}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="w-full px-3 py-2 text-sm text-left hover:bg-primary/10 flex items-center gap-2 transition-colors text-gray-900"
+                                                                    onClick={() => setFileMenuOpen(null)}
+                                                                >
+                                                                    <Download className="h-4 w-4" /> Download
+                                                                </a>
+                                                            )}
                                                             <button
                                                                 onClick={() => { handleDeleteFile(file.file_id, file.original_name); setFileMenuOpen(null); }}
                                                                 className="w-full px-3 py-2 text-sm text-left hover:bg-red-50 text-red-600 flex items-center gap-2 transition-colors"
@@ -498,7 +541,7 @@ export default function Workspace() {
                                             </h3>
                                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                 <span className="uppercase font-semibold px-1.5 py-0.5 rounded bg-gray-100">
-                                                    {file.ext}
+                                                    {file.ext === 'json' ? 'Content' : file.ext}
                                                 </span>
                                                 <span>·</span>
                                                 <span>{formatBytes(file.size_bytes)}</span>
@@ -546,6 +589,12 @@ export default function Workspace() {
                 onConfirm={() => { confirmDelete(); setDeleteModal({ isOpen: false, type: 'file', id: '', name: '' }); }}
                 title={`Delete ${deleteModal.type === 'folder' ? 'Folder' : 'File'}`}
                 message={`Are you sure you want to delete this ${deleteModal.type}? This action cannot be undone.`}
+            />
+
+            <ContentPreviewModal
+                file={previewFile}
+                isOpen={!!previewFile}
+                onClose={() => setPreviewFile(null)}
             />
         </div>
     );

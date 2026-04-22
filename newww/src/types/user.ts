@@ -1,17 +1,28 @@
 export interface User {
-    id: string;
-    fullName: string;
+    uid?: string;
+    full_name: string;
     email: string;
     password: string; // In real app, this would be hashed
-    status: 'active' | 'banned';
+    isActive: boolean;
     createdAt: string;
     lastLogin?: string;
+    role: string;
+    ph_country_code: string;
+    phone_number: string;
+    // status: boolean;
+    address: string;
 }
 
 export interface CreateUserData {
-    fullName: string;
+    full_name: string;
     email: string;
     password: string;
+    role: string;
+    ph_country_code: string;
+    phone_number: string;
+    // status: string;
+    address: string;
+    isActive: boolean;
 }
 
 export interface EmailData {

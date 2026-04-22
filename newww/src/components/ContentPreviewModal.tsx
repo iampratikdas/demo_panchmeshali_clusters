@@ -9,6 +9,8 @@ import { useState, useEffect } from 'react';
 import { RichTextEditor } from './RichTextEditor';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
+import { useUpdateWorkspaceContent } from '../hooks/useWorkspaceFiles';
+import { Loader2 } from 'lucide-react';
 
 interface ContentPreviewModalProps {
     file: WorkspaceFile | null;
@@ -67,6 +69,33 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
         setDetailsOpen(false);
     }, [file?.id, isOpen]);
 
+    // Fetch JSON content from server when opened
+    const [loadingContent, setLoadingContent] = useState(false);
+    useEffect(() => {
+        if (!isOpen || !file?.fullContentUrl) return;
+
+        let active = true;
+        setLoadingContent(true);
+        const url = import.meta.env.VITE_API_URL?.replace('/api', '') + file.fullContentUrl;
+
+        fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                if (active) {
+                    setDraft(prev => ({ ...prev, fullContent: data.content, name: data.title || prev.name }));
+                    setLoadingContent(false);
+                }
+            })
+            .catch(err => {
+                console.error("Failed to load json file", err);
+                if (active) setLoadingContent(false);
+            });
+
+        return () => { active = false; };
+    }, [file?.fullContentUrl, isOpen]);
+
+    const updateMutation = useUpdateWorkspaceContent(file?.folderId || 'root');
+
     if (!file) return null;
 
     const isContent = file.type === 'story' || file.type === 'poem';
@@ -75,10 +104,19 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
     const setField = <K extends keyof WorkspaceFile>(key: K, val: WorkspaceFile[K]) =>
         setDraft(prev => ({ ...prev, [key]: val }));
 
-    const handleSave = () => {
-        // TODO: wire to PATCH /api/workspace_update_file when implemented
-        // For now just exit edit mode with local draft changes visible
-        setEditMode(false);
+    const handleSave = async () => {
+        if (!file?.id) return;
+        try {
+            await updateMutation.mutateAsync({
+                file_id: file.id,
+                title: draft.name,
+                content: draft.fullContent
+            });
+            setEditMode(false);
+        } catch (error) {
+            console.error(error);
+            alert("Failed to save changes.");
+        }
     };
 
     const handleCancel = () => {
@@ -87,7 +125,7 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
     };
 
     // ── View helpers ─────────────────────────────────────
-    const d = editMode ? draft : file; // show draft in edit, file in view
+    const d = editMode ? draft : { ...file, fullContent: draft.fullContent, name: draft.name || file.name }; // show draft in edit, file in view
 
     return (
         <AnimatePresence>
@@ -258,7 +296,12 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
                                         />
                                     ) : (
                                         /* Read-only rendered HTML */
-                                        d.fullContent ? (
+                                        loadingContent ? (
+                                            <div className="flex flex-col items-center justify-center p-12 text-gray-400 gap-3">
+                                                <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                                                <p className="text-sm font-medium">Loading contents...</p>
+                                            </div>
+                                        ) : d.fullContent ? (
                                             <div
                                                 className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
                                                 dangerouslySetInnerHTML={{ __html: d.fullContent }}

@@ -215,7 +215,7 @@ export function Layout({ children }: LayoutProps) {
                             })}
 
                             {/* ── Book Previews widget ── */}
-                            <BookPreviewList />
+                            {/* <BookPreviewList /> */}
 
                             <div className="pt-4">
                                 <div className="px-3 mb-2">
@@ -239,6 +239,14 @@ export function Layout({ children }: LayoutProps) {
                                         </Link>
                                     );
                                 })}
+                                <Button style={{ border: "1px solid white", background: "black", cursor: "pointer", width: "100%", position: "relative", top: "12px" }}
+                                    onClick={
+                                        () => {
+                                            localStorage.removeItem("token");
+                                            window.location.href = "/auth/login";
+                                        }
+
+                                    }>Logout</Button>
                             </div>
                         </nav>
 
@@ -264,6 +272,7 @@ export function Layout({ children }: LayoutProps) {
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
                         {children}
                     </motion.div>
+
                 </div>
             </main>
         </div>

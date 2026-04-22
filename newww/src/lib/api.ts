@@ -6,8 +6,7 @@ import type { Chat, ChatMessage, SendMessageData } from '../types/chat';
 import type { Notification } from '../types/notification';
 import apiJson from '../lib/apiJson';
 import axios from 'axios';
-// Mock notifications data storage
-const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmdWxsX25hbWUiOiJSaW1wYSDwn4y7IiwiZW1haWwiOiJyaW1wYWJheWVuODQwQGdtYWlsLmNvbSIsInBoX2NvdW50cnlfY29kZSI6IiIsInBob25lX251bWJlciI6Ijg3NjgxOTQxNTciLCJyb2xlIjoidXNlciIsImlhdCI6MTc3MjU2MDUwNiwiZXhwIjoxNzc2MTYwNTA2fQ.HA08PfqUmQb7TAfriinu-EWmMr_THVwuPhOyV26NwfQ"
+
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 
@@ -486,48 +485,42 @@ export const createEvent = async (data: CreateEventData): Promise<Event> => {
 };
 
 // Users API Functions
-export const fetchUsers = async (): Promise<User[]> => {
-    await delay(500);
-    return [...mockUsers].sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+export const fetchUsers = async (page: number, limit: number): Promise<any> => {
+    // await delay(500);
+    try {
+        const response = await axios.post(`${API_BASE_URL}${apiJson.fetchUsers.url(page, limit)}`, {}, { headers: apiJson.fetchUsers.headers });
+        return response.data;
+    } catch (error: any) {
+        const errorData = JSON.parse(JSON.stringify(error.response?.data));
+        console.log("fetchUsers error payload:", errorData);
+        throw new Error(errorData?.message || "API Error");
+    }
 };
 
-export const createUser = async (data: CreateUserData): Promise<User> => {
-    await delay(800);
-
-    // Check if email already exists
-    if (mockUsers.some(u => u.email === data.email)) {
-        throw new Error('Email already exists');
+export const createUser = async (data: CreateUserData): Promise<User[]> => {
+    try {
+        const response = await axios.post(apiJson.createUser.url, data, { headers: apiJson.createUser.headers });
+        return response.data;
+    } catch (error) {
+        console.log(error);
+        return [];
     }
-
-    const newUser: User = {
-        id: `u${mockUsers.length + 1}`,
-        fullName: data.fullName,
-        email: data.email,
-        password: `hashed_${data.password}`, // Simulating password hashing
-        status: 'active',
-        createdAt: new Date().toISOString(),
-    };
-
-    mockUsers.unshift(newUser);
-    return newUser;
 };
 
 export const banUser = async (userId: string): Promise<User> => {
     await delay(400);
 
-    const user = mockUsers.find(u => u.id === userId);
+    const user = mockUsers.find(u => u.uid === userId);
     if (!user) throw new Error('User not found');
 
-    user.status = 'banned';
+    user.isActive = false;
     return user;
 };
 
 export const removeUser = async (userId: string): Promise<void> => {
     await delay(400);
 
-    const index = mockUsers.findIndex(u => u.id === userId);
+    const index = mockUsers.findIndex(u => u.uid === userId);
     if (index === -1) throw new Error('User not found');
 
     mockUsers.splice(index, 1);
@@ -602,33 +595,33 @@ export const sendMessage = async (data: SendMessageData): Promise<ChatMessage> =
     return newMessage;
 };
 
-export const createChat = async (writerId: string): Promise<Chat> => {
-    await delay(600);
+export const createChat = async (writerId: string): Promise<[]> => {
+    // await delay(600);
 
-    // Check if chat already exists
-    const existingChat = mockChats.find(c => c.writerId === writerId);
-    if (existingChat) {
-        return existingChat;
-    }
+    // // Check if chat already exists
+    // const existingChat = mockChats.find(c => c.writerId === writerId);
+    // if (existingChat) {
+    //     return existingChat;
+    // }
 
-    // Find writer from mockUsers
-    const writer = mockUsers.find(u => u.id === writerId);
-    if (!writer) {
-        throw new Error('Writer not found');
-    }
+    // // Find writer from mockUsers
+    // const writer = mockUsers.find(u => u.uid === writerId);
+    // if (!writer) {
+    //     throw new Error('Writer not found');
+    // }
 
-    const newChat: Chat = {
-        id: `chat${mockChats.length + 1}`,
-        writerId: writer.id,
-        writerName: writer.fullName,
-        writerEmail: writer.email,
-        unreadCount: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    };
+    // const newChat: Chat = {
+    //     id: `chat${mockChats.length + 1}`,
+    //     writerId: writer.uid,
+    //     writerName: writer.fullName,
+    //     writerEmail: writer.email,
+    //     unreadCount: 0,
+    //     createdAt: new Date().toISOString(),
+    //     updatedAt: new Date().toISOString(),
+    // };
 
-    mockChats.unshift(newChat);
-    return newChat;
+    // mockChats.unshift(newChat);
+    return [];
 };
 
 // Notifications API Functions

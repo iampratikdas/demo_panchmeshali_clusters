@@ -83,3 +83,23 @@ export function useDeleteWorkspaceFile(folder_id: string) {
         },
     });
 }
+
+// ── useUpdateWorkspaceContent ─────────────────────────────────────────────────
+export interface UpdateVars {
+    file_id: string;
+    title?: string;
+    content?: string;
+}
+
+export function useUpdateWorkspaceContent(folder_id: string) {
+    const qc = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ file_id, title, content }: UpdateVars) => 
+            import('../lib/workspaceFileApi').then(m => m.apiUpdateWorkspaceContent(file_id, title, content)),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: filesQueryKey(folder_id) });
+            qc.invalidateQueries({ queryKey: STORAGE_KEY });
+        },
+    });
+}

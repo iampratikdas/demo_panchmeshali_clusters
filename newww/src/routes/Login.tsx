@@ -30,6 +30,8 @@ const Login: React.FC = () => {
                     successPlay()
                     console.log("response======================>", res)
                     localStorage.setItem("token", res.data.tokenAdvanced);
+                    localStorage.setItem("name", res.data.user.full_name);
+                    localStorage.setItem("email", res.data.user.email);
                     window.location.href = "/"
                 } else {
                     // setError(true)

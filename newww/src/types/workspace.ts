@@ -20,6 +20,7 @@ export interface WorkspaceFile {
     contentType?: string; // e.g. 'Event Submission', 'Content Submission'
     excerpt?: string;     // short preview of body content
     // Rich content fields (for preview modal)
+    fullContentUrl?: string; // URL for fetching the full json content
     fullContent?: string; // full HTML content body
     category?: string;
     publisher?: string;

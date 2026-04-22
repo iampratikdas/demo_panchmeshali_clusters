@@ -10,7 +10,23 @@ const apiJson = {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem("token")}`
         },
-    }
+    },
+    fetchUsers: {
+        url: (page: number, limit: number) => `/user_list?page=${page}&limit=${limit}`,
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem("token")}`
+        },
+    },
+    createUser: {
+        url: "/create_user",
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem("token")}`
+        },
+    },
 };
 
 export default apiJson;

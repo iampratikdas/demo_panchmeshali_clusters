@@ -4,8 +4,8 @@ import type { ContentStatus } from '../types/content';
 // User state
 export const currentUserAtom = atom({
     id: 'user1',
-    name: 'John Doe',
-    email: 'john@example.com',
+    name: localStorage.getItem("name"),
+    email: localStorage.getItem("email"),
     isAdmin: true,   // set false to test writer-only view
 });
 
