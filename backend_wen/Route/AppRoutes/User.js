@@ -25,7 +25,7 @@ const { findOneUserByEmail, findOneUserById, UserInsert, UserUpdate } = require(
 
 const initializes = require("../../resuable_functions/Initializer.js")
 class User {
-    async Routes(router, userController, userFunc) {
+    async Routes(router, userController, userFunc, paginationFunc) {
         router.get('/auth/google/callback',
             passport.authenticate('google', { failureRedirect: '/', session: false }),
             (req, res) => userController.signupbygoogle(req, res)
@@ -70,6 +70,11 @@ class User {
         router.use("/upload-image", (req, res, next) => MethodValidate(req, res, next, "POST"), multer().single("image"), (req, res) => userController.uploadImage(req, res));
 
         //+++++++++++++++++++++++++++++NewApis+++++++++++++++++++++++++++++++++++++++++
+        // New Global Api for  Search list
+        router.use("/search_list/:search_type", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && userController.searchList(req, res, token_data, paginationFunc)).catch((data) => {
+
+            return res.status(404).json({ status: 404, message: data.message, data: {} });
+        }));
 
         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

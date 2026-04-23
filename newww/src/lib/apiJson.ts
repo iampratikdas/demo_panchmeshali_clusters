@@ -27,6 +27,14 @@ const apiJson = {
             'Authorization': `Bearer ${localStorage.getItem("token")}`
         },
     },
+    updateUser: {
+        url: "/update_user",
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem("token")}`
+        },
+    },
 };
 
 export default apiJson;

@@ -148,35 +148,35 @@ const mockMessages: ChatMessage[] = [
 
 
 // Mock users data storage
-const mockUsers: User[] = [
-    {
-        id: 'u1',
-        fullName: 'John Doe',
-        email: 'john.doe@example.com',
-        password: 'hashed_password_123',
-        status: 'active',
-        createdAt: '2025-01-15T10:00:00Z',
-        lastLogin: '2025-11-22T08:30:00Z',
-    },
-    {
-        id: 'u2',
-        fullName: 'Jane Smith',
-        email: 'jane.smith@example.com',
-        password: 'hashed_password_456',
-        status: 'active',
-        createdAt: '2025-02-20T14:30:00Z',
-        lastLogin: '2025-11-21T16:45:00Z',
-    },
-    {
-        id: 'u3',
-        fullName: 'Mike Johnson',
-        email: 'mike.johnson@example.com',
-        password: 'hashed_password_789',
-        status: 'banned',
-        createdAt: '2025-03-10T09:15:00Z',
-        lastLogin: '2025-10-05T12:20:00Z',
-    },
-];
+// const mockUsers: User[] = [
+//     {
+//         id: 'u1',
+//         fullName: 'John Doe',
+//         email: 'john.doe@example.com',
+//         password: 'hashed_password_123',
+//         status: 'active',
+//         createdAt: '2025-01-15T10:00:00Z',
+//         lastLogin: '2025-11-22T08:30:00Z',
+//     },
+//     {
+//         id: 'u2',
+//         fullName: 'Jane Smith',
+//         email: 'jane.smith@example.com',
+//         password: 'hashed_password_456',
+//         status: 'active',
+//         createdAt: '2025-02-20T14:30:00Z',
+//         lastLogin: '2025-11-21T16:45:00Z',
+//     },
+//     {
+//         id: 'u3',
+//         fullName: 'Mike Johnson',
+//         email: 'mike.johnson@example.com',
+//         password: 'hashed_password_789',
+//         status: 'banned',
+//         createdAt: '2025-03-10T09:15:00Z',
+//         lastLogin: '2025-10-05T12:20:00Z',
+//     },
+// ];
 
 
 // Mock event data storage
@@ -507,23 +507,33 @@ export const createUser = async (data: CreateUserData): Promise<User[]> => {
     }
 };
 
-export const banUser = async (userId: string): Promise<User> => {
-    await delay(400);
+// export const banUser = async (userId: string): Promise<User> => {
+//     await delay(400);
 
-    const user = mockUsers.find(u => u.uid === userId);
-    if (!user) throw new Error('User not found');
+//     const user = mockUsers.find(u => u.uid === userId);
+//     if (!user) throw new Error('User not found');
 
-    user.isActive = false;
-    return user;
-};
+//     user.isActive = false;
+//     return user;
+// };
 
-export const removeUser = async (userId: string): Promise<void> => {
-    await delay(400);
+// export const removeUser = async (userId: string): Promise<void> => {
+//     await delay(400);
 
-    const index = mockUsers.findIndex(u => u.uid === userId);
-    if (index === -1) throw new Error('User not found');
+//     const index = mockUsers.findIndex(u => u.uid === userId);
+//     if (index === -1) throw new Error('User not found');
 
-    mockUsers.splice(index, 1);
+//     mockUsers.splice(index, 1);
+// };
+
+export const updateUser = async (userId: string): Promise<any> => {
+    try {
+        const response = await axios.post(apiJson.updateUser.url, { uid: userId }, { headers: apiJson.updateUser.headers });
+        return response.data;
+    } catch (error) {
+        console.log(error);
+        return [];
+    }
 };
 
 export const sendEmail = async (emailData: EmailData): Promise<{ success: boolean; message: string }> => {

@@ -22,6 +22,7 @@ class Route {
     constructor() {
         // this.newres= res;
         this.userFunc = GlobalModelFunctions.modelsFunctions();
+        this.paginationFunc = GlobalModelFunctions.pagination();
         this.router = express.Router();
         this.initializeRoutes();
     }
@@ -40,7 +41,7 @@ class Route {
     //This Route is for User Controller
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     initializeUserRoutes(userController) {
-        new User().Routes(this.router, userController, this.userFunc)
+        new User().Routes(this.router, userController, this.userFunc, this.paginationFunc)
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //This Route is for Content Controller

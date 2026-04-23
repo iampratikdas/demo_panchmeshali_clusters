@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchUsers, createUser, banUser, removeUser, sendEmail } from '../lib/api';
+import { fetchUsers, createUser, updateUser, sendEmail } from '../lib/api';
 import type { EmailData, User } from '../types/user';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Input } from '../ui/input';
@@ -75,7 +75,7 @@ export default function Users() {
     });
 
     const banMutation = useMutation({
-        mutationFn: (userId: string) => banUser(userId),
+        mutationFn: (userId: string) => updateUser(userId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             toast({ title: 'Success!', description: 'User banned successfully.' });
@@ -83,7 +83,7 @@ export default function Users() {
     });
 
     const removeMutation = useMutation({
-        mutationFn: (userId: string) => removeUser(userId),
+        mutationFn: (userId: string) => updateUser(userId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             toast({ title: 'Success!', description: 'User removed successfully.' });
@@ -215,14 +215,14 @@ export default function Users() {
                             className="pl-10"
                         />
                     </div>
-                    <Button
+                    {/* <Button
                         variant="outline"
                         onClick={toggleSortOrder}
                         className="gap-2"
                     >
                         <ArrowUpDown className="h-4 w-4" />
                         Joined {sortOrder === 'desc' ? '↓ (Newest)' : '↑ (Oldest)'}
-                    </Button>
+                    </Button> */}
                 </div>
             </div>
 
