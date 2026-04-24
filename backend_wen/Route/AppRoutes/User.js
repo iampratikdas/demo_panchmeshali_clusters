@@ -71,10 +71,10 @@ class User {
 
         //+++++++++++++++++++++++++++++NewApis+++++++++++++++++++++++++++++++++++++++++
         // New Global Api for  Search list
-        router.use("/search_list/:search_type", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && userController.searchList(req, res, token_data, paginationFunc)).catch((data) => {
+        // router.use("/search_list/:search_type", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && userController.searchList(req, res, token_data, paginationFunc)).catch((data) => {
 
-            return res.status(404).json({ status: 404, message: data.message, data: {} });
-        }));
+        //     return res.status(404).json({ status: 404, message: data.message, data: {} });
+        // }));
 
         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

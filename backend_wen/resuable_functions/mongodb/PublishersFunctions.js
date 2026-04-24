@@ -21,6 +21,12 @@ class PublishersFunctions {
     async findAllPublishers(data = {}) {
         return await this.publishermodel.find(data).sort({ createdAt: -1 }).lean()
     }
+    async publisherCount(data) {
+        return await this.publishermodel.find(data).countDocuments().lean()
+    }
+    async publisherListByData(data, skip = 0, limit = 0) {
+        return await this.publishermodel.find(data).skip(skip).limit(limit).sort({ createdAt: -1 }).lean()
+    }
     async getAssignedPublishers(writer_uid) {
         try {
             return await this.assignedPublishersModel.aggregate([

@@ -22,6 +22,12 @@ class EventFunctions {
     async findAllEvents(data= {}){
         return await this.eventmodel.find(data).sort({ createdAt: -1 }).lean()
     }
+    async eventCount(data) {
+        return await this.eventmodel.find(data).countDocuments().lean()
+    }
+    async eventListByData(data, skip = 0, limit = 0) {
+        return await this.eventmodel.find(data).skip(skip).limit(limit).sort({ createdAt: -1 }).lean()
+    }
      async deleteEvent(data) {
         return await this.eventmodel.deleteOne(data).lean()
     }

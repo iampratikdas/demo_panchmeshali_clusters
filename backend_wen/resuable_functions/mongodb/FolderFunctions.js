@@ -14,12 +14,17 @@ class FolderFunctions {
 
     // ── Read ────────────────────────────────────────────────────────────────
 
-    /** Return all non-deleted folders owned by a user */
     async findAllByUser(uid) {
         return await this.folderModel
             .find({ uid, is_deleted: false })
             .sort({ createdAt: 1 })
             .lean();
+    }
+    async folderCount(data) {
+        return await this.folderModel.find({...data, is_deleted: false}).countDocuments().lean()
+    }
+    async folderListByData(data, skip = 0, limit = 0) {
+        return await this.folderModel.find({...data, is_deleted: false}).skip(skip).limit(limit).sort({ createdAt: 1 }).lean()
     }
 
     /** Return a single folder by its folder_id */

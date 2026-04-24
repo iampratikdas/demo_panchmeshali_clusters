@@ -714,47 +714,7 @@ class UserController {
     }
   }
 
-  async searchList(req, res, token_data, paginationFunc) {
-    try {
-      let paginationObj = await paginationFunc(req);
-      const { skip, limit, page } = paginationObj;
-      let listCounts = 0;
-      let data = [];
-      let filter = req.body.filter;
 
-      switch (req.query.search) {
-        case "admin_search_users":
-          listCounts = await this.userFunc.userCount(req.body.filter);
-          data = await this.userFunc.userListByData(req.body.filter, skip, limit);
-          break;
-        case "admin_search_contentlist":
-          listCounts = await this.contentFunc.contentCount(req.body.filter);
-          data = await this.contentFunc.contentListByData(req.body.filter, skip, limit);
-          break;
-        default:
-          return res.status(400).json({ status: 400, message: "Invalid search", data: {} });
-      }
-      const totalPages = Math.ceil(listCounts / limit);
-      return res
-        .status(201)
-        .json({
-          status: 201, message: `${req.query.search} list fetched`,
-          data: data,
-          pagination: {
-            listCounts,
-            totalPages,
-            currentPage: page,
-            pageSize: limit,
-            next: users.length === 0 ? false : page === totalPages ? false : true
-          }
-        });
-    } catch (error) {
-      console.error("Error during signup:", error);
-      res
-        .status(500)
-        .json({ status: 500, message: "Internal server error", data: {} });
-    }
-  }
 }
 
 module.exports = UserController;

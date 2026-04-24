@@ -8,6 +8,7 @@ const VotingController = require("../controllers/VotingController.js");
 const EventController = require("../controllers/EventController.js");
 const PublisherController = require("../controllers/PublisherController.js");
 const FolderController = require("../controllers/FolderController.js");
+const SearchController = require("../controllers/SearchController.js");
 
 const User = require("./AppRoutes/User.js")
 const Content = require("./AppRoutes/ContentRoutes.js")
@@ -15,6 +16,7 @@ const Voting = require("./AppRoutes/VotingRoutes.js");
 const Events = require("./AppRoutes/EventRoutes.js")
 const Publisher = require("./AppRoutes/PublisherRoutes.js")
 const Folder = require("./AppRoutes/FolderRoutes.js")
+const Search = require("./AppRoutes/SearchRoutes.js")
 const GlobalModelFunctions = require("../resuable_functions/mongodb/GlobalModelFunctions.js")
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -22,7 +24,7 @@ class Route {
     constructor() {
         // this.newres= res;
         this.userFunc = GlobalModelFunctions.modelsFunctions();
-        this.paginationFunc = GlobalModelFunctions.pagination();
+        this.paginationFunc = GlobalModelFunctions;
         this.router = express.Router();
         this.initializeRoutes();
     }
@@ -35,6 +37,7 @@ class Route {
         this.initializeEventsRoutes(new EventController(this.userFunc));  //event routes initializer
         this.initializePublisherRoutes(new PublisherController(this.userFunc));  //publisher routes initializer
         this.initializeFolderRoutes(new FolderController(this.userFunc));  //folder routes initializer
+        this.initializeSearchRoutes(new SearchController(this.userFunc));  //search routes initializer
     }
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -71,6 +74,12 @@ class Route {
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     initializeFolderRoutes(folderController) {
         new Folder().Routes(this.router, folderController, this.userFunc)
+    }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //This Route is for Search Controller
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    initializeSearchRoutes(searchController) {
+        new Search().Routes(this.router, searchController, this.userFunc, this.paginationFunc)
     }
 
 }

@@ -22,19 +22,20 @@ class GlobalModelFunctions {
                 };
         }
         pagination(req) {
-                if (req) {
-                        let page = parseInt(req.query.page) || 1;          // default page 1
-                        let limit = parseInt(req.query.limit) || 100;       // default 10 per page
-                        if (page < 1) page = 1;
-                        if (limit < 1) limit = 10;
-                        const skip = (page - 1) * limit;
-                        return {
-                                skip, limit, page
-                        }
-                }
+                // if (req) {
+                let page = parseInt(req.query.page) || 1;          // default page 1
+                let limit = parseInt(req.query.limit) || 100;       // default 10 per page
+                if (page < 1) page = 1;
+                if (limit < 1) limit = 10;
+                const skip = (page - 1) * limit;
                 return {
-                        skip: 0, limit: 0, page: 0
+                        skip, limit, page
                 }
+                // } else {
+                //         return {
+                //                 skip: 0, limit: 0, page: 0
+                //         }
+                // }
         }
 
 }

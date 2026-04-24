@@ -25,6 +25,12 @@ class VoteFunctions {
     async findOneEvenTVoteOne(data) {
         return await this.votemodel.findOne(data).lean()
     }
+    async voteCount(data) {
+        return await this.votemodel.find(data).countDocuments().lean()
+    }
+    async voteListByData(data, skip = 0, limit = 0) {
+        return await this.votemodel.find(data).skip(skip).limit(limit).lean()
+    }
     async findContentListAggregates(data) {
         // console.log("result====>", data)
         return await this.contentmodel.aggregate(data)

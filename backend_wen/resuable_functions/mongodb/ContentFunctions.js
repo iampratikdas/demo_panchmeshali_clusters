@@ -22,6 +22,9 @@ class ContentFunctions {
     async findOneEvenTContentAll(data, skip = 0, limit = 0) {
         return await this.contentmodel.find(data).skip(skip).limit(limit).lean()
     }
+    async contentListByData(data, skip = 0, limit = 0) {
+        return await this.contentmodel.find(data).skip(skip).limit(limit).lean()
+    }
     async findOneEvenTContentOne(data) {
         return await this.contentmodel.findOne(data).lean()
     }
