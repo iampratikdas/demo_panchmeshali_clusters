@@ -5,8 +5,8 @@ const initializes = require("../../resuable_functions/Initializer.js");
 class SearchRoutes {
     Routes(router, searchController, modelFuncs, paginationFunc) {
         // Global API for Search List using the dedicated SearchController
-        router.get("/search_list/:search_type",
-            (req, res, next) => MethodValidate(req, res, next, "get"),
+        router.post("/search_list/:search_type",
+            (req, res, next) => MethodValidate(req, res, next, "post"),
             async (req, res) => await initializes(req, res, modelFuncs)
                 .then((token_data) => token_data && searchController.searchList(req, res, token_data, paginationFunc))
                 .catch((error) => {

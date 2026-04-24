@@ -201,6 +201,10 @@
  *     description: Content management APIs
  *   - name: User
  *     description: User profile and auth APIs
+ *   - name: Publisher
+ *     description: Publisher APIs
+ *   - name: Search
+ *     description: Global search and filtering APIs
  */
 
 /**
@@ -501,3 +505,56 @@
  *       500:
  *         description: Internal server error
  */
+
+/**
+ * @swagger
+ * /search_list/{search_type}:
+ *   get:
+ *     summary: Fetch a list of items based on the search type
+ *     tags: [Search]
+ *     parameters:
+ *       - in: path
+ *         name: search_type
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Type of search (e.g., admin_search_users, admin_search_contentlist, etc.)
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       201:
+ *         description: List fetched successfully
+ *       400:
+ *         description: Invalid search type
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /search_func_call/{page_name}:
+ *   get:
+ *     summary: Fetch the relevant search function name for a specific page
+ *     tags: [Search]
+ *     parameters:
+ *       - in: path
+ *         name: page_name
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Name of the page (e.g., users_management)
+ *     responses:
+ *       200:
+ *         description: Search function mapping fetched successfully
+ *       400:
+ *         description: Invalid page name
+ *       500:
+ *         description: Internal server error
+ */
+

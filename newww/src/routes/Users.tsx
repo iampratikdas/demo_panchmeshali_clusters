@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUsers, createUser, updateUser, sendEmail } from '../lib/api';
 import type { EmailData, User } from '../types/user';
@@ -18,6 +18,7 @@ export default function Users() {
     const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
     const [emailData, setEmailData] = useState({ subject: '', message: '' });
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc'); // Default: newest first
     // const pageSize = 1;
@@ -40,9 +41,16 @@ export default function Users() {
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
     const { data: fetchResponse, isLoading, error: fetchUserError, isError } = useQuery({
-        queryKey: ['users', currentPage, pageSize],
-        queryFn: () => fetchUsers(currentPage, pageSize),
+        queryKey: ['users', currentPage, pageSize, debouncedSearchQuery],
+        queryFn: () => fetchUsers(currentPage, pageSize, debouncedSearchQuery),
     });
     console.log("fetchUserError============>", fetchUserError, isError);
 
@@ -127,17 +135,12 @@ export default function Users() {
         });
     };
 
-    // Client-side filtering & sorting on the current paginated result
-    const filteredAndSortedUsers = users
-        .filter(user =>
-            user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user.email?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-        .sort((a, b) => {
-            const dateA = new Date(a.createdAt || 0).getTime();
-            const dateB = new Date(b.createdAt || 0).getTime();
-            return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-        });
+    // Client-side sorting on the current paginated result from server
+    const filteredAndSortedUsers = [...users].sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
 
     const totalPages = Math.max(1, serverTotalPages);
     const paginatedUsers = filteredAndSortedUsers;

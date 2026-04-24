@@ -35,6 +35,14 @@ const apiJson = {
             'Authorization': `Bearer ${localStorage.getItem("token")}`
         },
     },
+    searchList: {
+        url: (searchType: string, page: number, limit: number) => `/search_list/${searchType}?page=${page}&limit=${limit}`,
+        method: "GET",
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem("token")}`
+        },
+    },
 };
 
 export default apiJson;

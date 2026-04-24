@@ -485,13 +485,20 @@ export const createEvent = async (data: CreateEventData): Promise<Event> => {
 };
 
 // Users API Functions
-export const fetchUsers = async (page: number, limit: number): Promise<any> => {
+export const fetchUsers = async (page: number, limit: number, searchQuery: string = ''): Promise<any> => {
     // await delay(500);
     try {
-        const response = await axios.post(`${API_BASE_URL}${apiJson.fetchUsers.url(page, limit)}`, {}, { headers: apiJson.fetchUsers.headers });
+        const filter = searchQuery ? {
+            $or: [
+                { full_name: { $regex: searchQuery, $options: "i" } },
+                { email: { $regex: searchQuery, $options: "i" } }
+            ]
+        } : {};
+
+        const response = await axios.post(`${API_BASE_URL}${apiJson.searchList.url('admin_search_users', page, limit)}`, { filter }, { headers: apiJson.searchList.headers });
         return response.data;
     } catch (error: any) {
-        const errorData = JSON.parse(JSON.stringify(error.response?.data));
+        const errorData = JSON.parse(JSON.stringify(error.response?.data || {}));
         console.log("fetchUsers error payload:", errorData);
         throw new Error(errorData?.message || "API Error");
     }
