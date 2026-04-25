@@ -384,7 +384,7 @@ export default function Users() {
                                 <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={selectAllUsers}>Select All</Button>
                                 <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => { setShowEmailDialog(true); selectAllUsers(); }}>
                                     <Mail className="h-4 w-4 mr-2" />
-                                    Email All
+                                    {localStorage.getItem("role") === "admin" ? `Email All` : `Login to Email All`}
                                 </Button>
                             </div>
 
