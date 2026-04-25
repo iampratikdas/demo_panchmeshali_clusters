@@ -485,15 +485,35 @@ export const createEvent = async (data: CreateEventData): Promise<Event> => {
 };
 
 // Users API Functions
-export const fetchUsers = async (page: number, limit: number, searchQuery: string = ''): Promise<any> => {
-    // await delay(500);
+export const fetchUsers = async (page: number, limit: number, queryFilters: any = {}): Promise<any> => {
     try {
-        const filter = searchQuery ? {
-            $or: [
-                { full_name: { $regex: searchQuery, $options: "i" } },
-                { email: { $regex: searchQuery, $options: "i" } }
-            ]
-        } : {};
+        const filter: any = {};
+
+        if (queryFilters.searchQuery) {
+            filter.$or = [
+                { full_name: { $regex: queryFilters.searchQuery, $options: "i" } },
+                { email: { $regex: queryFilters.searchQuery, $options: "i" } }
+            ];
+        }
+
+        if (queryFilters.email) filter.email = { $regex: queryFilters.email, $options: "i" };
+        if (queryFilters.full_name) filter.full_name = { $regex: queryFilters.full_name, $options: "i" };
+        if (queryFilters.phone_number) filter.phone_number = { $regex: queryFilters.phone_number, $options: "i" };
+        if (queryFilters.uid) filter.uid = { $regex: queryFilters.uid, $options: "i" };
+
+        if (queryFilters.isActive && queryFilters.isActive !== 'all') {
+            filter.isActive = queryFilters.isActive === 'true';
+        }
+
+        if (queryFilters.is_deleted && queryFilters.is_deleted !== 'all') {
+            filter.is_deleted = queryFilters.is_deleted === 'true';
+        }
+
+        if (queryFilters.role && queryFilters.role !== 'All' && queryFilters.role !== 'both') {
+            filter.role = queryFilters.role.toLowerCase();
+        } else if (queryFilters.role === 'both') {
+            filter.role = { $in: ['admin', 'user'] };
+        }
 
         const response = await axios.post(`${API_BASE_URL}${apiJson.searchList.url('admin_search_users', page, limit)}`, { filter }, { headers: apiJson.searchList.headers });
         return response.data;

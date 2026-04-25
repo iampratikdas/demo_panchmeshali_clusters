@@ -4,6 +4,7 @@ import { fetchUsers, createUser, updateUser, sendEmail } from '../lib/api';
 import type { EmailData, User } from '../types/user';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Input } from '../ui/input';
+import { Select } from '../ui/select';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
@@ -19,10 +20,24 @@ export default function Users() {
     const [emailData, setEmailData] = useState({ subject: '', message: '' });
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+    // UI Filters
+    const [filterEmail, setFilterEmail] = useState('');
+    const [filterFullName, setFilterFullName] = useState('');
+    const [filterPhone, setFilterPhone] = useState('');
+    const [filterUid, setFilterUid] = useState('');
+    const [filterIsActive, setFilterIsActive] = useState('all');
+    const [filterIsDeleted, setFilterIsDeleted] = useState('all');
+    const [filterRole, setFilterRole] = useState('All');
+
+    const [debouncedFilters, setDebouncedFilters] = useState({
+        email: '', full_name: '', phone_number: '', uid: '', isActive: 'all', is_deleted: 'all', role: 'All'
+    });
+
     const [currentPage, setCurrentPage] = useState(1);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc'); // Default: newest first
     // const pageSize = 1;
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(5);
 
     const [formData, setFormData] = useState<User>({
         full_name: '',
@@ -44,13 +59,22 @@ export default function Users() {
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearchQuery(searchQuery);
+            setDebouncedFilters({
+                email: filterEmail,
+                full_name: filterFullName,
+                phone_number: filterPhone,
+                uid: filterUid,
+                isActive: filterIsActive,
+                is_deleted: filterIsDeleted,
+                role: filterRole
+            });
         }, 500);
         return () => clearTimeout(timer);
-    }, [searchQuery]);
+    }, [searchQuery, filterEmail, filterFullName, filterPhone, filterUid, filterIsActive, filterIsDeleted, filterRole]);
 
     const { data: fetchResponse, isLoading, error: fetchUserError, isError } = useQuery({
-        queryKey: ['users', currentPage, pageSize, debouncedSearchQuery],
-        queryFn: () => fetchUsers(currentPage, pageSize, debouncedSearchQuery),
+        queryKey: ['users', currentPage, pageSize, debouncedSearchQuery, debouncedFilters],
+        queryFn: () => fetchUsers(currentPage, pageSize, { searchQuery: debouncedSearchQuery, ...debouncedFilters }),
     });
     console.log("fetchUserError============>", fetchUserError, isError);
 
@@ -155,6 +179,18 @@ export default function Users() {
         setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
         setCurrentPage(1);
     };
+    const clearAllFilters = () => {
+        setSearchQuery('');
+        setFilterEmail('');
+        setFilterFullName('');
+        setFilterPhone('');
+        setFilterUid('');
+        setFilterIsActive('all');
+        setFilterIsDeleted('all');
+        setFilterRole('All');
+        setCurrentPage(1);
+    };
+
     if (isError) {
         return <div className="flex items-center justify-center h-screen">
             <div className="text-center">
@@ -165,12 +201,12 @@ export default function Users() {
     }
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-                <div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="w-full sm:w-auto">
                     <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">Users Management</h1>
                     <p className="text-sm sm:text-base text-muted-foreground">Manage users, send emails, and moderate accounts</p>
                 </div>
-                <Button onClick={() => setShowCreateForm(!showCreateForm)} className="h-12 gap-2">
+                <Button onClick={() => setShowCreateForm(!showCreateForm)} className="h-12 w-full sm:w-auto gap-2">
                     <Plus className="h-4 w-4" />
                     {showCreateForm ? 'Cancel' : 'Create User'}
                 </Button>
@@ -212,19 +248,83 @@ export default function Users() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="text"
-                            placeholder="Search by name or email..."
+                            placeholder="Global search by name or email..."
                             value={searchQuery}
                             onChange={(e) => handleSearchChange(e.target.value)}
                             className="pl-10"
                         />
                     </div>
-                    {/* <Button
-                        variant="outline"
-                        onClick={toggleSortOrder}
-                        className="gap-2"
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    <Input
+                        placeholder="Filter by Email"
+                        value={filterEmail}
+                        onChange={(e) => { setFilterEmail(e.target.value); setCurrentPage(1); }}
+                    />
+                    <Input
+                        placeholder="Filter by Full Name"
+                        value={filterFullName}
+                        onChange={(e) => { setFilterFullName(e.target.value); setCurrentPage(1); }}
+                    />
+                    <Input
+                        placeholder="Filter by Phone Number"
+                        value={filterPhone}
+                        onChange={(e) => { setFilterPhone(e.target.value); setCurrentPage(1); }}
+                    />
+                    <Input
+                        placeholder="Filter by UID"
+                        value={filterUid}
+                        onChange={(e) => { setFilterUid(e.target.value); setCurrentPage(1); }}
+                    />
+
+                    <Select
+                        value={filterIsActive}
+                        onChange={(e) => { setFilterIsActive(e.target.value); setCurrentPage(1); }}
+                        options={[
+                            { value: 'all', label: 'All Status' },
+                            { value: 'true', label: 'Active Only' },
+                            { value: 'false', label: 'Inactive Only' }
+                        ]}
+                    />
+
+                    <Select
+                        value={filterIsDeleted}
+                        onChange={(e) => { setFilterIsDeleted(e.target.value); setCurrentPage(1); }}
+                        options={[
+                            { value: 'all', label: 'All (Deleted/Not)' },
+                            { value: 'true', label: 'Deleted Only' },
+                            { value: 'false', label: 'Not Deleted' }
+                        ]}
+                    />
+
+                    <Select
+                        value={filterRole}
+                        onChange={(e) => { setFilterRole(e.target.value); setCurrentPage(1); }}
+                        options={[
+                            { value: 'All', label: 'All Roles' },
+                            { value: 'admin', label: 'Admin' },
+                            { value: 'user', label: 'User' },
+                            { value: 'both', label: 'Admin & User' }
+                        ]}
+                    />
+
+                    <Button
+                        // variant="outline"
+                        onClick={clearAllFilters}
+                        // style={{ backgroundColor: "#eb8741 !important", color: "#030202ff !important" }}
+                        // className="w-full hover:text-white" 
+                        style={{ backgroundColor: "#cb8959ff", color: "#ffffffff", cursor: "pointer" }}
+                        className="w-full "
                     >
-                        <ArrowUpDown className="h-4 w-4" />
-                        Joined {sortOrder === 'desc' ? '↓ (Newest)' : '↑ (Oldest)'}
+                        Clear All Filter
+                    </Button>
+                    {/* <Button
+                        onClick={clearAllFilters}
+                        style={{ backgroundColor: '#eb8741', color: '#030202' }}
+                        className="w-full border-0 font-semibold shadow-md hover:opacity-90"
+                    >
+                        Clear All Filters
                     </Button> */}
                 </div>
             </div>
@@ -234,13 +334,13 @@ export default function Users() {
                 <Card className="bg-primary/5 border-primary">
                     <CardContent className="py-4">
                         <div className="flex items-center justify-between flex-wrap gap-4">
-                            <p className="text-sm font-medium">{selectedUsers.length} user(s) selected</p>
-                            <div className="flex gap-2">
-                                <Button variant="outline" size="sm" onClick={() => { setShowEmailDialog(true); }}>
+                            <p className="text-sm font-medium w-full sm:w-auto text-center sm:text-left">{selectedUsers.length} user(s) selected</p>
+                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => { setShowEmailDialog(true); }}>
                                     <Mail className="h-4 w-4 mr-2" />
                                     Email Selected
                                 </Button>
-                                <Button variant="outline" size="sm" onClick={() => setSelectedUsers([])}>Clear Selection</Button>
+                                <Button className="w-full sm:w-auto" style={{ backgroundColor: "#eb8741 !important", color: "#fff !important" }} variant="outline" size="sm" onClick={() => setSelectedUsers([])}>Clear Selection</Button>
                             </div>
                         </div>
                     </CardContent>
@@ -279,12 +379,33 @@ export default function Users() {
             ) : (
                 <>
                     {filteredAndSortedUsers.length > 0 && (
-                        <div className="flex justify-between items-center mb-4">
-                            <Button variant="outline" size="sm" onClick={selectAllUsers}>Select All</Button>
-                            <Button variant="outline" size="sm" onClick={() => { setShowEmailDialog(true); selectAllUsers(); }}>
-                                <Mail className="h-4 w-4 mr-2" />
-                                Email All
-                            </Button>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={selectAllUsers}>Select All</Button>
+                                <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => { setShowEmailDialog(true); selectAllUsers(); }}>
+                                    <Mail className="h-4 w-4 mr-2" />
+                                    Email All
+                                </Button>
+                            </div>
+
+                            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                                <span className="text-sm text-muted-foreground whitespace-nowrap">Rows per page:</span>
+                                <Select
+                                    className="w-[80px] h-9 cursor-pointer  rounded-md"
+                                    style={{ border: "1px solid #cb8959" }}
+                                    value={pageSize.toString()}
+                                    onChange={(e) => {
+                                        setPageSize(Number(e.target.value));
+                                        setCurrentPage(1);
+                                    }}
+                                    options={[
+                                        { value: '5', label: '5' },
+                                        { value: '10', label: '10' },
+                                        { value: '20', label: '20' },
+                                        { value: '50', label: '50' }
+                                    ]}
+                                />
+                            </div>
                         </div>
                     )}
 
@@ -292,23 +413,23 @@ export default function Users() {
                         {paginatedUsers.map((user: User) => (
                             <Card key={user.uid} className={`hover:shadow-lg transition-shadow ${selectedUsers.includes(user.uid || '') ? 'border-primary' : ''}`}>
                                 <CardHeader>
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex items-start gap-3 flex-1">
-                                            <input type="checkbox" checked={selectedUsers.includes(user.uid || '')} onChange={() => toggleUserSelection(user.uid || '')} className="mt-1 h-4 w-4" />
-                                            <div className="flex-1">
-                                                <CardTitle className="text-lg">{user.full_name}</CardTitle>
-                                                <CardDescription className="mt-1">{user.email}</CardDescription>
+                                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                                        <div className="flex items-start gap-3 flex-1 w-full">
+                                            <input type="checkbox" checked={selectedUsers.includes(user.uid || '')} onChange={() => toggleUserSelection(user.uid || '')} className="mt-1 h-4 w-4 flex-shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                                <CardTitle className="text-lg truncate block pb-1">{user.full_name}</CardTitle>
+                                                <CardDescription className="w-full break-all whitespace-normal text-sm block">{user.email}</CardDescription>
                                             </div>
                                         </div>
                                         {user.isActive ? (
-                                            <Badge className="bg-green-500 flex-shrink-0">
+                                            <Badge className="bg-green-500 flex-shrink-0 self-start">
                                                 <CheckCircle2 className="h-3 w-3 mr-1" />
                                                 Active
                                             </Badge>
                                         ) : (
-                                            <Badge variant="destructive" className="flex-shrink-0">
+                                            <Badge variant="destructive" className="flex-shrink-0 self-start">
                                                 <XCircle className="h-3 w-3 mr-1" />
-                                                Banned
+                                                In Active
                                             </Badge>
                                         )}
                                     </div>
@@ -320,20 +441,20 @@ export default function Users() {
                                         {user.lastLogin && <p>Last login: {new Date(user.lastLogin).toLocaleDateString()}</p>}
                                     </div>
 
-                                    <div className="flex gap-2 flex-wrap">
-                                        <Button variant="outline" size="sm" onClick={() => handleSendEmail([user.uid || ''])}>
+                                    <div className="flex gap-2 flex-wrap items-center mt-4">
+                                        <Button variant="outline" size="sm" className="flex-1 min-w-[80px]" onClick={() => handleSendEmail([user.uid || ''])}>
                                             <Mail className="h-4 w-4 mr-2" />
                                             Email
                                         </Button>
                                         {user.isActive ? (
-                                            <Button variant="outline" size="sm" onClick={() => banMutation.mutate(user.uid || '')} disabled={banMutation.isPending}>
+                                            <Button variant="outline" size="sm" className="flex-1 min-w-[80px]" onClick={() => banMutation.mutate(user.uid || '')} disabled={banMutation.isPending}>
                                                 <Ban className="h-4 w-4 mr-2" />
-                                                Ban
+                                                In Active
                                             </Button>
                                         ) : (
-                                            <Badge variant="outline">Banned</Badge>
+                                            <Badge variant="outline" className="flex-1 justify-center py-1.5 min-w-[80px]">Active</Badge>
                                         )}
-                                        <Button variant="destructive" size="sm" onClick={() => removeMutation.mutate(user.uid || '')} disabled={removeMutation.isPending}>
+                                        <Button variant="destructive" size="sm" className="flex-1 min-w-[80px]" onClick={() => removeMutation.mutate(user.uid || '')} disabled={removeMutation.isPending}>
                                             <Trash2 className="h-4 w-4 mr-2" />
                                             Remove
                                         </Button>

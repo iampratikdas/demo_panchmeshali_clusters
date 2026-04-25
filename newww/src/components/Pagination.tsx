@@ -72,7 +72,12 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
                             variant={currentPage === page ? 'default' : 'outline'}
                             size="icon"
                             onClick={() => onPageChange(page as number)}
-                            className={`h-10 w-10 ${currentPage === page ? 'pointer-events-none' : ''}`}
+                            // className={`h-10 w-10 ${currentPage === page ? 'text-[20px] font-bold !bg-primary-500 text-black cursor-not-allowed' : ''}`}
+                            // className={`h-10 w-10 ${currentPage === page ? 'text-[20px] font-bold !bg-primary-500 text-black cursor-not-allowed' : ''}`}
+                            style={{
+                                backgroundColor: currentPage === page ? '#eb8741' : '',
+                                color: currentPage === page ? '#fff' : '',
+                            }}
                         >
                             {page}
                         </Button>

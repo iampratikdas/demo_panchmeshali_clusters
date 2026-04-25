@@ -32,6 +32,7 @@ const Login: React.FC = () => {
                     localStorage.setItem("token", res.data.tokenAdvanced);
                     localStorage.setItem("name", res.data.user.full_name);
                     localStorage.setItem("email", res.data.user.email);
+                    localStorage.setItem("role", res.data.user.role);
                     window.location.href = "/"
                 } else {
                     // setError(true)
