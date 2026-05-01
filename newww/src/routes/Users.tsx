@@ -37,7 +37,7 @@ export default function Users() {
     const [currentPage, setCurrentPage] = useState(1);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc'); // Default: newest first
     // const pageSize = 1;
-    const [pageSize, setPageSize] = useState(5);
+    const [pageSize, setPageSize] = useState(6);
 
     const [formData, setFormData] = useState<User>({
         full_name: '',
@@ -446,18 +446,30 @@ export default function Users() {
                                             <Mail className="h-4 w-4 mr-2" />
                                             Email
                                         </Button>
-                                        {user.isActive ? (
-                                            <Button variant="outline" size="sm" className="flex-1 min-w-[80px]" onClick={() => banMutation.mutate(user.uid || '')} disabled={banMutation.isPending}>
-                                                <Ban className="h-4 w-4 mr-2" />
-                                                In Active
-                                            </Button>
-                                        ) : (
-                                            <Badge variant="outline" className="flex-1 justify-center py-1.5 min-w-[80px]">Active</Badge>
-                                        )}
-                                        <Button variant="destructive" size="sm" className="flex-1 min-w-[80px]" onClick={() => removeMutation.mutate(user.uid || '')} disabled={removeMutation.isPending}>
-                                            <Trash2 className="h-4 w-4 mr-2" />
-                                            Remove
-                                        </Button>
+                                        {
+                                            localStorage.getItem("role") === "admin" ?
+                                                user.isActive ? (
+                                                    <Button variant="outline" size="sm" className="flex-1 min-w-[80px]" onClick={() => banMutation.mutate(user.uid || '')} disabled={banMutation.isPending}>
+                                                        <Ban className="h-4 w-4 mr-2" />
+                                                        In Active
+                                                    </Button>
+                                                ) : (
+                                                    <Badge variant="outline" className="flex-1 justify-center py-1.5 min-w-[80px]">Active</Badge>
+                                                )
+                                                : null
+                                        }
+
+                                        {
+                                            localStorage.getItem("role") === "admin" ?
+                                                <Button variant="destructive" size="sm" className="flex-1 min-w-[80px]" onClick={() => removeMutation.mutate(user.uid || '')} disabled={removeMutation.isPending}>
+                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                    Remove Account
+                                                </Button>
+                                                : <Button variant="destructive" size="sm" className="flex-1 min-w-[80px]" onClick={() => removeMutation.mutate(user.uid || '')} disabled={removeMutation.isPending}>
+                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                    Remove User
+                                                </Button>
+                                        }
                                     </div>
                                 </CardContent>
                             </Card>
