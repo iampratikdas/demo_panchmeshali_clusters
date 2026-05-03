@@ -27,7 +27,7 @@ import { NewsFeedTab } from '../components/dashboard/NewsFeedTab';
 export default function Dashboard() {
     const { bootPlay } = useSounds();
     const [user] = useAtom(currentUserAtom);
-    const [activeTab, setActiveTab] = useState<'analytics' | 'news-feed' | 'publishers'>('news-feed');
+    const [activeTab, setActiveTab] = useState<'analytics' | 'news-feed' | 'publishers'>('publishers');
 
     const { data, isLoading } = useQuery({
         queryKey: ['contents'],
@@ -125,13 +125,13 @@ export default function Dashboard() {
 
                     {/* Top Navigation Bar */}
                     <div className="bg-white dark:bg-white dark:bg-card rounded-xl border border-border flex justify-around overflow-hidden shadow-sm">
-                        <button
+                        {/* <button
                             className={cn("flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'news-feed' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
                             onClick={() => setActiveTab('news-feed')}
                         >
                             For you
                             {activeTab === 'news-feed' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-green-600 rounded-t-full"></div>}
-                        </button>
+                        </button> */}
                         <button
                             className={cn("flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'publishers' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
                             onClick={() => setActiveTab('publishers')}
@@ -149,7 +149,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* What's happening input */}
-                    <div className="p-4 border border-border bg-white dark:bg-white dark:bg-card rounded-xl shadow-sm">
+                    {/* <div className="p-4 border border-border bg-white dark:bg-white dark:bg-card rounded-xl shadow-sm">
                         <div className="flex gap-4">
                             <div className="w-12 h-12 rounded-full bg-slate-200 flex-shrink-0 flex items-center justify-center text-slate-700 font-bold">
                                 {user.name?.charAt(0) || 'U'}
@@ -185,12 +185,12 @@ export default function Dashboard() {
                                 <span className="hidden sm:inline text-muted-foreground">Write article</span>
                             </button>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Feed Content */}
                     <div className="space-y-4">
                         {activeTab === 'analytics' && renderAnalytics()}
-                        {activeTab === 'news-feed' && <NewsFeedTab />}
+                        {/* {activeTab === 'news-feed' && <NewsFeedTab />} */}
                         {activeTab === 'publishers' && <PublishersTab />}
                     </div>
 
