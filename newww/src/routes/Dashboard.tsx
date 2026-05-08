@@ -133,14 +133,14 @@ export default function Dashboard() {
                             {activeTab === 'news-feed' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-green-600 rounded-t-full"></div>}
                         </button> */}
                         <button
-                            className={cn("flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'publishers' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
+                            className={cn(" cursor-pointer flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'publishers' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
                             onClick={() => setActiveTab('publishers')}
                         >
                             Following
                             {activeTab === 'publishers' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-green-600 rounded-t-full"></div>}
                         </button>
                         <button
-                            className={cn("flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'analytics' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
+                            className={cn("cursor-pointer flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'analytics' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
                             onClick={() => setActiveTab('analytics')}
                         >
                             Analytics
