@@ -693,3 +693,48 @@ export const getUnreadNotificationsCount = async (): Promise<number> => {
     return mockNotifications.filter(n => !n.read).length;
 };
 
+// ── Publisher API Functions ───────────────────────────────────────────────────
+
+const getAuthHeaders = () => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+});
+
+/**
+ * Fetch all publishers that are visible/assigned to the current writer.
+ * GET /publisher_lists/:uid
+ */
+export const fetchPublisherList = async (uid: string): Promise<any[]> => {
+    const response = await axios.get(
+        `${API_BASE_URL}/publisher_lists/${uid}`,
+        { headers: getAuthHeaders() }
+    );
+    return response.data?.data ?? [];
+};
+
+/**
+ * Request to join a publisher (writer → publisher assignment).
+ * POST /request_publisher_users/:publisherUid
+ */
+export const requestJoinPublisher = async (publisherUid: string): Promise<any> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/request_publisher_users/${publisherUid}`,
+        {},
+        { headers: getAuthHeaders() }
+    );
+    return response.data;
+};
+
+/**
+ * Cancel / remove a publisher assignment.
+ * POST /update_publisher_users/:publisherUid   body: { request_type: 'Removed' }
+ */
+export const removePublisherAssignment = async (publisherUid: string): Promise<any> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/update_publisher_users/${publisherUid}`,
+        { request_type: 'Removed' },
+        { headers: getAuthHeaders() }
+    );
+    return response.data;
+};
+
