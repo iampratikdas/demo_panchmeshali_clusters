@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchChats, fetchChatMessages, sendMessage, createChat, fetchUsers } from '../lib/api';
 import type { Chat } from '../types/chat';
+import type { User } from '../types/user';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -25,10 +26,11 @@ export default function Chats() {
         queryFn: fetchChats,
     });
 
-    const { data: writers } = useQuery({
+    const { data: usersResponse } = useQuery({
         queryKey: ['users'],
-        queryFn: fetchUsers,
+        queryFn: () => fetchUsers(1, 1000),
     });
+    const writers: User[] = usersResponse?.data || [];
 
     const { data: messages, isLoading: messagesLoading } = useQuery({
         queryKey: ['chatMessages', selectedChatId],
@@ -73,9 +75,9 @@ export default function Chats() {
         }
     };
 
-    const filteredWriters = writers?.filter(w =>
-        w.fullName.toLowerCase().includes(writerSearch.toLowerCase()) ||
-        w.email.toLowerCase().includes(writerSearch.toLowerCase())
+    const filteredWriters = writers.filter(w =>
+        (w.full_name?.toLowerCase() || '').includes(writerSearch.toLowerCase()) ||
+        (w.email?.toLowerCase() || '').includes(writerSearch.toLowerCase())
     );
 
     useEffect(() => {
@@ -116,11 +118,11 @@ export default function Chats() {
                         <div className="max-h-64 overflow-y-auto space-y-2">
                             {filteredWriters?.map((writer) => (
                                 <button
-                                    key={writer.id}
-                                    onClick={() => handleStartChat(writer.id)}
+                                    key={writer.uid}
+                                    onClick={() => handleStartChat(writer.uid!)}
                                     className="w-full text-left p-3 rounded-lg border hover:bg-accent transition-colors"
                                 >
-                                    <p className="font-medium">{writer.fullName}</p>
+                                    <p className="font-medium">{writer.full_name}</p>
                                     <p className="text-sm text-muted-foreground">{writer.email}</p>
                                 </button>
                             ))}

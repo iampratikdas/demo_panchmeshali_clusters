@@ -9,9 +9,10 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { Pagination } from '../components/Pagination';
-import { Users as UsersIcon, Plus, Mail, Ban, Trash2, CheckCircle2, XCircle, Search, ArrowUpDown } from 'lucide-react';
+import { Users as UsersIcon, Plus, Mail, Ban, Trash2, CheckCircle2, XCircle, Search, ArrowUpDown, Key, Edit2 } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import type { CreateUserData } from '../types/user';
+import Swal from 'sweetalert2';
 
 export default function Users() {
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -39,17 +40,15 @@ export default function Users() {
     // const pageSize = 1;
     const [pageSize, setPageSize] = useState(6);
 
-    const [formData, setFormData] = useState<User>({
+    const [formData, setFormData] = useState<CreateUserData>({
         full_name: '',
         email: '',
-        password: '', // In real app, this would be hashed
+        password: '',
         isActive: false,
-        createdAt: '',
-        lastLogin: '',
-        role: '',
+        role: 'user',
         ph_country_code: '',
         phone_number: '',
-        // status: boolean;
+        skills: 'writer',
         address: '',
     });
 
@@ -76,7 +75,17 @@ export default function Users() {
         queryKey: ['users', currentPage, pageSize, debouncedSearchQuery, debouncedFilters],
         queryFn: () => fetchUsers(currentPage, pageSize, { searchQuery: debouncedSearchQuery, ...debouncedFilters }),
     });
-    console.log("fetchUserError============>", fetchUserError, isError);
+
+    useEffect(() => {
+        if (isError && fetchUserError) {
+            Swal.fire({
+                icon: 'error',
+                title: 'API Error',
+                text: fetchUserError.message || 'Failed to fetch users.',
+                confirmButtonColor: '#cb8959',
+            });
+        }
+    }, [isError, fetchUserError]);
 
     const users: User[] = fetchResponse?.data || [];
     const serverTotalPages = fetchResponse?.pagination?.totalPages || 1;
@@ -85,52 +94,194 @@ export default function Users() {
         mutationFn: (data: CreateUserData) => createUser(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
-            toast({ title: 'Success!', description: 'User created successfully.' });
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'User created successfully.',
+                confirmButtonColor: '#cb8959',
+            });
             setShowCreateForm(false);
             setFormData({
                 full_name: '',
                 email: '',
-                password: '', // In real app, this would be hashed
+                password: '',
                 isActive: false,
-                createdAt: '',
-                // lastLogin: '',
-                role: '',
+                role: 'user',
                 ph_country_code: '',
                 phone_number: '',
-                // status: boolean;
+                skills: 'writer',
                 address: '',
             });
         },
         onError: (error: Error) => {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Creating User',
+                text: error.message || 'Something went wrong!',
+                confirmButtonColor: '#cb8959',
+            });
         },
     });
 
     const banMutation = useMutation({
-        mutationFn: (userId: string) => updateUser(userId),
+        mutationFn: ({ userId, data }: { userId: string; data: any }) => updateUser(userId, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
-            toast({ title: 'Success!', description: 'User banned successfully.' });
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'User status updated successfully.',
+                confirmButtonColor: '#cb8959',
+            });
+        },
+        onError: (error: Error) => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message || 'Failed to update user status.',
+                confirmButtonColor: '#cb8959',
+            });
         },
     });
 
     const removeMutation = useMutation({
-        mutationFn: (userId: string) => updateUser(userId),
+        mutationFn: ({ userId, data }: { userId: string; data: any }) => updateUser(userId, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
-            toast({ title: 'Success!', description: 'User removed successfully.' });
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'User removed successfully.',
+                confirmButtonColor: '#cb8959',
+            });
+        },
+        onError: (error: Error) => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message || 'Failed to remove user.',
+                confirmButtonColor: '#cb8959',
+            });
         },
     });
 
     const emailMutation = useMutation({
         mutationFn: (data: EmailData) => sendEmail(data),
         onSuccess: (response) => {
-            toast({ title: 'Success!', description: response.message });
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: response.message,
+                confirmButtonColor: '#cb8959',
+            });
             setShowEmailDialog(false);
             setSelectedUsers([]);
             setEmailData({ subject: '', message: '' });
         },
+        onError: (error: Error) => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error Sending Email',
+                text: error.message || 'Failed to send email.',
+                confirmButtonColor: '#cb8959',
+            });
+        },
     });
+
+    const changePasswordMutation = useMutation({
+        mutationFn: ({ userId, data }: { userId: string; data: any }) => updateUser(userId, data),
+        onSuccess: () => {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Password updated successfully.',
+                confirmButtonColor: '#cb8959',
+            });
+        },
+        onError: (error: Error) => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message || 'Failed to update password.',
+                confirmButtonColor: '#cb8959',
+            });
+        },
+    });
+
+    const handleChangePassword = async (user: User) => {
+        const { value: newPassword } = await Swal.fire({
+            title: 'Change Password',
+            input: 'password',
+            inputLabel: `New password for ${user.full_name}`,
+            inputPlaceholder: 'Enter new password',
+            inputAttributes: {
+                minlength: '6',
+                autocapitalize: 'off',
+                autocorrect: 'off',
+                autocomplete: 'new-password'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Update',
+            confirmButtonColor: '#cb8959',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'You need to write something!'
+                }
+                if (value.length < 6) {
+                    return 'Password must be at least 6 characters!'
+                }
+            }
+        });
+
+        if (newPassword) {
+            changePasswordMutation.mutate({ userId: user.uid || '', data: { password: newPassword } });
+        }
+    };
+
+    const changeNameMutation = useMutation({
+        mutationFn: ({ userId, data }: { userId: string; data: any }) => updateUser(userId, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Name updated successfully.',
+                confirmButtonColor: '#cb8959',
+            });
+        },
+        onError: (error: Error) => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message || 'Failed to update name.',
+                confirmButtonColor: '#cb8959',
+            });
+        },
+    });
+
+    const handleChangeName = async (user: User) => {
+        const { value: newName } = await Swal.fire({
+            title: 'Change Name',
+            input: 'text',
+            inputLabel: 'Full Name',
+            inputValue: user.full_name,
+            inputAttributes: {
+                autocomplete: 'off'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Update',
+            confirmButtonColor: '#cb8959',
+            inputValidator: (value) => {
+                if (!value || value.trim().length === 0) {
+                    return 'Name cannot be empty!';
+                }
+            }
+        });
+
+        if (newName && newName.trim() !== user.full_name) {
+            changeNameMutation.mutate({ userId: user.uid || '', data: { full_name: newName.trim() } });
+        }
+    };
 
     const handleCreateUser = (e: React.FormEvent) => {
         e.preventDefault();
@@ -206,36 +357,159 @@ export default function Users() {
                     <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">Users Management</h1>
                     <p className="text-sm sm:text-base text-muted-foreground">Manage users, send emails, and moderate accounts</p>
                 </div>
-                <Button onClick={() => setShowCreateForm(!showCreateForm)} className="h-12 w-full sm:w-auto gap-2">
-                    <Plus className="h-4 w-4" />
-                    {showCreateForm ? 'Cancel' : 'Create User'}
-                </Button>
+                {/* Create User — admin only */}
+                {localStorage.getItem('role') === 'admin' && (
+                    <Button onClick={() => setShowCreateForm(!showCreateForm)} className="h-12 w-full sm:w-auto gap-2">
+                        <Plus className="h-4 w-4" />
+                        {showCreateForm ? 'Cancel' : 'Create User'}
+                    </Button>
+                )}
             </div>
 
-            {/* Create User Form */}
-            {showCreateForm && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Create New User</CardTitle>
-                        <CardDescription>Add a new user to the system</CardDescription>
+            {/* Create User Form — admin only */}
+            {showCreateForm && localStorage.getItem('role') === 'admin' && (
+                <Card className="border-2 border-primary/20 shadow-lg">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                            <Plus className="h-5 w-5 text-primary" />
+                            Create New User
+                        </CardTitle>
+                        <CardDescription>Add a new user to the system. Fields marked <span className="text-red-500">*</span> are required.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={handleCreateUser} className="space-y-4">
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Full Name</label>
-                                <Input required value={formData.full_name} onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} placeholder="e.g., John Doe" />
+                        <form onSubmit={handleCreateUser} className="space-y-5">
+                            {/* Row 1: Full Name */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm font-semibold mb-1.5 block">
+                                        Full Name <span className="text-red-500">*</span>
+                                    </label>
+                                    <Input
+                                        required
+                                        value={formData.full_name}
+                                        onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                                        placeholder="e.g., John Doe"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-semibold mb-1.5 block">
+                                        Email <span className="text-red-500">*</span>
+                                    </label>
+                                    <Input
+                                        type="email"
+                                        required
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        placeholder="john@example.com"
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Email</label>
-                                <Input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="john.doe@example.com" />
+
+                            {/* Row 2: Password + Role */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm font-semibold mb-1.5 block">
+                                        Password <span className="text-red-500">*</span>
+                                    </label>
+                                    <Input
+                                        type="password"
+                                        required
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        placeholder="Min. 8 characters"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-semibold mb-1.5 block">
+                                        Role <span className="text-red-500">*</span>
+                                    </label>
+                                    <Select
+                                        value={formData.role}
+                                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                        options={[
+                                            { value: 'user', label: 'User (Writer)' },
+                                            { value: 'publisher', label: 'Publisher' },
+                                            { value: 'admin', label: 'Admin' },
+                                            { value: 'manager', label: 'Manager' },
+                                            { value: 'both', label: 'Both (Admin + User)' },
+                                        ]}
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <label className="text-sm font-medium mb-2 block">Password</label>
-                                <Input type="password" required value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="••••••••" />
+
+                            {/* Row 3: Phone country code + Phone */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="text-sm font-semibold mb-1.5 block">Country Code</label>
+                                    <Input
+                                        value={formData.ph_country_code}
+                                        onChange={(e) => setFormData({ ...formData, ph_country_code: e.target.value })}
+                                        placeholder="+91"
+                                        maxLength={5}
+                                        type='number'
+                                    />
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <label className="text-sm font-semibold mb-1.5 block">Phone Number</label>
+                                    <Input
+                                        type="tel"
+                                        value={formData.phone_number}
+                                        onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
+                                        placeholder="9876543210"
+                                    />
+                                </div>
                             </div>
-                            <Button type="submit" disabled={createMutation.isPending} className="w-full sm:w-auto">
-                                {createMutation.isPending ? 'Creating...' : 'Create User'}
-                            </Button>
+
+                            {/* Row 4: Skills + Address */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm font-semibold mb-1.5 block">Skills / Type</label>
+                                    <Input
+                                        value={formData.skills ?? ''}
+                                        onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+                                        placeholder="e.g., writer, poet"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-semibold mb-1.5 block">Address</label>
+                                    <Input
+                                        value={formData.address}
+                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                        placeholder="City, Country"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-border">
+                                <Button
+                                    type="submit"
+                                    disabled={createMutation.isPending}
+                                    className="sm:w-auto gap-2"
+                                >
+                                    {createMutation.isPending ? (
+                                        <>
+                                            <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                                            Creating…
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus className="h-4 w-4" />
+                                            Create User
+                                        </>
+                                    )}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowCreateForm(false)}
+                                    className="sm:w-auto"
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
                         </form>
                     </CardContent>
                 </Card>
@@ -261,21 +535,29 @@ export default function Users() {
                         placeholder="Filter by Email"
                         value={filterEmail}
                         onChange={(e) => { setFilterEmail(e.target.value); setCurrentPage(1); }}
+                        autoComplete="off"
+                        name="search_email_off"
                     />
                     <Input
                         placeholder="Filter by Full Name"
                         value={filterFullName}
                         onChange={(e) => { setFilterFullName(e.target.value); setCurrentPage(1); }}
+                        autoComplete="off"
+                        name="search_fullname_off"
                     />
                     <Input
                         placeholder="Filter by Phone Number"
                         value={filterPhone}
                         onChange={(e) => { setFilterPhone(e.target.value); setCurrentPage(1); }}
+                        autoComplete="off"
+                        name="search_phone_off"
                     />
                     <Input
                         placeholder="Filter by UID"
                         value={filterUid}
                         onChange={(e) => { setFilterUid(e.target.value); setCurrentPage(1); }}
+                        autoComplete="off"
+                        name="search_uid_off"
                     />
 
                     <Select
@@ -417,7 +699,19 @@ export default function Users() {
                                         <div className="flex items-start gap-3 flex-1 w-full">
                                             <input type="checkbox" checked={selectedUsers.includes(user.uid || '')} onChange={() => toggleUserSelection(user.uid || '')} className="mt-1 h-4 w-4 flex-shrink-0" />
                                             <div className="flex-1 min-w-0">
-                                                <CardTitle className="text-lg truncate block pb-1">{user.full_name}</CardTitle>
+                                                <CardTitle className="text-lg truncate block pb-1 flex items-center gap-2">
+                                                    {user.full_name}
+                                                    {localStorage.getItem("role") === "admin" && (
+                                                        <button
+                                                            onClick={() => handleChangeName(user)}
+                                                            disabled={changeNameMutation.isPending}
+                                                            className="text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                                                            title="Edit Name"
+                                                        >
+                                                            <Edit2 className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                </CardTitle>
                                                 <CardDescription className="w-full break-all whitespace-normal text-sm block">{user.email}</CardDescription>
                                             </div>
                                         </div>
@@ -444,28 +738,39 @@ export default function Users() {
                                     <div className="flex gap-2 flex-wrap items-center mt-4">
                                         <Button variant="outline" size="sm" className="flex-1 min-w-[80px]" onClick={() => handleSendEmail([user.uid || ''])}>
                                             <Mail className="h-4 w-4 mr-2" />
-                                            Email
+                                            Chat
                                         </Button>
+                                        {
+                                            localStorage.getItem("role") === "admin" && (
+                                                <Button variant="outline" size="sm" className="flex-1 min-w-[80px]" onClick={() => handleChangePassword(user)} disabled={changePasswordMutation.isPending}>
+                                                    <Key className="h-4 w-4 mr-2" />
+                                                    Password
+                                                </Button>
+                                            )
+                                        }
                                         {
                                             localStorage.getItem("role") === "admin" ?
                                                 user.isActive ? (
-                                                    <Button variant="outline" size="sm" className="flex-1 min-w-[80px]" onClick={() => banMutation.mutate(user.uid || '')} disabled={banMutation.isPending}>
+                                                    <Button variant="outline" size="sm" className="flex-1 min-w-[80px]" onClick={() => banMutation.mutate({ userId: user.uid || '', data: { isActive: false } })} disabled={banMutation.isPending}>
                                                         <Ban className="h-4 w-4 mr-2" />
                                                         In Active
                                                     </Button>
                                                 ) : (
-                                                    <Badge variant="outline" className="flex-1 justify-center py-1.5 min-w-[80px]">Active</Badge>
+                                                    <Button variant="outline" size="sm" className="flex-1 min-w-[80px] text-green-600 border-green-600 hover:bg-green-50" onClick={() => banMutation.mutate({ userId: user.uid || '', data: { isActive: true } })} disabled={banMutation.isPending}>
+                                                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                                                        Make Active
+                                                    </Button>
                                                 )
                                                 : null
                                         }
 
                                         {
                                             localStorage.getItem("role") === "admin" ?
-                                                <Button variant="destructive" size="sm" className="flex-1 min-w-[80px]" onClick={() => removeMutation.mutate(user.uid || '')} disabled={removeMutation.isPending}>
+                                                <Button variant="destructive" size="sm" className="flex-1 min-w-[80px]" onClick={() => removeMutation.mutate({ userId: user.uid || '', data: { is_deleted: true } })} disabled={removeMutation.isPending}>
                                                     <Trash2 className="h-4 w-4 mr-2" />
                                                     Remove Account
                                                 </Button>
-                                                : <Button variant="destructive" size="sm" className="flex-1 min-w-[80px]" onClick={() => removeMutation.mutate(user.uid || '')} disabled={removeMutation.isPending}>
+                                                : <Button variant="destructive" size="sm" className="flex-1 min-w-[80px]" onClick={() => removeMutation.mutate({ userId: user.uid || '', data: { is_deleted: true } })} disabled={removeMutation.isPending}>
                                                     <Trash2 className="h-4 w-4 mr-2" />
                                                     Remove User
                                                 </Button>

@@ -18,11 +18,13 @@ export interface CreateUserData {
     email: string;
     password: string;
     role: string;
+    skills: string;
     ph_country_code: string;
     phone_number: string;
-    // status: string;
     address: string;
     isActive: boolean;
+    type?: string;
+    ip?: string;
 }
 
 export interface EmailData {

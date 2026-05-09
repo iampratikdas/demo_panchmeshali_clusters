@@ -196,7 +196,7 @@ class UserController {
         role: role,
       }, moment().unix())
       const newUser = await this.userFunc.UserInsert({
-        // uid: gen(10),
+        uid: gen(10),
         full_name: full_name,
         email: email,
         skills,
@@ -635,11 +635,13 @@ class UserController {
         ...(dob && { dob: dob }),
         ...(address && { address: address }),
         ...(role && { role: role }),
-        ...(isActive && { isActive: isActive }),
+        ...(isActive !== undefined && { isActive: isActive }),
+        ...(is_deleted !== undefined && { is_deleted: is_deleted }),
         ...(ph_country_code && { ph_country_code: ph_country_code }),
         ...(phone_number && { phone_number: phone_number }),
         ...(skills && { skills: skills }),
-        ...(isfirstTimeLogin && { isfirstTimeLogin: isfirstTimeLogin }),
+        ...(profileImage && { profileImage: profileImage }),
+        ...(isfirstTimeLogin !== undefined && { isfirstTimeLogin: isfirstTimeLogin }),
         ...(password && { password: await encrypt(password) }),
         updated_at: moment().unix(),
       }

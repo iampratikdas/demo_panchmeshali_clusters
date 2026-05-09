@@ -524,13 +524,33 @@ export const fetchUsers = async (page: number, limit: number, queryFilters: any 
     }
 };
 
-export const createUser = async (data: CreateUserData): Promise<User[]> => {
+export const createUser = async (data: CreateUserData): Promise<any> => {
     try {
-        const response = await axios.post(apiJson.createUser.url, data, { headers: apiJson.createUser.headers });
+        const payload = {
+            full_name: data.full_name,
+            email: data.email,
+            password: data.password,
+            role: data.role || 'user',
+            skills: data.skills || 'writer',
+            phone_number: data.phone_number || '',
+            ph_country_code: data.ph_country_code || '',
+            type: data.type || 'writer',
+            ip: data.ip || '',
+        };
+        const response = await axios.post(
+            `${API_BASE_URL}/signup`,
+            payload,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+            }
+        );
         return response.data;
-    } catch (error) {
-        console.log(error);
-        return [];
+    } catch (error: any) {
+        const msg = error?.response?.data?.message || 'Failed to create user.';
+        throw new Error(msg);
     }
 };
 
@@ -553,13 +573,22 @@ export const createUser = async (data: CreateUserData): Promise<User[]> => {
 //     mockUsers.splice(index, 1);
 // };
 
-export const updateUser = async (userId: string): Promise<any> => {
+export const updateUser = async (userId: string, data: any): Promise<any> => {
     try {
-        const response = await axios.post(apiJson.updateUser.url, { uid: userId }, { headers: apiJson.updateUser.headers });
+        const response = await axios.post(
+            `${API_BASE_URL}/updateprofile_by_admin?uid=${userId}`,
+            data,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+            }
+        );
         return response.data;
-    } catch (error) {
-        console.log(error);
-        return [];
+    } catch (error: any) {
+        const msg = error?.response?.data?.message || 'Failed to update user.';
+        throw new Error(msg);
     }
 };
 
