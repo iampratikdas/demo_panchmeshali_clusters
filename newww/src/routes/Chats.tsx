@@ -125,17 +125,47 @@ export default function Chats() {
         }
     });
 
+    const checkIsSpamUrl = (text: string) => {
+        const lowerText = text.toLowerCase();
+        
+        // 1. Exact protocols
+        if (/(https?|ftp):\/\//.test(lowerText)) return true;
+        
+        // 2. WWW prefix
+        if (/www\.[a-z0-9-]+/.test(lowerText)) return true;
+        
+        // 3. Spaced-out or bracket-obfuscated known domains
+        const noObfuscation = lowerText.replace(/\s+/g, '').replace(/\[dot\]|\(dot\)|\{dot\}|<dot>/g, '.');
+        const blockedDomains = [
+            'youtube.com', 'youtu.be', 't.me', 'wa.me', 'instagram.com', 
+            'facebook.com', 'tiktok.com', 'bit.ly', 'tinyurl.com', 
+            'twitter.com', 'x.com', 'linkedin.com', 'discord.gg', 'discord.com'
+        ];
+        if (blockedDomains.some(domain => noObfuscation.includes(domain))) return true;
+        
+        // 4. Obfuscated strict TLDs (e.g. "google dot com", "google . net")
+        const strictTlds = "com|org|edu|gov|io|xyz|ly|net|biz";
+        const obfuscatedRegex = new RegExp(`\\b[a-z0-9-]{2,63}\\s*(?:\\.|\\sdot\\s|\\[dot\\]|\\(dot\\))\\s*(?:${strictTlds})\\b`, 'i');
+        if (obfuscatedRegex.test(lowerText)) return true;
+        
+        // 5. Any TLD followed by a slash (e.g. "youtube .to / watch")
+        const anyTldWithSlash = /\b[a-z0-9-]{2,63}\s*(?:\.|\sdot\s|\[dot\]|\(dot\))\s*[a-z]{2,6}\s*\//i;
+        if (anyTldWithSlash.test(lowerText)) return true;
+
+        return false;
+    };
+
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
         if (messageInput.trim() && selectedChatId) {
-            // Check for URLs to block them
-            const urlRegex = /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z]{2,6}\b(?:[-a-zA-Z0-9()@:%_+.~#?&//=]*))/i;
-            if (urlRegex.test(messageInput)) {
+            // Check for smart URL obfuscations to block them
+            if (checkIsSpamUrl(messageInput)) {
                 Swal.fire({
-                    title: 'Links not allowed!',
-                    text: 'Sharing URLs or links is restricted in this chat.',
+                    title: 'Action Blocked',
+                    text: 'Sharing URLs or external links is strictly restricted in this chat. Please remove the link to send your message.',
                     icon: 'error',
-                    confirmButtonText: 'Okay'
+                    confirmButtonText: 'Understood',
+                    confirmButtonColor: '#d33',
                 });
                 return;
             }
