@@ -19,7 +19,8 @@ import {
     SpellCheck2,
     Trophy,
     Loader2,
-    Newspaper
+    Newspaper,
+    Building
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useAtom } from 'jotai';
@@ -45,6 +46,7 @@ const navItems = [
     { to: '/proofread', label: 'Proof Read Room', icon: SpellCheck2 },
     { to: '/rankings', label: 'Rank the Contents', icon: Trophy },
     { to: '/publish-preview', label: 'Book Publish Preview', icon: Newspaper },
+    { to: '/publishers', label: 'Publishers', icon: Building },
 ];
 
 const projectItems = [
@@ -96,6 +98,10 @@ export function Layout({ children }: LayoutProps) {
             title: 'Submit Your Work',
             image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2940&auto=format&fit=crop'
         };
+        if (pathname.startsWith('/publish-preview')) return {
+            title: 'Publish Your Work',
+            image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2940&auto=format&fit=crop'
+        };
         if (pathname.startsWith('/workspace')) return {
             title: 'Workspace',
             image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=2940&auto=format&fit=crop'
@@ -111,6 +117,10 @@ export function Layout({ children }: LayoutProps) {
         if (pathname.startsWith('/rankings')) return {
             title: 'Rank the Contents',
             image: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=2940&auto=format&fit=crop'
+        };
+        if (pathname.startsWith('/publishers')) return {
+            title: 'Client Management System',
+            image: 'https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?q=80&w=2940&auto=format&fit=crop'
         };
         return {
             title: 'Dashboard',

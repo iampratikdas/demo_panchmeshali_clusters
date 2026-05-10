@@ -5,7 +5,7 @@ const publisherSchema = new mongoose.Schema({
   uids: {
     type: [String],
     required: true,
-    unique: true
+    // unique: true
   },
   pid: {
     type: String,
@@ -32,6 +32,10 @@ const publisherSchema = new mongoose.Schema({
     default: ""
   },
   logo_url: {
+    type: String,
+    default: ""
+  },
+  rgst_gov_id: {
     type: String,
     default: ""
   },

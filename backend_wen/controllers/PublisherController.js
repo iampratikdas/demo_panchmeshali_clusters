@@ -65,9 +65,20 @@ class PublisherController {
                 });
         } catch (error) {
             console.error("Error during publisherlists fetch:", error);
-            res
-                .status(500)
-                .json({ status: 500, message: "Internal server error", data: {} });
+            res.status(500).json({ status: 500, message: "Internal server error", data: {} });
+        }
+    }
+
+    async getAllCompanies(req, res, user_data) {
+        try {
+            if (user_data.role !== "admin") {
+                return res.status(403).json({ status: 403, message: "Access denied. Admins only.", data: {} });
+            }
+            const companies = await this.publisherFunc.findAllPublishers();
+            return res.status(200).json({ status: 200, message: "Publisher companies fetched successfully", data: companies });
+        } catch (error) {
+            console.error("Error during getAllCompanies:", error);
+            res.status(500).json({ status: 500, message: "Internal server error", data: {} });
         }
     }
 
@@ -104,9 +115,10 @@ class PublisherController {
                 email: body.email,
                 phone: body.phone,
                 logo_url: body.logo_url || "",
-                status: "Pending" // Starts at Pending, Admin approves later or Active if preferred
+                rgst_gov_id: body.rgst_gov_id || "",
+                status: "Active" // Starts at Pending, Admin approves later or Active if preferred
             };
-
+            console.log("checking==========>", companyData)
             await this.publisherFunc.insertPublisher(companyData);
 
             return res.status(201).json({

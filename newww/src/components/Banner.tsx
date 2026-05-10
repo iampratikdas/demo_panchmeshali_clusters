@@ -14,12 +14,12 @@ export function Banner({ title, image }: BannerProps) {
     });
 
     const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
-    const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+    const opacity = useTransform(scrollYProgress, [0, 0.8], [0.8, 0]);
 
     return (
         <div className="relative h-48 sm:h-64 md:h-80 w-full overflow-hidden" ref={ref}>
             <motion.div style={{ y, opacity }} className="absolute inset-0 w-full h-full">
-                <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent z-10" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent z-10" />
                 <img
                     src={image}
                     alt={title}
@@ -31,7 +31,7 @@ export function Banner({ title, image }: BannerProps) {
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-3xl sm:text-4xl md:text-5xl font-bold text-white drop-shadow-lg"
+                        className="text-3xl border-b-4 border-white pb-3 sm:text-4xl md:text-5xl font-bold text-white drop-shadow-lg"
                     >
                         {title}
                     </motion.h1>

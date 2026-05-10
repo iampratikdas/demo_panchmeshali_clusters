@@ -509,7 +509,9 @@ export const fetchUsers = async (page: number, limit: number, queryFilters: any 
             filter.is_deleted = queryFilters.is_deleted === 'true';
         }
 
-        if (queryFilters.role && queryFilters.role !== 'All' && queryFilters.role !== 'both') {
+        if (queryFilters.roles && Array.isArray(queryFilters.roles)) {
+            filter.role = { $in: queryFilters.roles.map((r: string) => r.toLowerCase()) };
+        } else if (queryFilters.role && queryFilters.role !== 'All' && queryFilters.role !== 'both') {
             filter.role = queryFilters.role.toLowerCase();
         } else if (queryFilters.role === 'both') {
             filter.role = { $in: ['admin', 'user'] };
@@ -664,6 +666,23 @@ const getAuthHeaders = () => ({
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${localStorage.getItem('token')}`,
 });
+
+export const createPublisherCompany = async (data: any): Promise<any> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/create_publisher_company`,
+        data,
+        { headers: getAuthHeaders() }
+    );
+    return response.data;
+};
+
+export const fetchAllPublisherCompanies = async (): Promise<any[]> => {
+    const response = await axios.get(
+        `${API_BASE_URL}/publisher_companies`,
+        { headers: getAuthHeaders() }
+    );
+    return response.data?.data ?? [];
+};
 
 /**
  * Fetch all publishers that are visible/assigned to the current writer.

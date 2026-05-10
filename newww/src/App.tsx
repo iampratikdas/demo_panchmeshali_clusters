@@ -14,6 +14,7 @@ import ProofReadRoom from './routes/ProofReadRoom';
 import Rankings from './routes/Rankings';
 import PublishPreview from './routes/PublishPreview';
 import Login from './routes/Login';
+import Publishers from './routes/Publishers';
 import { Layout } from './components/Layout';
 import './index.css';
 
@@ -98,6 +99,12 @@ const publishPreviewRoute = createRoute({
   path: '/publish-preview',
   component: PublishPreview,
 });
+
+const publishersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/publishers',
+  component: Publishers,
+});
 const rootRoutelogin = createRootRoute();
 
 const authRootRoute = createRoute({
@@ -125,6 +132,7 @@ const mainRoutes = [
   proofreadRoute,
   rankingsRoute,
   publishPreviewRoute,
+  publishersRoute,
   settingsRoute,
 ];
 
