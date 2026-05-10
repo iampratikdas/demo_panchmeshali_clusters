@@ -35,6 +35,21 @@ module.exports = (io) => {
     io.on("connection", (socket) => {
         console.log(`User connected: ${socket.user.uid} (${socket.user.full_name})`);
 
+        // Join personal room for user-specific events
+        socket.join(socket.user.uid);
+
+        // Auto-join all existing active chats
+        (async () => {
+            try {
+                const db = await SetupDatabase.getConnection();
+                const Chat = await require('../models/monogdb/Chat')(db);
+                const userChats = await Chat.find({ "participants.uid": socket.user.uid, is_deleted: { $ne: true } });
+                userChats.forEach(chat => socket.join(chat.chatId));
+            } catch (err) {
+                console.error("Error joining existing chats:", err);
+            }
+        })();
+
         // Broadcast user online status
         socket.broadcast.emit("user_online", { uid: socket.user.uid });
 
@@ -42,6 +57,18 @@ module.exports = (io) => {
         socket.on("join_chat", (chatId) => {
             socket.join(chatId);
             console.log(`User ${socket.user.uid} joined chat ${chatId}`);
+        });
+
+        // Notify participants of new chat creation
+        socket.on("new_chat_created", ({ chat }) => {
+            socket.join(chat.chatId);
+            if (chat.participants) {
+                chat.participants.forEach(p => {
+                    if (p.uid !== socket.user.uid) {
+                        io.to(p.uid).emit("chat_created_event", { chat });
+                    }
+                });
+            }
         });
 
         // User sends a message

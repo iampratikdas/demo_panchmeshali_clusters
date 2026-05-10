@@ -9,6 +9,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { MessageSquare, Send, Search, User as UserIcon, Trash2 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { useToast } from '../hooks/useToast';
 import { initSocket, disconnectSocket, getSocket } from '../lib/socket';
 
@@ -62,6 +63,12 @@ export default function Chats() {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
         });
 
+        socket.on('chat_created_event', ({ chat }) => {
+            // Target user gets this event, join the room immediately
+            socket.emit('join_chat', chat.chatId);
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+        });
+
         socket.on('message_deleted', ({ messageId, chatId }) => {
             queryClient.setQueryData(['chatMessages', chatId], (oldData: any) => {
                 if (!oldData) return oldData;
@@ -103,6 +110,10 @@ export default function Chats() {
     const createChatMutation = useMutation({
         mutationFn: (targetUid: string) => createChat(targetUid),
         onSuccess: (newChat) => {
+            // Notify server so it can tell the other user
+            const socket = getSocket();
+            socket.emit('new_chat_created', { chat: newChat });
+
             queryClient.invalidateQueries({ queryKey: ['chats'] });
             setSelectedChatId(newChat.chatId);
             setShowWriterSelect(false);
@@ -128,36 +139,80 @@ export default function Chats() {
         }
     };
 
+    const renderMessageText = (text: string) => {
+        // Regex to detect HTTP/HTTPS URLs
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        return text.split(urlRegex).map((part, i) => {
+            if (part.match(urlRegex)) {
+                return (
+                    <a 
+                        key={i} 
+                        href={part} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="underline hover:opacity-80 transition-opacity break-all font-medium text-blue-400"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {part}
+                    </a>
+                );
+            }
+            return <span key={i} className="break-words">{part}</span>;
+        });
+    };
+
     const handleDeleteMessage = (messageId: string, chatId: string) => {
-        if (!confirm('Are you sure you want to delete this message?')) return;
-        const socket = getSocket();
-        socket.emit('delete_message', { messageId, chatId }, (response: any) => {
-            if (response?.status === 'success') {
-                // Update local cache immediately
-                queryClient.setQueryData(['chatMessages', chatId], (oldData: any) => {
-                    if (!oldData) return oldData;
-                    return oldData.filter((msg: ChatMessage) => msg.messageId !== messageId);
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this message deletion!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const socket = getSocket();
+                socket.emit('delete_message', { messageId, chatId }, (response: any) => {
+                    if (response?.status === 'success') {
+                        // Update local cache immediately
+                        queryClient.setQueryData(['chatMessages', chatId], (oldData: any) => {
+                            if (!oldData) return oldData;
+                            return oldData.filter((msg: ChatMessage) => msg.messageId !== messageId);
+                        });
+                        queryClient.invalidateQueries({ queryKey: ['chats'] });
+                    } else {
+                        toast({ title: 'Error', description: response?.message || 'Failed to delete message.', variant: 'destructive' });
+                    }
                 });
-                queryClient.invalidateQueries({ queryKey: ['chats'] });
-            } else {
-                toast({ title: 'Error', description: response?.message || 'Failed to delete message.', variant: 'destructive' });
             }
         });
     };
 
     const handleDeleteChat = (e: React.MouseEvent, chatId: string) => {
         e.stopPropagation();
-        if (!confirm('Are you sure you want to delete this entire chat?')) return;
-        const socket = getSocket();
-        socket.emit('delete_chat', { chatId }, (response: any) => {
-            if (response?.status === 'success') {
-                if (chatId === selectedChatId) {
-                    setSelectedChatId(null);
-                }
-                queryClient.invalidateQueries({ queryKey: ['chats'] });
-                toast({ title: 'Success', description: 'Chat deleted.' });
-            } else {
-                toast({ title: 'Error', description: response?.message || 'Failed to delete chat.', variant: 'destructive' });
+        Swal.fire({
+            title: 'Delete this chat?',
+            text: "This will remove the entire conversation.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const socket = getSocket();
+                socket.emit('delete_chat', { chatId }, (response: any) => {
+                    if (response?.status === 'success') {
+                        if (chatId === selectedChatId) {
+                            setSelectedChatId(null);
+                        }
+                        queryClient.invalidateQueries({ queryKey: ['chats'] });
+                        toast({ title: 'Success', description: 'Chat deleted.' });
+                    } else {
+                        toast({ title: 'Error', description: response?.message || 'Failed to delete chat.', variant: 'destructive' });
+                    }
+                });
             }
         });
     };
@@ -318,7 +373,6 @@ export default function Chats() {
                                         </div>
                                         <div>
                                             <CardTitle className="text-lg">{getOtherParticipant(selectedChat)?.full_name}</CardTitle>
-                                            {/* <p className="text-sm text-muted-foreground">{getOtherParticipant(selectedChat)?.email}</p> */}
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -334,12 +388,12 @@ export default function Chats() {
                                                     className={`flex ${msg.senderId === currentUid ? 'justify-end' : 'justify-start'}`}
                                                 >
                                                     <div
-                                                        className={`max-w-[70%] rounded-2xl px-4 py-3 shadow-sm ${msg.senderId === currentUid
-                                                            ? 'bg-primary text-primary-foreground rounded-tr-sm'
-                                                            : 'bg-muted border border-muted-foreground/10 text-foreground rounded-tl-sm'
+                                                        className={`max-w-[70%] rounded-2xl px-4 py-2 ${msg.senderId === currentUid
+                                                            ? 'bg-primary text-primary-foreground rounded-br-none shadow-md'
+                                                            : 'bg-muted text-foreground rounded-bl-none border border-border shadow-sm'
                                                             }`}
                                                     >
-                                                        <p className="text-sm">{msg.message}</p>
+                                                        <div className="text-sm whitespace-pre-wrap leading-relaxed">{renderMessageText(msg.message)}</div>
                                                         <div className={`text-xs mt-1 flex justify-between items-center ${msg.senderId === currentUid ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                                                             {msg.senderId === currentUid ? (
                                                                 <button 
