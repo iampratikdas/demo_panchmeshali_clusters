@@ -5,6 +5,8 @@ const fs = require("fs");
 const cors = require("cors");
 const path = require("path");
 const express = require("express");
+const http = require("http");
+const { Server: SocketIOServer } = require("socket.io");
 const bodyParser = require("body-parser");
 const rateLimit = require('express-rate-limit');
 // const cron = require("node-cron");
@@ -31,6 +33,17 @@ const MethodCheck = require("./middlewares/MethodCheck");
 class Server {
     constructor() {
         this.app = express();
+        this.server = http.createServer(this.app);
+        this.io = new SocketIOServer(this.server, {
+            cors: {
+                origin: "*",
+                methods: ["GET", "POST"]
+            }
+        });
+        
+        // Expose io to routes/controllers
+        this.app.set('io', this.io);
+
         this.app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerSpec));
 
         this.port = process.env.PORT || 5000;
@@ -117,12 +130,16 @@ class Server {
     setupRoutes() {
         const route = new Route();
         this.app.use("/api", route.router);
+        
+        // Initialize socket events
+        const setupChatSockets = require("./socket/chat.socket.js");
+        setupChatSockets(this.io);
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //Start
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     start() {
-        this.app.listen(this.port, () => {
+        this.server.listen(this.port, () => {
             console.log(`Server running on http://localhost:${this.port}`);
         });
     }

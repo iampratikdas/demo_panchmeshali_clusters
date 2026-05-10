@@ -531,7 +531,118 @@
  *       201:
  *         description: List fetched successfully
  *       400:
- *         description: Invalid search type
+ *         description: Internal server error
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * tags:
+ *   - name: Chat
+ *     description: Real-time Chat and Messaging APIs
+ */
+
+/**
+ * @swagger
+ * /chats/initiate:
+ *   post:
+ *     summary: Initiate a chat room
+ *     tags: [Chat]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - targetUid
+ *             properties:
+ *               targetUid:
+ *                 type: string
+ *                 example: target_uid_here
+ *     responses:
+ *       200:
+ *         description: Chat initiated successfully
+ *       400:
+ *         description: Missing targetUid or cannot chat with self
+ *       403:
+ *         description: Unauthorized to chat with this user
+ *       404:
+ *         description: Target user not found
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /chats:
+ *   get:
+ *     summary: Get all chats for the logged in user
+ *     tags: [Chat]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of chats
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /chats/{chatId}/messages:
+ *   get:
+ *     summary: Get paginated messages for a chat
+ *     tags: [Chat]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: List of messages
+ *       403:
+ *         description: Unauthorized or chat not found
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /chats/{chatId}/seen:
+ *   patch:
+ *     summary: Mark messages as seen in a chat
+ *     tags: [Chat]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Messages marked as seen
+ *       403:
+ *         description: Unauthorized or chat not found
  *       500:
  *         description: Internal server error
  */

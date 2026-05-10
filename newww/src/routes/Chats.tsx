@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchChats, fetchChatMessages, sendMessage, createChat, fetchUsers } from '../lib/api';
-import type { Chat } from '../types/chat';
+import { fetchChats, fetchChatMessages, createChat, fetchUsers, markMessagesAsSeen } from '../lib/api';
+import type { Chat, ChatMessage, Participant } from '../types/chat';
 import type { User } from '../types/user';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
@@ -10,6 +10,7 @@ import { Badge } from '../ui/badge';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { MessageSquare, Send, Search, User as UserIcon } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
+import { initSocket, disconnectSocket, getSocket } from '../lib/socket';
 
 export default function Chats() {
     const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -21,6 +22,9 @@ export default function Chats() {
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
+    // The user object stored in localStorage
+    const currentUid = localStorage.getItem('uid');
+
     const { data: chats, isLoading: chatsLoading } = useQuery({
         queryKey: ['chats'],
         queryFn: fetchChats,
@@ -30,7 +34,7 @@ export default function Chats() {
         queryKey: ['users'],
         queryFn: () => fetchUsers(1, 1000),
     });
-    const writers: User[] = usersResponse?.data || [];
+    const usersList: User[] = usersResponse?.data || [];
 
     const { data: messages, isLoading: messagesLoading } = useQuery({
         queryKey: ['chatMessages', selectedChatId],
@@ -38,53 +42,110 @@ export default function Chats() {
         enabled: !!selectedChatId,
     });
 
-    const sendMutation = useMutation({
-        mutationFn: (message: string) => sendMessage({ chatId: selectedChatId!, message }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['chatMessages', selectedChatId] });
+    // Setup Socket
+    useEffect(() => {
+        const socket = initSocket();
+
+        socket.on('receive_message', (newMessage: ChatMessage) => {
+            queryClient.setQueryData(['chatMessages', newMessage.chatId], (oldData: any) => {
+                if (!oldData) return [newMessage];
+                // Check if msg already exists to prevent duplicate
+                if (oldData.some((msg: ChatMessage) => msg._id === newMessage._id)) return oldData;
+                return [...oldData, newMessage];
+            });
+
+            // If we are looking at this chat, mark it as seen immediately
+            if (selectedChatId === newMessage.chatId && newMessage.senderId !== currentUid) {
+                socket.emit('mark_seen', { chatId: newMessage.chatId });
+            }
+
             queryClient.invalidateQueries({ queryKey: ['chats'] });
-            setMessageInput('');
-        },
-    });
+        });
+
+        socket.on('message_seen', ({ chatId, seenBy }) => {
+            if (chatId === selectedChatId) {
+                queryClient.invalidateQueries({ queryKey: ['chatMessages', chatId] });
+            }
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+        });
+
+        return () => {
+            disconnectSocket();
+        };
+    }, [queryClient, selectedChatId, currentUid]);
+
+    // Handle joining room and marking seen when chat changes
+    useEffect(() => {
+        if (selectedChatId) {
+            const socket = getSocket();
+            socket.emit('join_chat', selectedChatId);
+            
+            // Mark as seen via API and socket
+            markMessagesAsSeen(selectedChatId).then(() => {
+                queryClient.invalidateQueries({ queryKey: ['chats'] });
+            });
+            socket.emit('mark_seen', { chatId: selectedChatId });
+        }
+    }, [selectedChatId, queryClient]);
 
     const createChatMutation = useMutation({
-        mutationFn: (writerId: string) => createChat(writerId),
+        mutationFn: (targetUid: string) => createChat(targetUid),
         onSuccess: (newChat) => {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
-            setSelectedChatId(newChat.id);
+            setSelectedChatId(newChat.chatId);
             setShowWriterSelect(false);
             setWriterSearch('');
             toast({ title: 'Success!', description: 'Chat started successfully.' });
         },
+        onError: (error: any) => {
+            toast({ title: 'Error', description: error.response?.data?.message || 'Failed to start chat.', variant: 'destructive' });
+        }
     });
 
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
         if (messageInput.trim() && selectedChatId) {
-            sendMutation.mutate(messageInput);
+            const socket = getSocket();
+            socket.emit('send_message', { chatId: selectedChatId, message: messageInput }, (response: any) => {
+                if (response?.status === 'success') {
+                    // Update chat list to reflect last message
+                    queryClient.invalidateQueries({ queryKey: ['chats'] });
+                }
+            });
+            setMessageInput('');
         }
     };
 
-    const handleStartChat = (writerId: string) => {
-        const existingChat = chats?.find(c => c.writerId === writerId);
+    const handleStartChat = (targetUid: string) => {
+        // Find existing chat first
+        const existingChat = chats?.find((c: Chat) => 
+            c.participants.some(p => p.uid === targetUid)
+        );
+        
         if (existingChat) {
-            setSelectedChatId(existingChat.id);
+            setSelectedChatId(existingChat.chatId);
             setShowWriterSelect(false);
         } else {
-            createChatMutation.mutate(writerId);
+            createChatMutation.mutate(targetUid);
         }
     };
 
-    const filteredWriters = writers.filter(w =>
-        (w.full_name?.toLowerCase() || '').includes(writerSearch.toLowerCase()) ||
-        (w.email?.toLowerCase() || '').includes(writerSearch.toLowerCase())
+    const filteredUsers = usersList.filter(u =>
+        u.uid !== currentUid &&
+        ((u.full_name?.toLowerCase() || '').includes(writerSearch.toLowerCase()) ||
+        (u.email?.toLowerCase() || '').includes(writerSearch.toLowerCase()))
     );
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const selectedChat = chats?.find(c => c.id === selectedChatId);
+    const selectedChat = chats?.find((c: Chat) => c.chatId === selectedChatId);
+
+    // Helper to get the "other" participant
+    const getOtherParticipant = (chat: Chat): Participant | undefined => {
+        return chat.participants.find(p => p.uid !== currentUid);
+    };
 
     return (
         <div className="space-y-6">
@@ -99,11 +160,11 @@ export default function Chats() {
                 </Button>
             </div>
 
-            {/* Writer Selection */}
+            {/* User Selection */}
             {showWriterSelect && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Select a Writer</CardTitle>
+                        <CardTitle>Select a User</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="relative">
@@ -111,19 +172,24 @@ export default function Chats() {
                             <Input
                                 value={writerSearch}
                                 onChange={(e) => setWriterSearch(e.target.value)}
-                                placeholder="Search writers by name or email..."
+                                placeholder="Search users by name or email..."
                                 className="pl-10"
                             />
                         </div>
-                        <div className="max-h-64 overflow-y-auto space-y-2">
-                            {filteredWriters?.map((writer) => (
+                        <div className="max-h-64 overflow-y-auto space-y-2 p-1">
+                            {filteredUsers?.map((user) => (
                                 <button
-                                    key={writer.uid}
-                                    onClick={() => handleStartChat(writer.uid!)}
-                                    className="w-full text-left p-3 rounded-lg border hover:bg-accent transition-colors"
+                                    key={user.uid}
+                                    onClick={() => handleStartChat(user.uid!)}
+                                    className="w-full text-left p-3 rounded-lg border hover:bg-primary/5 hover:border-primary/30 hover:shadow-sm transition-all"
                                 >
-                                    <p className="font-medium">{writer.full_name}</p>
-                                    <p className="text-sm text-muted-foreground">{writer.email}</p>
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="font-medium">{user.full_name}</p>
+                                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                                        </div>
+                                        <Badge variant="outline" className="capitalize">{user.role}</Badge>
+                                    </div>
                                 </button>
                             ))}
                         </div>
@@ -144,33 +210,37 @@ export default function Chats() {
                                 <LoadingSkeleton />
                             ) : (
                                 <div className="divide-y">
-                                    {chats?.map((chat: Chat) => (
-                                        <button
-                                            key={chat.id}
-                                            onClick={() => setSelectedChatId(chat.id)}
-                                            className={`w-full text-left p-4 hover:bg-accent transition-colors ${selectedChatId === chat.id ? 'bg-accent' : ''
-                                                }`}
-                                        >
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="flex items-start gap-3 flex-1 min-w-0">
-                                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                                        <UserIcon className="h-5 w-5 text-primary" />
+                                    {chats?.map((chat: Chat) => {
+                                        const otherUser = getOtherParticipant(chat);
+                                        const unreadCount = chat.unreadCounts?.[currentUid] || 0;
+                                        return (
+                                            <button
+                                                key={chat.chatId}
+                                                onClick={() => setSelectedChatId(chat.chatId)}
+                                                className={`w-full text-left p-4 hover:bg-primary/5 transition-all border-l-4 ${selectedChatId === chat.chatId ? 'bg-primary/10 border-primary shadow-sm' : 'border-transparent'
+                                                    }`}
+                                            >
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                                                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                                            <UserIcon className="h-5 w-5 text-primary" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="font-medium truncate">{otherUser?.full_name || 'Unknown'}</p>
+                                                            {chat.lastMessage && (
+                                                                <p className="text-sm text-muted-foreground truncate">
+                                                                    {chat.lastMessage.message}
+                                                                </p>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="font-medium truncate">{chat.writerName}</p>
-                                                        {chat.lastMessage && (
-                                                            <p className="text-sm text-muted-foreground truncate">
-                                                                {chat.lastMessage.message}
-                                                            </p>
-                                                        )}
-                                                    </div>
+                                                    {unreadCount > 0 && (
+                                                        <Badge className="bg-primary flex-shrink-0">{unreadCount}</Badge>
+                                                    )}
                                                 </div>
-                                                {chat.unreadCount > 0 && (
-                                                    <Badge className="bg-primary flex-shrink-0">{chat.unreadCount}</Badge>
-                                                )}
-                                            </div>
-                                        </button>
-                                    ))}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             )}
                             {chats && chats.length === 0 && !showWriterSelect && (
@@ -194,8 +264,8 @@ export default function Chats() {
                                             <UserIcon className="h-5 w-5 text-primary" />
                                         </div>
                                         <div>
-                                            <CardTitle className="text-lg">{selectedChat.writerName}</CardTitle>
-                                            <p className="text-sm text-muted-foreground">{selectedChat.writerEmail}</p>
+                                            <CardTitle className="text-lg">{getOtherParticipant(selectedChat)?.full_name}</CardTitle>
+                                            <p className="text-sm text-muted-foreground">{getOtherParticipant(selectedChat)?.email}</p>
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -205,20 +275,25 @@ export default function Chats() {
                                         <LoadingSkeleton />
                                     ) : (
                                         <>
-                                            {messages?.map((msg) => (
+                                            {messages?.map((msg: ChatMessage) => (
                                                 <div
-                                                    key={msg.id}
-                                                    className={`flex ${msg.senderRole === 'admin' ? 'justify-end' : 'justify-start'}`}
+                                                    key={msg._id}
+                                                    className={`flex ${msg.senderId === currentUid ? 'justify-end' : 'justify-start'}`}
                                                 >
                                                     <div
-                                                        className={`max-w-[70%] rounded-lg p-3 ${msg.senderRole === 'admin'
-                                                            ? 'bg-primary text-primary-foreground'
-                                                            : 'bg-accent'
+                                                        className={`max-w-[70%] rounded-2xl px-4 py-3 shadow-sm ${msg.senderId === currentUid
+                                                            ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                                                            : 'bg-muted border border-muted-foreground/10 text-foreground rounded-tl-sm'
                                                             }`}
                                                     >
                                                         <p className="text-sm">{msg.message}</p>
-                                                        <p className={`text-xs mt-1 ${msg.senderRole === 'admin' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                                                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        <p className={`text-xs mt-1 text-right ${msg.senderId === currentUid ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                                                            {new Date(parseInt(msg.createdAt) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            {msg.senderId === currentUid && (
+                                                                <span className="ml-2">
+                                                                    {msg.status === 'seen' ? '✓✓' : '✓'}
+                                                                </span>
+                                                            )}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -236,7 +311,7 @@ export default function Chats() {
                                             placeholder="Type your message..."
                                             className="flex-1"
                                         />
-                                        <Button type="submit" disabled={!messageInput.trim() || sendMutation.isPending}>
+                                        <Button type="submit" disabled={!messageInput.trim()}>
                                             <Send className="h-4 w-4" />
                                         </Button>
                                     </form>

@@ -1,21 +1,27 @@
 export interface ChatMessage {
-    id: string;
+    _id: string;
+    messageId: string;
     chatId: string;
     senderId: string;
-    senderName: string;
-    senderRole: 'admin' | 'writer';
     message: string;
-    timestamp: string;
-    read: boolean;
+    status: 'sent' | 'delivered' | 'seen';
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface Participant {
+    uid: string;
+    role: string;
+    full_name: string;
+    email: string;
 }
 
 export interface Chat {
-    id: string;
-    writerId: string;
-    writerName: string;
-    writerEmail: string;
+    _id: string;
+    chatId: string;
+    participants: Participant[];
     lastMessage?: ChatMessage;
-    unreadCount: number;
+    unreadCounts: Record<string, number>;
     createdAt: string;
     updatedAt: string;
 }

@@ -607,87 +607,39 @@ export const sendEmail = async (emailData: EmailData): Promise<{ success: boolea
 };
 
 // Chats API Functions
-export const fetchChats = async (): Promise<Chat[]> => {
-    await delay(400);
-
-    // Update last message for each chat
-    const chatsWithMessages = mockChats.map(chat => {
-        const chatMessages = mockMessages.filter(m => m.chatId === chat.id);
-        const lastMessage = chatMessages[chatMessages.length - 1];
-        const unreadCount = chatMessages.filter(m => m.senderRole === 'writer' && !m.read).length;
-
-        return {
-            ...chat,
-            lastMessage,
-            unreadCount,
-        };
+export const fetchChats = async (): Promise<any[]> => {
+    const response = await axios.get(`${API_BASE_URL}/chats`, {
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
     });
-
-    return chatsWithMessages.sort((a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    );
+    return response.data?.data || [];
 };
 
-export const fetchChatMessages = async (chatId: string): Promise<ChatMessage[]> => {
-    await delay(300);
-
-    return mockMessages
-        .filter(m => m.chatId === chatId)
-        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+export const fetchChatMessages = async (chatId: string, page = 1, limit = 50): Promise<any> => {
+    const response = await axios.get(`${API_BASE_URL}/chats/${chatId}/messages?page=${page}&limit=${limit}`, {
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+    });
+    return response.data?.data || [];
 };
 
-export const sendMessage = async (data: SendMessageData): Promise<ChatMessage> => {
-    await delay(500);
-
-    const newMessage: ChatMessage = {
-        id: `msg${mockMessages.length + 1}`,
-        chatId: data.chatId,
-        senderId: 'admin1',
-        senderName: 'Admin',
-        senderRole: 'admin',
-        message: data.message,
-        timestamp: new Date().toISOString(),
-        read: false,
-    };
-
-    mockMessages.push(newMessage);
-
-    // Update chat's updatedAt
-    const chat = mockChats.find(c => c.id === data.chatId);
-    if (chat) {
-        chat.updatedAt = new Date().toISOString();
-    }
-
-    return newMessage;
+export const createChat = async (targetUid: string): Promise<any> => {
+    const response = await axios.post(`${API_BASE_URL}/chats/initiate`, { targetUid }, {
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+    });
+    return response.data?.data;
 };
 
-export const createChat = async (writerId: string): Promise<[]> => {
-    // await delay(600);
-
-    // // Check if chat already exists
-    // const existingChat = mockChats.find(c => c.writerId === writerId);
-    // if (existingChat) {
-    //     return existingChat;
-    // }
-
-    // // Find writer from mockUsers
-    // const writer = mockUsers.find(u => u.uid === writerId);
-    // if (!writer) {
-    //     throw new Error('Writer not found');
-    // }
-
-    // const newChat: Chat = {
-    //     id: `chat${mockChats.length + 1}`,
-    //     writerId: writer.uid,
-    //     writerName: writer.fullName,
-    //     writerEmail: writer.email,
-    //     unreadCount: 0,
-    //     createdAt: new Date().toISOString(),
-    //     updatedAt: new Date().toISOString(),
-    // };
-
-    // mockChats.unshift(newChat);
-    return [];
+export const markMessagesAsSeen = async (chatId: string): Promise<void> => {
+    await axios.patch(`${API_BASE_URL}/chats/${chatId}/seen`, {}, {
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+    });
 };
 
 // Notifications API Functions

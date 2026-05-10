@@ -38,6 +38,9 @@ class Route {
         this.initializePublisherRoutes(new PublisherController(this.userFunc));  //publisher routes initializer
         this.initializeFolderRoutes(new FolderController(this.userFunc));  //folder routes initializer
         this.initializeSearchRoutes(new SearchController(this.userFunc));  //search routes initializer
+        
+        // Chat routes
+        this.router.use('/chats', require('./chat.js'));
     }
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
