@@ -126,6 +126,58 @@ module.exports = (io) => {
             }
         });
 
+        // Delete message
+        socket.on("delete_message", async ({ messageId, chatId }, callback) => {
+            try {
+                const db = await SetupDatabase.getConnection();
+                const Message = await require('../models/monogdb/Message')(db);
+
+                // Find and verify the message belongs to the sender
+                const msgDoc = await Message.findOne({ messageId, chatId, senderId: socket.user.uid });
+                if (!msgDoc) {
+                    if (callback) callback({ status: "error", message: "Message not found or unauthorized" });
+                    return;
+                }
+
+                msgDoc.is_deleted = true;
+                await msgDoc.save();
+
+                // Broadcast deletion to room
+                io.to(chatId).emit("message_deleted", { messageId, chatId });
+
+                if (callback) callback({ status: "success" });
+            } catch (error) {
+                console.error("Socket delete_message error:", error);
+                if (callback) callback({ status: "error", message: "Internal server error" });
+            }
+        });
+
+        // Delete chat
+        socket.on("delete_chat", async ({ chatId }, callback) => {
+            try {
+                const db = await SetupDatabase.getConnection();
+                const Chat = await require('../models/monogdb/Chat')(db);
+
+                // Find and verify the chat belongs to the user
+                const chatDoc = await Chat.findOne({ chatId, "participants.uid": socket.user.uid });
+                if (!chatDoc) {
+                    if (callback) callback({ status: "error", message: "Chat not found or unauthorized" });
+                    return;
+                }
+
+                chatDoc.is_deleted = true;
+                await chatDoc.save();
+
+                // Broadcast deletion to room
+                io.to(chatId).emit("chat_deleted", { chatId });
+
+                if (callback) callback({ status: "success" });
+            } catch (error) {
+                console.error("Socket delete_chat error:", error);
+                if (callback) callback({ status: "error", message: "Internal server error" });
+            }
+        });
+
         // User disconnects
         socket.on("disconnect", () => {
             console.log(`User disconnected: ${socket.user.uid}`);

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchChats, fetchChatMessages, createChat, fetchUsers, markMessagesAsSeen } from '../lib/api';
+import { fetchChats, fetchChatMessages, createChat, fetchUsers } from '../lib/api';
 import type { Chat, ChatMessage, Participant } from '../types/chat';
 import type { User } from '../types/user';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -8,7 +8,7 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
-import { MessageSquare, Send, Search, User as UserIcon } from 'lucide-react';
+import { MessageSquare, Send, Search, User as UserIcon, Trash2 } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import { initSocket, disconnectSocket, getSocket } from '../lib/socket';
 
@@ -62,6 +62,21 @@ export default function Chats() {
             queryClient.invalidateQueries({ queryKey: ['chats'] });
         });
 
+        socket.on('message_deleted', ({ messageId, chatId }) => {
+            queryClient.setQueryData(['chatMessages', chatId], (oldData: any) => {
+                if (!oldData) return oldData;
+                return oldData.filter((msg: ChatMessage) => msg.messageId !== messageId);
+            });
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+        });
+
+        socket.on('chat_deleted', ({ chatId }) => {
+            if (chatId === selectedChatId) {
+                setSelectedChatId(null);
+            }
+            queryClient.invalidateQueries({ queryKey: ['chats'] });
+        });
+
         socket.on('message_seen', ({ chatId, seenBy }) => {
             if (chatId === selectedChatId) {
                 queryClient.invalidateQueries({ queryKey: ['chatMessages', chatId] });
@@ -79,11 +94,8 @@ export default function Chats() {
         if (selectedChatId) {
             const socket = getSocket();
             socket.emit('join_chat', selectedChatId);
-            
-            // Mark as seen via API and socket
-            markMessagesAsSeen(selectedChatId).then(() => {
-                queryClient.invalidateQueries({ queryKey: ['chats'] });
-            });
+
+            // Mark as seen via socket
             socket.emit('mark_seen', { chatId: selectedChatId });
         }
     }, [selectedChatId, queryClient]);
@@ -116,12 +128,46 @@ export default function Chats() {
         }
     };
 
+    const handleDeleteMessage = (messageId: string, chatId: string) => {
+        if (!confirm('Are you sure you want to delete this message?')) return;
+        const socket = getSocket();
+        socket.emit('delete_message', { messageId, chatId }, (response: any) => {
+            if (response?.status === 'success') {
+                // Update local cache immediately
+                queryClient.setQueryData(['chatMessages', chatId], (oldData: any) => {
+                    if (!oldData) return oldData;
+                    return oldData.filter((msg: ChatMessage) => msg.messageId !== messageId);
+                });
+                queryClient.invalidateQueries({ queryKey: ['chats'] });
+            } else {
+                toast({ title: 'Error', description: response?.message || 'Failed to delete message.', variant: 'destructive' });
+            }
+        });
+    };
+
+    const handleDeleteChat = (e: React.MouseEvent, chatId: string) => {
+        e.stopPropagation();
+        if (!confirm('Are you sure you want to delete this entire chat?')) return;
+        const socket = getSocket();
+        socket.emit('delete_chat', { chatId }, (response: any) => {
+            if (response?.status === 'success') {
+                if (chatId === selectedChatId) {
+                    setSelectedChatId(null);
+                }
+                queryClient.invalidateQueries({ queryKey: ['chats'] });
+                toast({ title: 'Success', description: 'Chat deleted.' });
+            } else {
+                toast({ title: 'Error', description: response?.message || 'Failed to delete chat.', variant: 'destructive' });
+            }
+        });
+    };
+
     const handleStartChat = (targetUid: string) => {
         // Find existing chat first
-        const existingChat = chats?.find((c: Chat) => 
+        const existingChat = chats?.find((c: Chat) =>
             c.participants.some(p => p.uid === targetUid)
         );
-        
+
         if (existingChat) {
             setSelectedChatId(existingChat.chatId);
             setShowWriterSelect(false);
@@ -133,7 +179,7 @@ export default function Chats() {
     const filteredUsers = usersList.filter(u =>
         u.uid !== currentUid &&
         ((u.full_name?.toLowerCase() || '').includes(writerSearch.toLowerCase()) ||
-        (u.email?.toLowerCase() || '').includes(writerSearch.toLowerCase()))
+            (u.email?.toLowerCase() || '').includes(writerSearch.toLowerCase()))
     );
 
     useEffect(() => {
@@ -217,26 +263,33 @@ export default function Chats() {
                                             <button
                                                 key={chat.chatId}
                                                 onClick={() => setSelectedChatId(chat.chatId)}
-                                                className={`w-full text-left p-4 hover:bg-primary/5 transition-all border-l-4 ${selectedChatId === chat.chatId ? 'bg-primary/10 border-primary shadow-sm' : 'border-transparent'
+                                                className={`w-full text-left p-4 hover:bg-muted/50 transition-colors group flex justify-between items-center ${selectedChatId === chat.chatId ? 'bg-muted/50 border-l-4 border-primary' : ''
                                                     }`}
                                             >
-                                                <div className="flex items-start justify-between gap-3">
-                                                    <div className="flex items-start gap-3 flex-1 min-w-0">
-                                                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                                            <UserIcon className="h-5 w-5 text-primary" />
-                                                        </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="font-medium truncate">{otherUser?.full_name || 'Unknown'}</p>
-                                                            {chat.lastMessage && (
-                                                                <p className="text-sm text-muted-foreground truncate">
-                                                                    {chat.lastMessage.message}
-                                                                </p>
-                                                            )}
-                                                        </div>
+                                                <div className="flex items-center gap-3 truncate">
+                                                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                                                        <UserIcon className="h-5 w-5 text-muted-foreground" />
                                                     </div>
+                                                    <div className="truncate">
+                                                        <p className="font-medium truncate">{otherUser?.full_name || 'Unknown User'}</p>
+                                                        <p className="text-sm text-muted-foreground truncate">
+                                                            {chat.lastMessage ? chat.lastMessage.message : 'No messages yet'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
                                                     {unreadCount > 0 && (
-                                                        <Badge className="bg-primary flex-shrink-0">{unreadCount}</Badge>
+                                                        <Badge variant="default" className="rounded-full px-2 py-0.5">
+                                                            {unreadCount}
+                                                        </Badge>
                                                     )}
+                                                    <button
+                                                        onClick={(e) => handleDeleteChat(e, chat.chatId)}
+                                                        className="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-red-500 transition-all shrink-0"
+                                                        title="Delete Chat"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
                                                 </div>
                                             </button>
                                         );
@@ -265,7 +318,7 @@ export default function Chats() {
                                         </div>
                                         <div>
                                             <CardTitle className="text-lg">{getOtherParticipant(selectedChat)?.full_name}</CardTitle>
-                                            <p className="text-sm text-muted-foreground">{getOtherParticipant(selectedChat)?.email}</p>
+                                            {/* <p className="text-sm text-muted-foreground">{getOtherParticipant(selectedChat)?.email}</p> */}
                                         </div>
                                     </div>
                                 </CardHeader>
@@ -287,14 +340,25 @@ export default function Chats() {
                                                             }`}
                                                     >
                                                         <p className="text-sm">{msg.message}</p>
-                                                        <p className={`text-xs mt-1 text-right ${msg.senderId === currentUid ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                                                            {new Date(parseInt(msg.createdAt) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                            {msg.senderId === currentUid && (
-                                                                <span className="ml-2">
-                                                                    {msg.status === 'seen' ? '✓✓' : '✓'}
-                                                                </span>
-                                                            )}
-                                                        </p>
+                                                        <div className={`text-xs mt-1 flex justify-between items-center ${msg.senderId === currentUid ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                                                            {msg.senderId === currentUid ? (
+                                                                <button 
+                                                                    onClick={() => handleDeleteMessage(msg.messageId, msg.chatId)}
+                                                                    className="hover:text-red-500 transition-colors opacity-50 hover:opacity-100 p-1"
+                                                                    title="Delete message"
+                                                                >
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                </button>
+                                                            ) : <span />}
+                                                            <div className="text-right flex-1">
+                                                                {new Date(parseInt(msg.createdAt) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                {msg.senderId === currentUid && (
+                                                                    <span className="ml-2">
+                                                                        {msg.status === 'seen' ? '✓✓' : '✓'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}

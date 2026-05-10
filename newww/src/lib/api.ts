@@ -606,40 +606,24 @@ export const sendEmail = async (emailData: EmailData): Promise<{ success: boolea
     };
 };
 
-// Chats API Functions
+
 export const fetchChats = async (): Promise<any[]> => {
-    const response = await axios.get(`${API_BASE_URL}/chats`, {
-        headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-    });
+    const response = await axios.get(`${API_BASE_URL}/chats`, { headers: getAuthHeaders() });
     return response.data?.data || [];
 };
 
 export const fetchChatMessages = async (chatId: string, page = 1, limit = 50): Promise<any> => {
-    const response = await axios.get(`${API_BASE_URL}/chats/${chatId}/messages?page=${page}&limit=${limit}`, {
-        headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-    });
+    const response = await axios.get(`${API_BASE_URL}/chats/${chatId}/messages?page=${page}&limit=${limit}`, { headers: getAuthHeaders() });
     return response.data?.data || [];
 };
 
 export const createChat = async (targetUid: string): Promise<any> => {
-    const response = await axios.post(`${API_BASE_URL}/chats/initiate`, { targetUid }, {
-        headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-    });
+    const response = await axios.post(`${API_BASE_URL}/chats/initiate`, { targetUid }, { headers: getAuthHeaders() });
     return response.data?.data;
 };
 
 export const markMessagesAsSeen = async (chatId: string): Promise<void> => {
-    await axios.patch(`${API_BASE_URL}/chats/${chatId}/seen`, {}, {
-        headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-    });
+    await axios.patch(`${API_BASE_URL}/chats/${chatId}/seen`, {}, { headers: getAuthHeaders() });
 };
 
 // Notifications API Functions

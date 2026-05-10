@@ -33,6 +33,10 @@ const chatSchema = new mongoose.Schema({
     of: Number,
     default: {}
   },
+  is_deleted: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: String,
     default: () => moment().unix()

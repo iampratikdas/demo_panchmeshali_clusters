@@ -26,6 +26,10 @@ const messageSchema = new mongoose.Schema({
     enum: ['sent', 'delivered', 'seen'],
     default: 'sent'
   },
+  is_deleted: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: String,
     default: () => moment().unix()

@@ -3,6 +3,16 @@ const SetupDatabase = require("../db/mongodb/setupDatabase");
 
 class ChatController {
   
+  async _getModels() {
+    const db = await SetupDatabase.getConnection();
+    return {
+      User: await require('../models/monogdb/User')(db),
+      Chat: await require('../models/monogdb/Chat')(db),
+      Message: await require('../models/monogdb/Message')(db),
+      WritersAssignedPublishers: await require('../models/monogdb/WritersAssignedPublishers')(db)
+    };
+  }
+
   async initiateChat(req, res, token_data) {
     try {
       const { targetUid } = req.body;
@@ -17,10 +27,7 @@ class ChatController {
         return res.status(400).json({ status: 400, message: "Cannot initiate chat with yourself" });
       }
 
-      const db = await SetupDatabase.getConnection();
-      const User = await require('../models/monogdb/User')(db);
-      const Chat = await require('../models/monogdb/Chat')(db);
-      const WritersAssignedPublishers = await require('../models/monogdb/WritersAssignedPublishers')(db);
+      const { User, Chat, WritersAssignedPublishers } = await this._getModels();
 
       // 1. Verify target user exists
       const targetUser = await User.findOne({ uid: targetUid });
@@ -93,11 +100,9 @@ class ChatController {
 
   async getChats(req, res, token_data) {
     try {
-      const db = await SetupDatabase.getConnection();
-      const Chat = await require('../models/monogdb/Chat')(db);
-      const Message = await require('../models/monogdb/Message')(db);
+      const { Chat, Message } = await this._getModels();
       
-      const chats = await Chat.find({ "participants.uid": token_data.uid })
+      const chats = await Chat.find({ "participants.uid": token_data.uid, is_deleted: { $ne: true } })
                               .populate('lastMessage')
                               .sort({ updatedAt: -1 })
                               .exec();
@@ -120,17 +125,15 @@ class ChatController {
       const limit = parseInt(req.query.limit) || 20;
       const skip = (page - 1) * limit;
 
-      const db = await SetupDatabase.getConnection();
-      const Chat = await require('../models/monogdb/Chat')(db);
-      const Message = await require('../models/monogdb/Message')(db);
+      const { Chat, Message } = await this._getModels();
 
       const chat = await Chat.findOne({ chatId, "participants.uid": token_data.uid });
       if (!chat) {
         return res.status(403).json({ status: 403, message: "Unauthorized or chat not found" });
       }
 
-      const totalMessages = await Message.countDocuments({ chatId });
-      const messages = await Message.find({ chatId })
+      const totalMessages = await Message.countDocuments({ chatId, is_deleted: { $ne: true } });
+      const messages = await Message.find({ chatId, is_deleted: { $ne: true } })
                                     .sort({ createdAt: -1 })
                                     .skip(skip)
                                     .limit(limit)
@@ -160,9 +163,7 @@ class ChatController {
     try {
       const { chatId } = req.params;
       
-      const db = await SetupDatabase.getConnection();
-      const Chat = await require('../models/monogdb/Chat')(db);
-      const Message = await require('../models/monogdb/Message')(db);
+      const { Chat, Message } = await this._getModels();
 
       const chatDoc = await Chat.findOne({ chatId, "participants.uid": token_data.uid });
       if (!chatDoc) {
