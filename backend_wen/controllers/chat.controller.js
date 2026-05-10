@@ -62,10 +62,11 @@ class ChatController {
         }
       }
 
-      // 3. Check if chat already exists
+      // 3. Check if an active chat already exists
       let chat = await Chat.findOne({
         "participants.uid": { $all: [myUid, targetUid] },
-        participants: { $size: 2 }
+        participants: { $size: 2 },
+        is_deleted: { $ne: true }
       });
 
       if (!chat) {
