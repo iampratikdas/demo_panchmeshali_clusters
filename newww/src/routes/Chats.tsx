@@ -128,6 +128,18 @@ export default function Chats() {
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
         if (messageInput.trim() && selectedChatId) {
+            // Check for URLs to block them
+            const urlRegex = /((?:https?:\/\/)?(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z]{2,6}\b(?:[-a-zA-Z0-9()@:%_+.~#?&//=]*))/i;
+            if (urlRegex.test(messageInput)) {
+                Swal.fire({
+                    title: 'Links not allowed!',
+                    text: 'Sharing URLs or links is restricted in this chat.',
+                    icon: 'error',
+                    confirmButtonText: 'Okay'
+                });
+                return;
+            }
+
             const socket = getSocket();
             socket.emit('send_message', { chatId: selectedChatId, message: messageInput }, (response: any) => {
                 if (response?.status === 'success') {
@@ -137,28 +149,6 @@ export default function Chats() {
             });
             setMessageInput('');
         }
-    };
-
-    const renderMessageText = (text: string) => {
-        // Regex to detect HTTP/HTTPS URLs
-        const urlRegex = /(https?:\/\/[^\s]+)/g;
-        return text.split(urlRegex).map((part, i) => {
-            if (part.match(urlRegex)) {
-                return (
-                    <a 
-                        key={i} 
-                        href={part} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="underline hover:opacity-80 transition-opacity break-all font-medium text-blue-400"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {part}
-                    </a>
-                );
-            }
-            return <span key={i} className="break-words">{part}</span>;
-        });
     };
 
     const handleDeleteMessage = (messageId: string, chatId: string) => {
@@ -393,7 +383,7 @@ export default function Chats() {
                                                             : 'bg-muted text-foreground rounded-bl-none border border-border shadow-sm'
                                                             }`}
                                                     >
-                                                        <div className="text-sm whitespace-pre-wrap leading-relaxed">{renderMessageText(msg.message)}</div>
+                                                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.message}</p>
                                                         <div className={`text-xs mt-1 flex justify-between items-center ${msg.senderId === currentUid ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                                                             {msg.senderId === currentUid ? (
                                                                 <button 
