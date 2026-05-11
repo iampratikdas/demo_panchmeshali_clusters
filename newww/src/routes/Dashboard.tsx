@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchContents } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
@@ -27,8 +27,13 @@ import { NewsFeedTab } from '../components/dashboard/NewsFeedTab';
 export default function Dashboard() {
     const { bootPlay } = useSounds();
     const [user] = useAtom(currentUserAtom);
-    const [activeTab, setActiveTab] = useState<'analytics' | 'news-feed' | 'publishers'>('publishers');
+    const [activeTab, setActiveTab] = useState<'analytics' | 'news-feed' | 'publishers'>('analytics');
 
+    useEffect(() => {
+        if (user.role === 'writer') {
+            setActiveTab('publishers');
+        }
+    }, [user]);
     const { data, isLoading } = useQuery({
         queryKey: ['contents'],
         queryFn: () => fetchContents(1, 100),
@@ -125,20 +130,28 @@ export default function Dashboard() {
 
                     {/* Top Navigation Bar */}
                     <div className="bg-white dark:bg-white dark:bg-card rounded-xl border border-border flex justify-around overflow-hidden shadow-sm">
-                        {/* <button
-                            className={cn("flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'news-feed' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
-                            onClick={() => setActiveTab('news-feed')}
-                        >
-                            For you
-                            {activeTab === 'news-feed' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-green-600 rounded-t-full"></div>}
-                        </button> */}
-                        <button
-                            className={cn(" cursor-pointer flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'publishers' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
-                            onClick={() => setActiveTab('publishers')}
-                        >
-                            Following
-                            {activeTab === 'publishers' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-green-600 rounded-t-full"></div>}
-                        </button>
+                        {
+                            false ?
+
+                                <button
+                                    className={cn("flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'news-feed' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
+                                    onClick={() => setActiveTab('news-feed')}
+                                >
+                                    For you
+                                    {activeTab === 'news-feed' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-green-600 rounded-t-full"></div>}
+                                </button> : null
+                        }
+                        {
+                            user.role == "writer" ?
+                                <button
+                                    className={cn(" cursor-pointer flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'publishers' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
+                                    onClick={() => setActiveTab('publishers')}
+                                >
+                                    Following
+                                    {activeTab === 'publishers' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-green-600 rounded-t-full"></div>}
+                                </button> : null
+                        }
+
                         <button
                             className={cn("cursor-pointer flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'analytics' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
                             onClick={() => setActiveTab('analytics')}
@@ -190,7 +203,7 @@ export default function Dashboard() {
                     {/* Feed Content */}
                     <div className="space-y-4">
                         {activeTab === 'analytics' && renderAnalytics()}
-                        {/* {activeTab === 'news-feed' && <NewsFeedTab />} */}
+                        {activeTab === 'news-feed' && <NewsFeedTab />}
                         {activeTab === 'publishers' && <PublishersTab />}
                     </div>
 

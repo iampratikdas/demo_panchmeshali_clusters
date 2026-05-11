@@ -6,7 +6,8 @@ export const currentUserAtom = atom({
     id: 'user1',
     name: localStorage.getItem("name"),
     email: localStorage.getItem("email"),
-    isAdmin: true,   // set false to test writer-only view
+    role: localStorage.getItem("role"),   // set false to test writer-only view
+    uid: localStorage.getItem("uid"),   // set false to test writer-only view
 });
 
 // UI state
