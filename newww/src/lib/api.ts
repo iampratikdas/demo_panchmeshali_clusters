@@ -711,14 +711,78 @@ export const requestJoinPublisher = async (publisherUid: string): Promise<any> =
 
 /**
  * Cancel / remove a publisher assignment.
- * POST /update_publisher_users/:publisherUid   body: { request_type: 'Removed' }
+ * POST /update_publisher_users/:publisherUid   body: { request_type: 'Cancelled' }
  */
-export const removePublisherAssignment = async (publisherUid: string): Promise<any> => {
+export const removePublisherAssignment = async (pid: string): Promise<any> => {
     const response = await axios.post(
-        `${API_BASE_URL}/update_publisher_users/${publisherUid}`,
-        { request_type: 'Removed' },
+        `${API_BASE_URL}/update_publisher_users/${pid}`,
+        { request_type: 'Cancelled' },
         { headers: getAuthHeaders() }
     );
     return response.data;
 };
 
+// ── Teams Section API Functions ───────────────────────────────────────────────
+
+/**
+ * Publisher: fetch all writer requests/members for their company.
+ * GET /team_requests
+ */
+export const fetchTeamRequests = async (): Promise<any> => {
+    const response = await axios.get(
+        `${API_BASE_URL}/team_requests`,
+        { headers: getAuthHeaders() }
+    );
+    return response.data;
+};
+
+/**
+ * Publisher: accept / reject / remove a writer.
+ * POST /update_team_request/:writerUid
+ */
+export const updateTeamRequest = async (writerUid: string, requestType: 'Accepted' | 'Rejected' | 'Cancelled'): Promise<any> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/update_team_request/${writerUid}`,
+        { request_type: requestType },
+        { headers: getAuthHeaders() }
+    );
+    return response.data;
+};
+
+/**
+ * Fetch stats for a specific writer.
+ * GET /writer_stats/:writerUid
+ */
+export const fetchWriterStats = async (writerUid: string): Promise<any> => {
+    const response = await axios.get(
+        `${API_BASE_URL}/writer_stats/${writerUid}`,
+        { headers: getAuthHeaders() }
+    );
+    return response.data?.data ?? {};
+};
+
+/**
+ * Writer: leave/remove themselves from a publisher team.
+ * POST /update_publisher_users/:pid  body: { request_type: 'Cancelled' }
+ */
+export const leavePublisherTeam = async (pid: string): Promise<any> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/update_publisher_users/${pid}`,
+        { request_type: 'Cancelled' },
+        { headers: getAuthHeaders() }
+    );
+    return response.data;
+};
+
+/**
+ * Writer: request to join a publisher company by pid.
+ * POST /request_publisher_users/:pid
+ */
+export const requestJoinPublisherByPid = async (pid: string): Promise<any> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/request_publisher_users/${pid}`,
+        {},
+        { headers: getAuthHeaders() }
+    );
+    return response.data;
+};

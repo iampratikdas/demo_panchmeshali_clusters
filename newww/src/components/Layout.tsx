@@ -20,7 +20,8 @@ import {
     Trophy,
     Loader2,
     Newspaper,
-    Building
+    Building,
+    Users2
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useAtom } from 'jotai';
@@ -47,6 +48,7 @@ const navItems = [
     { to: '/rankings', label: 'Rank the Contents', icon: Trophy },
     { to: '/publish-preview', label: 'Book Publish Preview', icon: Newspaper },
     { to: '/publishers', label: 'Publishers', icon: Building },
+    { to: '/teams', label: 'Teams', icon: Users2, roles: ['publisher', 'writer', 'both'] },
 ];
 
 const projectItems = [
@@ -121,6 +123,10 @@ export function Layout({ children }: LayoutProps) {
         if (pathname.startsWith('/publishers')) return {
             title: 'Client Management System',
             image: 'https://images.unsplash.com/photo-1571171637578-41bc2dd41cd2?q=80&w=2940&auto=format&fit=crop'
+        };
+        if (pathname.startsWith('/teams')) return {
+            title: 'Teams',
+            image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2940&auto=format&fit=crop'
         };
         return {
             title: 'Dashboard',
@@ -198,7 +204,11 @@ export function Layout({ children }: LayoutProps) {
                         </div>
 
                         <nav className="space-y-1 flex-1">
-                            {navItems.map((item) => {
+                            {navItems.filter(item => {
+                                // If item has role restriction, check current user role
+                                if (!item.roles) return true;
+                                return item.roles.includes(user.role ?? '');
+                            }).map((item) => {
                                 const Icon = item.icon;
                                 const isActive = location.pathname === item.to;
                                 return (

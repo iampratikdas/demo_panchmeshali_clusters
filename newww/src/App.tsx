@@ -15,6 +15,7 @@ import Rankings from './routes/Rankings';
 import PublishPreview from './routes/PublishPreview';
 import Login from './routes/Login';
 import Publishers from './routes/Publishers';
+import Teams from './routes/Teams';
 import { Layout } from './components/Layout';
 import './index.css';
 
@@ -105,6 +106,12 @@ const publishersRoute = createRoute({
   path: '/publishers',
   component: Publishers,
 });
+
+const teamsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/teams',
+  component: Teams,
+});
 const rootRoutelogin = createRootRoute();
 
 const authRootRoute = createRoute({
@@ -133,6 +140,7 @@ const mainRoutes = [
   rankingsRoute,
   publishPreviewRoute,
   publishersRoute,
+  teamsRoute,
   settingsRoute,
 ];
 

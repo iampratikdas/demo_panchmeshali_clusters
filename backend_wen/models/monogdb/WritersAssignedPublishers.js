@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const moment = require("moment");
 
 const writersAssignedPublishersSchema = new mongoose.Schema({
-  publisher_uid: {
+  pid: {
     type: String,
     required: true,
   },
