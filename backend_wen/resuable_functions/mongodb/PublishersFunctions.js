@@ -37,8 +37,8 @@ class PublishersFunctions {
      */
     async getAssignedPublishers(writer_uid) {
         try {
-            return await this.assignedPublishersModel.aggregate([
-                { $match: { writer_uid: writer_uid } },
+            return await this.publishermodel.aggregate([
+
                 {
                     $lookup: {
                         from: "publishers",
@@ -47,7 +47,8 @@ class PublishersFunctions {
                         as: "publisher_details"
                     }
                 },
-                { $unwind: { path: "$publisher_details", preserveNullAndEmptyArrays: true } }
+                // { $match: { writer_uid: { $ne: writer_uid } } },
+                // { $unwind: { path: "$publisher_details", preserveNullAndEmptyArrays: true } }
             ]);
         } catch (error) {
             console.error("Error fetching assigned publishers:", error);

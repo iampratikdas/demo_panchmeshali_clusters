@@ -17,7 +17,7 @@ const writersAssignedPublishersSchema = new mongoose.Schema({
   },
   requested_by: {
     type: String,
-    enum: ['publisher', 'writer'],
+    // enum: ['publisher', 'writer', 'both'],
     required: true
   },
   createdAt: {

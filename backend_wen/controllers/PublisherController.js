@@ -46,7 +46,7 @@ class PublisherController {
             }
 
             const assignedPublishers = await this.publisherFunc.getAssignedPublishers(uid);
-
+            console.log("assignedPublishers============>", assignedPublishers);
             // Format the output: list of publishers with assignment info
             const formattedData = assignedPublishers.map(ap => {
                 if (ap.publisher_details) {

@@ -6,11 +6,27 @@ const swaggerDefinition = {
     title: 'Panchmeshali',
     version: '1.0.0',
     description: 'All Apis listed here',
-  },servers: [
-      {
-        url: "http://localhost:8600/api/", // Adjust if needed
+  },
+  servers: [
+    {
+      url: "http://localhost:8600/api/", // Adjust if needed
+    },
+  ],
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Enter your JWT token in the format: Bearer <token>',
       },
-    ],
+    },
+  },
+  security: [
+    {
+      bearerAuth: [],
+    },
+  ],
 };
 
 const options = {
