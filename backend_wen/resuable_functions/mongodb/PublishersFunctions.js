@@ -40,9 +40,10 @@ class PublishersFunctions {
 
             const ddd = await this.assignedPublishersModel
                 .find({
-                    requested_by: writer_uid,
+
+                    writer_uid: writer_uid,
                     status: {
-                        $in: ['Pending'],
+                        $in: ['Active', 'Pending'],
                     },
                 })
                 .distinct('pid');

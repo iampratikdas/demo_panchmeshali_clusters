@@ -141,13 +141,7 @@ export function PublishersTab() {
         try {
             await requestJoinPublisher(pub.pid);
             // Optimistically mark as Pending + generate a temporary assignment_id
-            setPublishers(prev =>
-                prev.map(p =>
-                    p.pid === pub.pid
-                        ? { ...p, status: 'Pending', assignment_id: 'pending_' + pub.pid }
-                        : p
-                )
-            );
+            loadPublishers();
             showToast(`Join request sent to ${pub.name}!`, 'success');
         } catch (err: any) {
             const msg = err?.response?.data?.message ?? 'Failed to send request.';

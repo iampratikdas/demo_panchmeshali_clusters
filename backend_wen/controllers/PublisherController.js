@@ -49,7 +49,7 @@ class PublisherController {
             // console.log("assignedPublishers============>", uid, assignedPublishers);
             // Format the output: list of publishers with assignment info
 
-            console.log("assignedPublishers=============>", assignedPublishers)
+            // console.log("assignedPublishers=============>", assignedPublishers)
             return res
                 .status(200)
                 .json({
@@ -178,7 +178,7 @@ class PublisherController {
             }
 
             // Check if request already exists
-            const existingRequest = await this.publisherFunc.findAssignedPublisher({ pid, writer_uid });
+            const existingRequest = await this.publisherFunc.findAssignedPublisher({ pid, writer_uid, status: { $in: ['Active', 'Pending'] } });
             if (existingRequest) {
                 return res.status(409).json({ status: 409, message: "Request already exists between this publisher and writer", data: {} });
             }
