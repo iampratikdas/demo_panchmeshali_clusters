@@ -82,62 +82,21 @@ function PublisherRow({ pub, isLast, loadingUid, onJoin, onRemove }: PublisherRo
                 </div>
             </div>
 
-            {/* Right: Action buttons */}
+            {/* Right: Action buttons eligible publishers list will be presenting here */}
             <div className="flex gap-2 sm:ml-4 flex-shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
-                {/* Show "Join" only when there is no existing assignment (status is Removed or the assignment_id is falsy) */}
-                {(status === 'Removed') && (
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={false}
-                        className="rounded-full flex-1 sm:flex-none border-blue-600 text-blue-600 hover:bg-blue-50 font-bold"
-                        onClick={() => onJoin(pub)}
-                    >
 
-                        <UserPlus className="w-4 h-4 mr-1.5" />
+                <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={false}
+                    className="rounded-full flex-1 sm:flex-none border-blue-600 text-blue-600 hover:bg-blue-50 font-bold"
+                    onClick={() => onJoin(pub)}
+                >
 
-                        Join
-                    </Button>
-                )}
+                    <UserPlus className="w-4 h-4 mr-1.5" />
 
-                {/* Show "Requested" (disabled) when pending */}
-                {status === 'Pending' && (
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        disabled
-                        className="rounded-full flex-1 sm:flex-none border-yellow-500 text-yellow-600 bg-yellow-50 font-bold cursor-not-allowed"
-                    >
-                        <Check className="w-4 h-4 mr-1.5" />
-                        Requested
-                    </Button>
-                )}
-
-                {/* Show "Accepted" label (non-interactive) when accepted */}
-                {status === 'Accepted' && (
-                    <span className="flex items-center gap-1.5 text-sm font-bold text-green-600 px-3 py-1.5 bg-green-50 rounded-full border border-green-200">
-                        <Check className="w-4 h-4" />
-                        Joined
-                    </span>
-                )}
-
-                {/* Show "Cancel / Remove" when pending or accepted */}
-                {(status === 'Pending' || status === 'Accepted') && (
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={false}
-                        className="rounded-full flex-1 sm:flex-none font-bold text-muted-foreground hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
-                        onClick={() => onRemove(pub)}
-                    >
-                        {false ? (
-                            <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-                        ) : (
-                            <X className="w-4 h-4 mr-1.5" />
-                        )}
-                        {status === 'Accepted' ? 'Leave' : 'Cancel'}
-                    </Button>
-                )}
+                    Join
+                </Button>
             </div>
         </div>
     );
