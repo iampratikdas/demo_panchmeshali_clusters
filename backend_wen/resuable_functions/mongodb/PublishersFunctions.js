@@ -37,19 +37,20 @@ class PublishersFunctions {
      */
     async getAssignedPublishers(writer_uid) {
         try {
-            return await this.publishermodel.aggregate([
 
-                {
-                    $lookup: {
-                        from: "publishers",
-                        localField: "pid",
-                        foreignField: "pid",
-                        as: "publisher_details"
-                    }
-                },
-                // { $match: { writer_uid: { $ne: writer_uid } } },
-                // { $unwind: { path: "$publisher_details", preserveNullAndEmptyArrays: true } }
-            ]);
+            const ddd = await this.assignedPublishersModel
+                .find({
+                    requested_by: writer_uid,
+                    status: {
+                        $in: ['Pending'],
+                    },
+                })
+                .distinct('pid');
+            console.log("asigned=============>", ddd)
+            return ddd.length > 0 ? await this.publishermodel.find({ pid: { "$nin": ddd }, status: "Active" }).sort({ createdAt: -1 }).lean() : await this.publishermodel.find({ status: "Active" }).sort({ createdAt: -1 }).lean();
+
+
+
         } catch (error) {
             console.error("Error fetching assigned publishers:", error);
             throw new Error("Failed to fetch assigned publishers");

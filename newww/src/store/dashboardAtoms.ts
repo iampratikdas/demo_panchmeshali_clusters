@@ -8,26 +8,41 @@ export type AssignmentStatus = 'Pending' | 'Accepted' | 'Rejected' | 'Removed';
  * The backend spreads publisher_details onto the object and adds assignment fields.
  */
 export interface Publisher {
-    /** The publisher's own unique id (from the publishers collection) */
-    uid: string;
+    /** Array of associated user IDs */
+    uids: string[];
+
+    /** Publisher unique ID */
+    pid: string;
+
     /** Display name of the publisher */
     name: string;
-    /** Contact email of the publisher */
-    email: string;
-    /** Phone number (optional) */
-    phone?: string;
-    /** Description (optional) */
+
+    /** Description */
     description?: string;
-    /** Publisher logo URL (optional) */
+
+    /** Contact email */
+    email: string;
+
+    /** Contact phone number */
+    phone?: string;
+
+    /** Publisher logo URL */
     logo_url?: string;
-    /** The UID of the writer in this assignment */
-    writer_uid: string;
-    /** Current status of the assignment */
-    assignment_status: AssignmentStatus;
-    /** Who initiated the request: 'writer' | 'publisher' | 'both' */
-    requested_by: string;
-    /** MongoDB _id of the assignment document — used for UI keying */
-    assignment_id: string;
+
+    /** Government registration ID */
+    rgst_gov_id?: string;
+
+    /** Current publisher status */
+    status: string;
+
+    /** Unix timestamp when created */
+    createdAt: string;
+
+    /** Unix timestamp when last updated */
+    updatedAt: string;
+
+    /** Mongoose version key */
+    __v: number;
 }
 
 export interface NewsArticle {

@@ -12,7 +12,7 @@ const writersAssignedPublishersSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Pending', 'Accepted', 'Rejected', 'Cancelled'],
+    enum: ['Pending', 'Accepted', 'Cancelled'],
     default: "Pending"
   },
   requested_by: {

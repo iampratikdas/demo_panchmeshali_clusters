@@ -52,8 +52,8 @@ interface PublisherRowProps {
 }
 
 function PublisherRow({ pub, isLast, loadingUid, onJoin, onRemove }: PublisherRowProps) {
-    const isBusy = loadingUid === pub.uid;
-    const status = pub.assignment_status;
+    // const isBusy = loadingUid === pub.pid;
+    const status = pub.status;
 
     return (
         <div
@@ -73,7 +73,7 @@ function PublisherRow({ pub, isLast, loadingUid, onJoin, onRemove }: PublisherRo
                         <span className="font-bold text-sm sm:text-base text-foreground truncate hover:underline hover:text-blue-600 cursor-pointer">
                             {pub.name}
                         </span>
-                        <StatusBadge status={status} />
+                        {/* <StatusBadge status={status} /> */}
                     </div>
                     {pub.description && (
                         <p className="text-muted-foreground text-xs sm:text-sm mt-0.5 truncate">{pub.description}</p>
@@ -85,25 +85,23 @@ function PublisherRow({ pub, isLast, loadingUid, onJoin, onRemove }: PublisherRo
             {/* Right: Action buttons */}
             <div className="flex gap-2 sm:ml-4 flex-shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
                 {/* Show "Join" only when there is no existing assignment (status is Removed or the assignment_id is falsy) */}
-                {(!pub.assignment_id || status === 'Removed') && (
+                {(status === 'Removed') && (
                     <Button
                         size="sm"
                         variant="outline"
-                        disabled={isBusy}
+                        disabled={false}
                         className="rounded-full flex-1 sm:flex-none border-blue-600 text-blue-600 hover:bg-blue-50 font-bold"
                         onClick={() => onJoin(pub)}
                     >
-                        {isBusy ? (
-                            <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-                        ) : (
-                            <UserPlus className="w-4 h-4 mr-1.5" />
-                        )}
+
+                        <UserPlus className="w-4 h-4 mr-1.5" />
+
                         Join
                     </Button>
                 )}
 
                 {/* Show "Requested" (disabled) when pending */}
-                {status === 'Pending' && pub.assignment_id && (
+                {status === 'Pending' && (
                     <Button
                         size="sm"
                         variant="outline"
@@ -116,7 +114,7 @@ function PublisherRow({ pub, isLast, loadingUid, onJoin, onRemove }: PublisherRo
                 )}
 
                 {/* Show "Accepted" label (non-interactive) when accepted */}
-                {status === 'Accepted' && pub.assignment_id && (
+                {status === 'Accepted' && (
                     <span className="flex items-center gap-1.5 text-sm font-bold text-green-600 px-3 py-1.5 bg-green-50 rounded-full border border-green-200">
                         <Check className="w-4 h-4" />
                         Joined
@@ -124,15 +122,15 @@ function PublisherRow({ pub, isLast, loadingUid, onJoin, onRemove }: PublisherRo
                 )}
 
                 {/* Show "Cancel / Remove" when pending or accepted */}
-                {(status === 'Pending' || status === 'Accepted') && pub.assignment_id && (
+                {(status === 'Pending' || status === 'Accepted') && (
                     <Button
                         size="sm"
                         variant="outline"
-                        disabled={isBusy}
+                        disabled={false}
                         className="rounded-full flex-1 sm:flex-none font-bold text-muted-foreground hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
                         onClick={() => onRemove(pub)}
                     >
-                        {isBusy ? (
+                        {false ? (
                             <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
                         ) : (
                             <X className="w-4 h-4 mr-1.5" />
@@ -180,14 +178,14 @@ export function PublishersTab() {
 
     // ── Join request ──────────────────────────────────────────────────────────
     const handleJoin = async (pub: Publisher) => {
-        setLoadingUid(pub.uid);
+        setLoadingUid(pub.pid);
         try {
-            await requestJoinPublisher(pub.uid);
+            await requestJoinPublisher(pub.pid);
             // Optimistically mark as Pending + generate a temporary assignment_id
             setPublishers(prev =>
                 prev.map(p =>
-                    p.uid === pub.uid
-                        ? { ...p, assignment_status: 'Pending', assignment_id: 'pending_' + pub.uid }
+                    p.pid === pub.pid
+                        ? { ...p, status: 'Pending', assignment_id: 'pending_' + pub.pid }
                         : p
                 )
             );
@@ -198,8 +196,8 @@ export function PublishersTab() {
             if (err?.response?.status === 409) {
                 setPublishers(prev =>
                     prev.map(p =>
-                        p.uid === pub.uid
-                            ? { ...p, assignment_status: 'Pending', assignment_id: 'pending_' + pub.uid }
+                        p.pid === pub.pid
+                            ? { ...p, status: 'Pending', assignment_id: 'pending_' + pub.pid }
                             : p
                     )
                 );
@@ -214,14 +212,14 @@ export function PublishersTab() {
 
     // ── Remove / cancel ───────────────────────────────────────────────────────
     const handleRemove = async (pub: Publisher) => {
-        setLoadingUid(pub.uid);
+        setLoadingUid(pub.pid);
         try {
-            await removePublisherAssignment(pub.uid);
+            await removePublisherAssignment(pub.pid);
             // Optimistically mark as Removed and clear assignment_id
             setPublishers(prev =>
                 prev.map(p =>
-                    p.uid === pub.uid
-                        ? { ...p, assignment_status: 'Removed', assignment_id: '' }
+                    p.pid === pub.pid
+                        ? { ...p, status: 'Removed', assignment_id: '' }
                         : p
                 )
             );
@@ -235,7 +233,7 @@ export function PublishersTab() {
     };
 
     // ── Render ────────────────────────────────────────────────────────────────
-
+    console.log("publishers Atom", publishers)
     if (loading) {
         return (
             <div className="bg-white dark:bg-card border border-border rounded-xl shadow-sm p-8 flex flex-col items-center gap-3 text-muted-foreground">
@@ -303,7 +301,7 @@ export function PublishersTab() {
                 <div className="flex flex-col">
                     {publishers.map((pub, index) => (
                         <PublisherRow
-                            key={pub.uid ?? pub.assignment_id ?? index}
+                            key={pub.pid}
                             pub={pub}
                             isLast={index === publishers.length - 1}
                             loadingUid={loadingUid}

@@ -46,28 +46,16 @@ class PublisherController {
             }
 
             const assignedPublishers = await this.publisherFunc.getAssignedPublishers(uid);
-            console.log("assignedPublishers============>", assignedPublishers);
+            // console.log("assignedPublishers============>", uid, assignedPublishers);
             // Format the output: list of publishers with assignment info
-            const formattedData = assignedPublishers.map(ap => {
-                if (ap.publisher_details) {
-                    return {
-                        ...ap.publisher_details,
-                        writer_uid: ap.writer_uid,
-                        assignment_status: ap.status,
-                        requested_by: ap.requested_by,
-                        assignment_id: ap._id,
-                        pid: ap.pid,
-                    };
-                }
-                return ap;
-            }).filter(item => item.pid); // Keep only valid publishers
 
+            console.log("assignedPublishers=============>", assignedPublishers)
             return res
                 .status(200)
                 .json({
                     status: 200,
                     message: "Lists of assigned publishers fetched successfully",
-                    data: formattedData
+                    data: assignedPublishers
                 });
         } catch (error) {
             console.error("Error during publisherlists fetch:", error);
