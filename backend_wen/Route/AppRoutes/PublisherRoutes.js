@@ -20,6 +20,12 @@ class Publisher {
         // Writer stats
         router.get("/writer_stats/:writerUid", (req, res, next) => MethodValidate(req, res, next, "GET"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && publisherController.getWriterStats(req, res, token_data)));
         router.post("/writer_stats/:writerUid", (req, res, next) => MethodValidate(req, res, next, "POST"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && publisherController.updateWriterStats(req, res, token_data)));
+
+        // ── Publisher Detail page routes (any authenticated user) ─────────────────
+        router.get("/publisher_profile/:pid", (req, res, next) => MethodValidate(req, res, next, "GET"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && publisherController.getPublisherProfile(req, res, token_data)));
+        router.get("/publisher_stats/:pid", (req, res, next) => MethodValidate(req, res, next, "GET"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && publisherController.getPublisherStats(req, res, token_data)));
+        router.get("/publisher_books/:pid", (req, res, next) => MethodValidate(req, res, next, "GET"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && publisherController.getPublisherBooks(req, res, token_data)));
+        router.get("/publisher_categories/:pid", (req, res, next) => MethodValidate(req, res, next, "GET"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && publisherController.getPublisherCategories(req, res, token_data)));
     }
 }
 module.exports = Publisher;

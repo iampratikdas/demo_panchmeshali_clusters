@@ -786,3 +786,58 @@ export const requestJoinPublisherByPid = async (pid: string): Promise<any> => {
     );
     return response.data;
 };
+
+// ── Publisher Detail Page API Functions ───────────────────────────────────────
+
+/**
+ * Fetch full publisher profile by pid.
+ * GET /publisher_profile/:pid
+ */
+export const fetchPublisherProfile = async (pid: string): Promise<any> => {
+    const response = await axios.get(
+        `${API_BASE_URL}/publisher_profile/${pid}`,
+        { headers: getAuthHeaders() }
+    );
+    return response.data?.data ?? null;
+};
+
+/**
+ * Fetch analytics/stats for a publisher.
+ * GET /publisher_stats/:pid
+ */
+export const fetchPublisherStats = async (pid: string): Promise<any> => {
+    const response = await axios.get(
+        `${API_BASE_URL}/publisher_stats/${pid}`,
+        { headers: getAuthHeaders() }
+    );
+    return response.data?.data ?? {};
+};
+
+/**
+ * Fetch paginated books for a publisher with optional category filter.
+ * GET /publisher_books/:pid?page=&limit=&category=
+ */
+export const fetchPublisherBooks = async (
+    pid: string,
+    page: number = 1,
+    limit: number = 12,
+    category: string = 'all'
+): Promise<any> => {
+    const response = await axios.get(
+        `${API_BASE_URL}/publisher_books/${pid}?page=${page}&limit=${limit}&category=${encodeURIComponent(category)}`,
+        { headers: getAuthHeaders() }
+    );
+    return response.data;
+};
+
+/**
+ * Fetch distinct categories present in a publisher's content.
+ * GET /publisher_categories/:pid
+ */
+export const fetchPublisherCategories = async (pid: string): Promise<string[]> => {
+    const response = await axios.get(
+        `${API_BASE_URL}/publisher_categories/${pid}`,
+        { headers: getAuthHeaders() }
+    );
+    return response.data?.data ?? [];
+};

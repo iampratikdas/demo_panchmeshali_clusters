@@ -395,6 +395,10 @@ class PublisherController {
      * POST /writer_stats/:writerUid
      * Update stats for a writer (bio, genres, activity, etc.)
      */
+    /**
+     * POST /writer_stats/:writerUid
+     * Update stats for a writer (bio, genres, activity, etc.)
+     */
     async updateWriterStats(req, res, token_data) {
         try {
             const writerUid = req.params.writerUid;
@@ -406,6 +410,94 @@ class PublisherController {
             return res.status(200).json({ status: 200, message: "Writer stats updated", data: stats });
         } catch (error) {
             console.error("Error during updateWriterStats:", error);
+            res.status(500).json({ status: 500, message: "Internal server error", data: {} });
+        }
+    }
+
+    /**
+     * GET /publisher_profile/:pid
+     * Fetch full publisher profile — accessible by any authenticated user.
+     */
+    async getPublisherProfile(req, res, token_data) {
+        try {
+            const pid = req.params.pid;
+            if (!pid) {
+                return res.status(400).json({ status: 400, message: "Missing pid parameter", data: {} });
+            }
+            const publisher = await this.publisherFunc.getPublisherProfile(pid);
+            if (!publisher) {
+                return res.status(404).json({ status: 404, message: "Publisher not found", data: {} });
+            }
+            return res.status(200).json({ status: 200, message: "Publisher profile fetched", data: publisher });
+        } catch (error) {
+            console.error("Error during getPublisherProfile:", error);
+            res.status(500).json({ status: 500, message: "Internal server error", data: {} });
+        }
+    }
+
+    /**
+     * GET /publisher_stats/:pid
+     * Aggregate analytics (book counts, sales) for a publisher.
+     */
+    async getPublisherStats(req, res, token_data) {
+        try {
+            const pid = req.params.pid;
+            if (!pid) {
+                return res.status(400).json({ status: 400, message: "Missing pid parameter", data: {} });
+            }
+            const stats = await this.publisherFunc.getPublisherStats(pid);
+            return res.status(200).json({ status: 200, message: "Publisher stats fetched", data: stats });
+        } catch (error) {
+            console.error("Error during getPublisherStats:", error);
+            res.status(500).json({ status: 500, message: "Internal server error", data: {} });
+        }
+    }
+
+    /**
+     * GET /publisher_books/:pid
+     * Paginated books list for a publisher, with optional category filter.
+     * Query params: page, limit, category
+     */
+    async getPublisherBooks(req, res, token_data) {
+        try {
+            const pid = req.params.pid;
+            if (!pid) {
+                return res.status(400).json({ status: 400, message: "Missing pid parameter", data: {} });
+            }
+            const page = Math.max(1, parseInt(req.query.page) || 1);
+            const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 12));
+            const category = req.query.category || "all";
+            const skip = (page - 1) * limit;
+
+            const { books, total } = await this.publisherFunc.getPublisherBooks(pid, skip, limit, category);
+            const totalPages = Math.ceil(total / limit);
+
+            return res.status(200).json({
+                status: 200,
+                message: "Publisher books fetched",
+                data: books,
+                meta: { total, page, limit, totalPages }
+            });
+        } catch (error) {
+            console.error("Error during getPublisherBooks:", error);
+            res.status(500).json({ status: 500, message: "Internal server error", data: {} });
+        }
+    }
+
+    /**
+     * GET /publisher_categories/:pid
+     * Fetch distinct content categories for a publisher.
+     */
+    async getPublisherCategories(req, res, token_data) {
+        try {
+            const pid = req.params.pid;
+            if (!pid) {
+                return res.status(400).json({ status: 400, message: "Missing pid parameter", data: {} });
+            }
+            const categories = await this.publisherFunc.getPublisherCategories(pid);
+            return res.status(200).json({ status: 200, message: "Publisher categories fetched", data: categories });
+        } catch (error) {
+            console.error("Error during getPublisherCategories:", error);
             res.status(500).json({ status: 500, message: "Internal server error", data: {} });
         }
     }

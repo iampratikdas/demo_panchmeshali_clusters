@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { createPublisherCompany, fetchUsers, fetchAllPublisherCompanies } from '../lib/api';
 import { Card, CardHeader, CardContent, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
@@ -62,8 +63,9 @@ export default function Publishers() {
     );
 }
 
-// ─── Company List Tab ────────────────────────────────────────────────────────
+// ─── Company List Tab ───────────────────────────────────────────────────────────────────
 function CompanyList({ onCreateClick }: { onCreateClick: () => void }) {
+    const navigate = useNavigate();
     const { data: companies = [], isLoading, isError, refetch } = useQuery({
         queryKey: ['publisher-companies'],
         queryFn: fetchAllPublisherCompanies,
@@ -140,7 +142,15 @@ function CompanyList({ onCreateClick }: { onCreateClick: () => void }) {
 
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-2">
-                                            <h3 className="font-semibold text-base leading-tight truncate">{company.name}</h3>
+                                            <h3
+                                                className="font-semibold text-base leading-tight truncate cursor-pointer hover:text-violet-600 hover:underline transition-colors"
+                                                onClick={() => navigate({ to: '/publishers/$pid', params: { pid: company.pid } })}
+                                                role="link"
+                                                tabIndex={0}
+                                                onKeyDown={e => e.key === 'Enter' && navigate({ to: '/publishers/$pid', params: { pid: company.pid } })}
+                                            >
+                                                {company.name}
+                                            </h3>
                                             <StatusBadge status={company.status} />
                                         </div>
 

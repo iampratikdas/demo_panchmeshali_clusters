@@ -12,6 +12,26 @@ const publisherSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  address: {
+    type: String,
+    default: ""
+  },
+  city: {
+    type: String,
+    default: ""
+  },
+  state: {
+    type: String,
+    default: ""
+  },
+  country: {
+    type: String,
+    default: ""
+  },
+  zip_code: {
+    type: String,
+    default: ""
+  },
   name: {
     type: String,
     required: true,

@@ -157,6 +157,122 @@ class PublishersFunctions {
             throw new Error("Failed to update publisher");
         }
     }
+
+    /**
+     * GET /publisher_profile/:pid
+     * Fetch a single publisher's full profile by pid.
+     */
+    async getPublisherProfile(pid) {
+        try {
+            return await this.publishermodel.findOne({ pid }).lean();
+        } catch (error) {
+            console.error("Error fetching publisher profile:", error);
+            throw new Error("Failed to fetch publisher profile");
+        }
+    }
+
+    /**
+     * GET /publisher_stats/:pid
+     * Aggregate analytics for a publisher from the Contents collection.
+     * Returns: total_books, total_ebooks, total_sales, books_sold, ebooks_sold, active_categories
+     */
+    async getPublisherStats(pid) {
+        try {
+            const Categoryschema = require("../../models/monogdb/Categories");
+            const Setup = require("../../db/mongodb/setupDatabase");
+            const categorymodel = await Categoryschema(await Setup.getConnection());
+
+            const [contentStats] = await this.contentmodel.aggregate([
+                { $match: { page_id: pid } },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: 1 },
+                        total_books: {
+                            $sum: { $cond: [{ $eq: ["$type", "book"] }, 1, 0] }
+                        },
+                        total_ebooks: {
+                            $sum: { $cond: [{ $eq: ["$type", "ebook"] }, 1, 0] }
+                        },
+                        total_sales: { $sum: { $ifNull: ["$sales_count", 0] } },
+                        books_sold: {
+                            $sum: {
+                                $cond: [
+                                    { $eq: ["$type", "book"] },
+                                    { $ifNull: ["$sales_count", 0] },
+                                    0
+                                ]
+                            }
+                        },
+                        ebooks_sold: {
+                            $sum: {
+                                $cond: [
+                                    { $eq: ["$type", "ebook"] },
+                                    { $ifNull: ["$sales_count", 0] },
+                                    0
+                                ]
+                            }
+                        },
+                        categories: { $addToSet: "$category" }
+                    }
+                }
+            ]);
+
+            // Count active categories for this publisher (global + publisher-specific)
+            const activeCategoryCount = await categorymodel.countDocuments({
+                $or: [{ is_global: true }, { pid: pid }]
+            });
+
+            return {
+                total_books: contentStats?.total_books ?? 0,
+                total_ebooks: contentStats?.total_ebooks ?? 0,
+                total_sales: contentStats?.total_sales ?? 0,
+                books_sold: contentStats?.books_sold ?? 0,
+                ebooks_sold: contentStats?.ebooks_sold ?? 0,
+                active_categories: activeCategoryCount ?? 0,
+            };
+        } catch (error) {
+            console.error("Error fetching publisher stats:", error);
+            throw new Error("Failed to fetch publisher stats");
+        }
+    }
+
+    /**
+     * GET /publisher_books/:pid
+     * Fetch paginated books/ebooks for a publisher with optional category filter.
+     */
+    async getPublisherBooks(pid, skip = 0, limit = 12, category = null) {
+        try {
+            const query = { page_id: pid };
+            if (category && category !== "all") {
+                query.category = { $regex: new RegExp("^" + category + "$", "i") };
+            }
+            const total = await this.contentmodel.countDocuments(query);
+            const books = await this.contentmodel
+                .find(query)
+                .skip(skip)
+                .limit(limit)
+                .sort({ createdAt: -1 })
+                .lean();
+            return { books, total };
+        } catch (error) {
+            console.error("Error fetching publisher books:", error);
+            throw new Error("Failed to fetch publisher books");
+        }
+    }
+
+    /**
+     * Get all distinct categories for a publisher's content.
+     */
+    async getPublisherCategories(pid) {
+        try {
+            const categories = await this.contentmodel.distinct("category", { page_id: pid });
+            return categories.filter(Boolean);
+        } catch (error) {
+            console.error("Error fetching publisher categories:", error);
+            throw new Error("Failed to fetch publisher categories");
+        }
+    }
 }
 
 

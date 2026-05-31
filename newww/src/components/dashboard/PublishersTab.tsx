@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useAtom } from 'jotai';
+import { useNavigate } from '@tanstack/react-router';
 import { publishersAtom, type Publisher, type AssignmentStatus } from '../../store/dashboardAtoms';
 import { fetchPublisherList, requestJoinPublisher, removePublisherAssignment } from '../../lib/api';
 import { Button } from '../../ui/button';
@@ -49,9 +50,10 @@ interface PublisherRowProps {
     loadingUid: string | null;
     onJoin: (pub: Publisher) => void;
     onRemove: (pub: Publisher) => void;
+    onNavigate: (pid: string) => void;
 }
 
-function PublisherRow({ pub, isLast, loadingUid, onJoin, onRemove }: PublisherRowProps) {
+function PublisherRow({ pub, isLast, loadingUid, onJoin, onRemove, onNavigate }: PublisherRowProps) {
     // const isBusy = loadingUid === pub.pid;
     const status = pub.status;
 
@@ -70,7 +72,13 @@ function PublisherRow({ pub, isLast, loadingUid, onJoin, onRemove }: PublisherRo
 
                 <div className="flex-1 min-w-0 pt-1 sm:pt-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-sm sm:text-base text-foreground truncate hover:underline hover:text-blue-600 cursor-pointer">
+                        <span
+                            className="font-bold text-sm sm:text-base text-foreground truncate hover:underline hover:text-violet-600 cursor-pointer transition-colors"
+                            onClick={() => onNavigate(pub.pid)}
+                            role="link"
+                            tabIndex={0}
+                            onKeyDown={e => e.key === 'Enter' && onNavigate(pub.pid)}
+                        >
                             {pub.name}
                         </span>
                         {/* <StatusBadge status={status} /> */}
@@ -109,6 +117,7 @@ export function PublishersTab() {
     const [loadingUid, setLoadingUid] = useState<string | null>(null);
     const [fetchError, setFetchError] = useState<string | null>(null);
     const { toasts, show: showToast } = useToast();
+    const navigate = useNavigate();
 
     // ── Fetch publisher list ──────────────────────────────────────────────────
     const loadPublishers = useCallback(async () => {
@@ -260,6 +269,7 @@ export function PublishersTab() {
                             loadingUid={loadingUid}
                             onJoin={handleJoin}
                             onRemove={handleRemove}
+                            onNavigate={(pid) => navigate({ to: '/publishers/$pid', params: { pid } })}
                         />
                     ))}
                 </div>
