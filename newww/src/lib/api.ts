@@ -841,3 +841,16 @@ export const fetchPublisherCategories = async (pid: string): Promise<string[]> =
     );
     return response.data?.data ?? [];
 };
+
+/**
+ * Fetch team requests/assignments by user UID.
+ * GET /team_requests_by_uid
+ */
+export const fetchTeamRequestsByUid = async (): Promise<any> => {
+    const response = await axios.get(
+        `${API_BASE_URL}/team_requests_by_uid`,
+        { headers: getAuthHeaders() }
+    );
+    return response.data;
+};
+

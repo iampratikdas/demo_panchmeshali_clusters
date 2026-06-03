@@ -13,6 +13,7 @@ class Publisher {
         // ── Teams section routes ──────────────────────────────────────────────────
         // Publisher: get all writer requests/members for their company
         router.get("/team_requests", (req, res, next) => MethodValidate(req, res, next, "GET"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && publisherController.getTeamRequests(req, res, token_data)));
+        router.get("/team_requests_by_uid", (req, res, next) => MethodValidate(req, res, next, "GET"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && publisherController.getUserTeamRequests(req, res, token_data)));
 
         // Publisher: accept / reject / remove a writer
         router.post("/update_team_request/:writerUid", (req, res, next) => MethodValidate(req, res, next, "POST"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && publisherController.updateTeamRequest(req, res, token_data)));

@@ -265,13 +265,14 @@ class PublisherController {
             }
 
             // Get the publisher company for this user
-            const publisherCompany = await this.publisherFunc.findOnePublisher({ uids: token_data.uid });
+            const publisherCompany = await this.publisherFunc.findOnePublisher({ uids: { "$in": [token_data.uid] } });
             if (!publisherCompany) {
                 return res.status(404).json({ status: 404, message: "No publisher company found for this user", data: {} });
             }
 
-            const pid = publisherCompany.pid;
+            const pid = publisherCompany[0].pid;
             const requests = await this.publisherFunc.getWriterRequestsForPublisher(pid);
+            console.log("publisherCompany=====>", requests)
 
             const formattedData = requests.map(r => ({
                 assignment_id: r._id,
@@ -300,15 +301,29 @@ class PublisherController {
             return res.status(200).json({
                 status: 200,
                 message: "Team requests fetched successfully",
-                data: formattedData,
-                publisher: {
-                    pid: publisherCompany.pid,
-                    name: publisherCompany.name,
-                    logo_url: publisherCompany.logo_url,
-                }
+                data: formattedData
             });
         } catch (error) {
             console.error("Error during getTeamRequests:", error);
+            res.status(500).json({ status: 500, message: "Internal server error", data: {} });
+        }
+    }
+    async getUserTeamRequests(req, res, token_data) {
+        try {
+            const role = token_data.role;
+            if (!["writer"].includes(role)) {
+                return res.status(403).json({ status: 403, message: "Access denied. Writers only.", data: {} });
+            }
+            const requests = await this.publisherFunc.getRequestsForWriter(token_data.uid);
+
+
+            return res.status(200).json({
+                status: 200,
+                message: "Team requests fetched successfully",
+                data: requests
+            });
+        } catch (error) {
+            console.error("Error during getUserTeamRequests:", error);
             res.status(500).json({ status: 500, message: "Internal server error", data: {} });
         }
     }

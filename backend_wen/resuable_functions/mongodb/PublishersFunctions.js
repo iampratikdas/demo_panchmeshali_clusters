@@ -19,7 +19,7 @@ class PublishersFunctions {
     }
 
     async findOnePublisher(data) {
-        return await this.publishermodel.findOne(data).lean()
+        return await this.publishermodel.find(data).lean()
     }
     async findAllPublishers(data = {}) {
         return await this.publishermodel.find(data).sort({ createdAt: -1 }).lean()
@@ -59,8 +59,47 @@ class PublishersFunctions {
     }
 
     /**
-     * Get all writer requests for a given publisher (by pid).
-     * Joins with User collection on writer_uid = uid.
+     * Get all pubisher list 
+     */
+    async getRequestsForWriter(uid) {
+        try {
+            const re = await this.assignedPublishersModel.aggregate([
+                {
+                    $match: {
+                        writer_uid: uid
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "publishers",
+                        localField: "pid",
+                        foreignField: "pid",
+                        as: "publisher_details"
+                    }
+                },
+                {
+                    $unwind: {
+                        path: "$publisher_details",
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $project: {
+                        publisher_details: 1
+                    }
+                }
+            ]);
+            return re;
+
+        } catch (error) {
+            console.error("Error fetching assigned publishers:", error);
+            throw new Error("Failed to fetch assigned publishers");
+        }
+    }
+
+    /**
+     * Get all writer requests for a given writer (by writer_uid).
+     * Joins with User collection on pid.
      * Also joins with WriterStats on writer_uid.
      * Also calculates stories_count from contents.
      */

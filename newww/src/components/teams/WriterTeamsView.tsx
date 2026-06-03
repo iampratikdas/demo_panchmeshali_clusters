@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Building, Star, Users, BookOpen, Search,
+    Building, Star, Users, Search,
     RefreshCw, LogOut, Inbox, ServerCrash, Plus, Globe
 } from 'lucide-react';
-import { fetchPublisherList, leavePublisherTeam, fetchAllPublisherCompanies, requestJoinPublisherByPid } from '../../lib/api';
+import { fetchPublisherList, leavePublisherTeam, requestJoinPublisherByPid, fetchTeamRequestsByUid, fetchPublisherProfile } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { useAtom } from 'jotai';
 import { currentUserAtom } from '../../store/atoms';
@@ -125,17 +125,20 @@ function DiscoverPublishers({ existingPids }: { existingPids: Set<string> }) {
     const [search, setSearch] = useState('');
     const [joiningPid, setJoiningPid] = useState<string | null>(null);
 
+    const [user] = useAtom(currentUserAtom);
     const { data: companies = [], isLoading } = useQuery({
-        queryKey: ['publisher-companies-discover'],
-        queryFn: fetchAllPublisherCompanies,
+        queryKey: ['publisher-companies-discover', user.uid],
+        queryFn: () => fetchPublisherList(user.uid!),
         staleTime: 60_000,
+        enabled: !!user.uid,
     });
 
     const joinMutation = useMutation({
         mutationFn: (pid: string) => requestJoinPublisherByPid(pid),
         onSuccess: () => {
             toast({ title: 'Join request sent! ✅' });
-            queryClient.invalidateQueries({ queryKey: ['publisher-lists'] });
+            queryClient.invalidateQueries({ queryKey: ['team-requests-by-uid', user.uid] });
+            queryClient.invalidateQueries({ queryKey: ['publisher-lists', user.uid] });
             setJoiningPid(null);
         },
         onError: (err: any) => {
@@ -257,18 +260,27 @@ export function WriterTeamsView() {
     const [confirmLeave, setConfirmLeave] = useState<{ pid: string; name: string } | null>(null);
     const [leavingPid, setLeavingPid] = useState<string | null>(null);
 
-    const { data: publisherList = [], isLoading, isError, refetch } = useQuery({
-        queryKey: ['publisher-lists', user.uid],
-        queryFn: () => fetchPublisherList(user.uid!),
+    const { data: teamRequestData, isLoading: isRequestLoading, isError: isRequestError, refetch: refetchRequest } = useQuery({
+        queryKey: ['team-requests-by-uid', user.uid],
+        queryFn: () => fetchTeamRequestsByUid(),
         staleTime: 30_000,
         enabled: !!user.uid,
+    });
+    const teamRequest = teamRequestData?.data; // can be single object or null
+
+    const { data: assignedPublisherProfile, isLoading: isProfileLoading, refetch: refetchProfile } = useQuery({
+        queryKey: ['assigned-publisher-profile', teamRequest?.pid],
+        queryFn: () => fetchPublisherProfile(teamRequest.pid),
+        staleTime: 30_000,
+        enabled: !!teamRequest?.pid,
     });
 
     const leaveMutation = useMutation({
         mutationFn: (pid: string) => leavePublisherTeam(pid),
         onSuccess: () => {
             toast({ title: 'Left publisher team successfully.' });
-            queryClient.invalidateQueries({ queryKey: ['publisher-lists'] });
+            queryClient.invalidateQueries({ queryKey: ['team-requests-by-uid', user.uid] });
+            queryClient.invalidateQueries({ queryKey: ['publisher-lists', user.uid] });
             setConfirmLeave(null);
             setSelectedAssignment(null);
             setLeavingPid(null);
@@ -278,6 +290,21 @@ export function WriterTeamsView() {
             setLeavingPid(null);
         },
     });
+
+    const publisherList: any[] = [];
+    if (teamRequest && assignedPublisherProfile) {
+        publisherList.push({
+            ...assignedPublisherProfile,
+            assignment_status: teamRequest.status,
+        });
+    }
+
+    const isLoading = isRequestLoading || (!!teamRequest?.pid && isProfileLoading);
+    const isError = isRequestError;
+    const refetch = () => {
+        refetchRequest();
+        refetchProfile();
+    };
 
     // Only show accepted publishers on "My Publishers" tab
     const acceptedPublishers = publisherList.filter((p: any) => p.assignment_status === 'Accepted');

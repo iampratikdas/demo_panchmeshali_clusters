@@ -3,14 +3,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users, CheckCircle, XCircle, UserMinus, Search,
-    Star, BookOpen, Filter, RefreshCw, Inbox, ServerCrash
+    Star, BookOpen, RefreshCw, Inbox, ServerCrash
 } from 'lucide-react';
-import { fetchTeamRequests, updateTeamRequest } from '../../lib/api';
+import { fetchTeamRequests, updateTeamRequest, fetchPublisherProfile } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { Button } from '../../ui/button';
 import { TeamStatusBadge } from './TeamStatusBadge';
 import { WriterDetailModal } from './WriterDetailModal';
 import { ConfirmModal } from './ConfirmModal';
+import { useAtom } from 'jotai';
+import { currentUserAtom } from '../../store/atoms';
 
 type FilterTab = 'all' | 'Pending' | 'Accepted' | 'Rejected';
 
@@ -186,14 +188,33 @@ export function PublisherTeamsView() {
     } | null>(null);
     const [loadingUid, setLoadingUid] = useState<string | null>(null);
 
-    const { data, isLoading, isError, refetch } = useQuery({
+    const [user] = useAtom(currentUserAtom);
+
+    const { data, isLoading, isError, refetch: refetchRequests } = useQuery({
         queryKey: ['team-requests'],
         queryFn: fetchTeamRequests,
         staleTime: 30_000,
     });
 
     const requests: any[] = data?.data ?? [];
-    const publisherInfo = data?.publisher;
+    const firstRequestPid = requests[0]?.pid;
+
+    const { data: publisherProfile, refetch: refetchProfile } = useQuery({
+        queryKey: ['publisher-profile', firstRequestPid],
+        queryFn: () => fetchPublisherProfile(firstRequestPid),
+        staleTime: 60_000,
+        enabled: !!firstRequestPid,
+    });
+
+    const publisherInfo = publisherProfile || data?.publisher || {
+        name: user.name || 'Publisher',
+        logo_url: '',
+    };
+
+    const refetch = () => {
+        refetchRequests();
+        refetchProfile();
+    };
 
     const mutation = useMutation({
         mutationFn: ({ uid, type }: { uid: string; type: 'Accepted' | 'Rejected' | 'Cancelled' }) =>
