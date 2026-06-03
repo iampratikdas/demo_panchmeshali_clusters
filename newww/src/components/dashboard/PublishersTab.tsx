@@ -5,7 +5,7 @@ import { publishersAtom, type Publisher, type AssignmentStatus } from '../../sto
 import { fetchPublisherList, requestJoinPublisher, removePublisherAssignment } from '../../lib/api';
 import { Button } from '../../ui/button';
 import { cn } from '../../lib/utils';
-import { Check, X, UserPlus, Loader2, RefreshCw, Building2 } from 'lucide-react';
+import { Check, X, UserPlus, Loader2, RefreshCw, Building2, Eye } from 'lucide-react';
 
 // ── Tiny inline toast ─────────────────────────────────────────────────────────
 interface ToastItem {
@@ -92,12 +92,22 @@ function PublisherRow({ pub, isLast, loadingUid, onJoin, onRemove, onNavigate }:
 
             {/* Right: Action buttons eligible publishers list will be presenting here */}
             <div className="flex gap-2 sm:ml-4 flex-shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
+                <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={false}
+                    className="rounded-full cursor-pointer flex-1 sm:flex-none border-slate-300 text-slate-700 hover:bg-slate-50 font-bold"
+                    onClick={() => onNavigate(pub.pid)}
+                >
+                    <Eye className="w-4 h-4 mr-1.5" />
+                    View Us
+                </Button>
 
                 <Button
                     size="sm"
                     variant="outline"
                     disabled={false}
-                    className="rounded-full flex-1 sm:flex-none border-blue-600 text-blue-600 hover:bg-blue-50 font-bold"
+                    className="rounded-full cursor-pointer flex-1 sm:flex-none border-blue-600 text-blue-600 hover:bg-blue-50 font-bold"
                     onClick={() => onJoin(pub)}
                 >
 
