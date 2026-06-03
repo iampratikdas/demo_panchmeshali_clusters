@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Star, Users, BookOpen, Calendar, Mail, Phone, Building, FileText, Globe } from 'lucide-react';
+import { X, ArrowLeftToLine, Star, Users, Calendar, Mail, Phone, Building, FileText, LogOut } from 'lucide-react';
 import { Button } from '../../ui/button';
 
 interface PublisherDetailModalProps {
@@ -11,155 +11,252 @@ interface PublisherDetailModalProps {
     isActionLoading?: boolean;
 }
 
+// ─── Star Rating ─────────────────────────────────────────────────────────────
 function StarRating({ rating }: { rating: number }) {
     return (
-        <div className="flex items-center gap-0.5">
-            {[1, 2, 3, 4, 5].map(s => (
+        <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map(i => (
                 <Star
-                    key={s}
-                    className={`h-4 w-4 ${s <= Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-muted-foreground/30'}`}
+                    key={i}
+                    className={`h-4 w-4 ${i <= Math.round(rating)
+                        ? 'text-amber-400 fill-amber-400'
+                        : 'text-muted-foreground/25'}`}
                 />
             ))}
-            <span className="ml-1.5 text-sm font-medium text-muted-foreground">{(rating ?? 0).toFixed(1)}</span>
+            <span className="ml-2 text-sm font-bold text-foreground">{(rating ?? 0).toFixed(1)}</span>
+            <span className="text-xs text-muted-foreground ml-0.5">/ 5.0</span>
         </div>
     );
 }
 
-function InfoRow({ icon: Icon, label, value }: any) {
+// ─── Info Row ────────────────────────────────────────────────────────────────
+function InfoRow({ icon: Icon, label, value }: { icon: any; label: string; value?: string | null }) {
     if (!value) return null;
     return (
-        <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-            <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <div>
-                <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="text-sm font-medium text-foreground">{value}</p>
+        <div className="flex items-center gap-3 py-3 border-b border-border/30 last:border-b-0">
+            <div className="h-8 w-8 rounded-lg bg-primary/8 border border-border/40 flex items-center justify-center flex-shrink-0">
+                <Icon className="h-3.5 w-3.5 text-primary/70" />
+            </div>
+            <div className="min-w-0 flex-1">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">{label}</p>
+                <p className="text-sm font-medium text-foreground mt-0.5 truncate">{value}</p>
             </div>
         </div>
     );
 }
 
-function StatPill({ label, value, color }: { label: string; value: any; color: string }) {
+// ─── Request Status Badge ────────────────────────────────────────────────────
+const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string; border: string }> = {
+    Accepted: { bg: 'bg-emerald-500/10', text: 'text-emerald-500', dot: 'bg-emerald-500', border: 'border-emerald-500/25' },
+    Pending: { bg: 'bg-amber-500/10', text: 'text-amber-500', dot: 'bg-amber-500', border: 'border-amber-500/25' },
+    Rejected: { bg: 'bg-red-500/10', text: 'text-red-500', dot: 'bg-red-500', border: 'border-red-500/25' },
+};
+
+function RequestStatusBadge({ status }: { status?: string }) {
+    const s = status ?? 'Pending';
+    const cfg = STATUS_STYLES[s] ?? STATUS_STYLES.Pending;
     return (
-        <div className={`flex flex-col items-center p-4 rounded-xl border ${color}`}>
-            <span className="text-2xl font-bold">{value}</span>
-            <span className="text-xs text-muted-foreground mt-1 text-center">{label}</span>
-        </div>
+        <span className={`inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-1.5 rounded-full border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
+            <span className={`h-2 w-2 rounded-full ${cfg.dot} ${s === 'Pending' ? 'animate-pulse' : ''}`} />
+            {s}
+        </span>
     );
 }
 
+// ─── Main Modal ──────────────────────────────────────────────────────────────
 export function PublisherDetailModal({
-    publisher, assignmentStatus, open, onClose, onLeave, isActionLoading
+    publisher, assignmentStatus, open, onClose, onLeave, isActionLoading,
 }: PublisherDetailModalProps) {
     if (!publisher) return null;
 
     const joinedDate = publisher.createdAt
-        ? new Date(Number(publisher.createdAt) * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-        : 'Unknown';
+        ? new Date(Number(publisher.createdAt) * 1000).toLocaleDateString('en-US', {
+            year: 'numeric', month: 'long', day: 'numeric',
+        })
+        : null;
 
     const memberCount = Array.isArray(publisher.uids) ? publisher.uids.length : 0;
+    const isActive = publisher.status === 'Active';
 
     return (
         <AnimatePresence>
             {open && (
                 <>
+                    {/* ── Backdrop ── */}
                     <motion.div
+                        key="backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90]"
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] h-full "
                     />
+
+                    {/* ── Panel: bottom-sheet on mobile, right-panel on md+ ── */}
                     <motion.div
-                        initial={{ opacity: 0, x: '100%' }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: '100%' }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                        className="fixed right-0 top-0 h-screen w-full max-w-lg bg-card border-l border-border shadow-2xl z-[91] overflow-y-auto [scrollbar-width:none]"
+                        key="panel"
+                        initial={{ y: '100%' }}
+                        animate={{ y: 0 }}
+                        exit={{ y: '100%' }}
+                        transition={{ type: 'spring', stiffness: 340, damping: 34 }}
+                        className={[
+                            'fixed z-[91] bg-white flex flex-col overflow-hidden',
+                            // Mobile: bottom sheet
+                            'bottom-0 left-0 right-0 max-h-[92dvh] rounded-t-3xl border-t border-border/40',
+                            // Desktop: right panel, full height, no rounded top
+                            'md:bottom-auto md:top-0 md:left-auto md:right-0 md:max-h-screen md:h-screen md:w-full md:max-w-md md:rounded-none md:border-t-0 md:border-l',
+                        ].join(' ')}
                     >
-                        {/* Header */}
-                        <div className="sticky top-0 bg-card/95 backdrop-blur-md border-b border-border/50 p-5 flex items-center justify-between z-10">
-                            <h2 className="text-lg font-bold text-foreground">Publisher Profile</h2>
+                        {/* Drag handle – mobile only */}
+                        <div className="md:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
+                            <div className="h-1 w-12 rounded-full bg-muted-foreground/20" />
+                        </div>
+
+                        {/* ── Sticky Header ── */}
+                        <div className="flex-shrink-0 flex items-center justify-between px-5 py-3.5 border-b border-border/40">
+                            <div className="flex items-center gap-2">
+                                <Building className="h-4 w-4 text-primary" />
+                                <h2 className="text-base font-bold text-foreground">Publisher Profile</h2>
+                            </div>
                             <button
                                 onClick={onClose}
-                                className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-muted transition-colors"
+                                className="h-8 w-8 cursor-pointer bg-red-100 rounded-full flex items-center justify-center hover:bg-muted transition-colors"
                             >
-                                <X className="h-5 w-5 text-muted-foreground" />
+                                <ArrowLeftToLine className="h-4 w-4 text-muted-foreground" />
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-6">
-                            {/* Publisher hero */}
+                        {/* ── Scrollable Content ── */}
+                        <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+
+                            {/* ── Hero section ── */}
                             <div className="relative">
-                                <div className="h-28 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 overflow-hidden">
-                                    <div className="absolute inset-0 opacity-10"
-                                        style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '30px 30px' }}
+                                {/* Gradient banner */}
+                                <div
+                                    className="h-28 w-full relative overflow-hidden"
+                                    style={{ background: 'linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #7c3aed 100%)' }}
+                                >
+                                    {/* Subtle dot pattern */}
+                                    <div
+                                        className="absolute inset-0"
+                                        style={{
+                                            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px)',
+                                            backgroundSize: '20px 20px',
+                                        }}
                                     />
+                                    {/* Glow circles */}
+                                    <div className="absolute -top-8 -right-8 h-36 w-36 rounded-full bg-white/10 blur-3xl" />
+                                    <div className="absolute top-4 left-8 h-16 w-16 rounded-full bg-white/5 blur-2xl" />
                                 </div>
-                                <div className="flex items-end gap-4 px-2 -mt-8">
-                                    <div className="h-16 w-16 rounded-xl bg-card border-2 border-border shadow-lg flex items-center justify-center overflow-hidden">
+
+                                {/* Avatar bubble – centered below the banner */}
+                                <div className="flex flex-col items-center relative z-10" style={{ marginTop: '-36px' }}>
+                                    <div className="h-[72px] w-[72px] rounded-2xl bg-white border-[3px] border-background shadow-2xl flex items-center justify-center overflow-hidden">
                                         {publisher.logo_url ? (
-                                            <img src={publisher.logo_url} alt={publisher.name} className="h-full w-full object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
+                                            <img
+                                                src={publisher.logo_url}
+                                                alt={publisher.name}
+                                                className="h-full w-full object-cover bg-white "
+                                                onError={e => { e.currentTarget.style.display = 'none'; }}
+                                            />
                                         ) : (
                                             <Building className="h-8 w-8 text-primary" />
                                         )}
                                     </div>
-                                    <div className="pb-1 flex-1 min-w-0">
-                                        <h3 className="text-xl font-bold text-foreground truncate">{publisher.name}</h3>
-                                        <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full border mt-1 ${publisher.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' : 'bg-amber-500/10 text-amber-500 border-amber-500/30'}`}>
-                                            {publisher.status || 'Active'}
-                                        </span>
-                                    </div>
+
+                                    {/* Name */}
+                                    <h3 className="mt-3 text-xl font-bold text-foreground text-center px-4 leading-tight">
+                                        {publisher.name}
+                                    </h3>
+
+                                    {/* Publisher account status badge */}
+                                    <span className={`mt-2 mb-5 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border
+                                        ${isActive
+                                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/25'
+                                            : 'bg-amber-500/10 text-amber-500 border-amber-500/25'}`}
+                                    >
+                                        <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                        {publisher.status || 'Active'}
+                                    </span>
                                 </div>
                             </div>
 
-                            {/* Description */}
-                            {publisher.description && (
-                                <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 rounded-xl p-4 border border-border/30">
-                                    {publisher.description}
-                                </p>
-                            )}
+                            {/* ── Body ── */}
+                            <div className="px-5 space-y-4 pb-8">
 
-                            {/* Stats row */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <StatPill
-                                    label="Team Members"
-                                    value={memberCount}
-                                    color="bg-blue-500/5 border-blue-500/20 text-blue-500"
-                                />
-                                <StatPill
-                                    label="Your Status"
-                                    value={assignmentStatus || 'Active'}
-                                    color="bg-emerald-500/5 border-emerald-500/20 text-emerald-500"
-                                />
-                            </div>
+                                {/* Description */}
+                                {publisher.description && publisher.description !== 'description' && (
+                                    <p className="text-sm text-muted-foreground leading-relaxed text-center">
+                                        {publisher.description}
+                                    </p>
+                                )}
 
-                            {/* Star rating */}
-                            <div className="bg-gradient-to-r from-amber-500/5 to-orange-500/5 rounded-xl p-4 border border-amber-500/10">
-                                <p className="text-xs text-muted-foreground mb-2 font-medium">Publisher Rating</p>
-                                <StarRating rating={publisher.average_rating || 0} />
-                            </div>
+                                {/* Stats: Members + Rating */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="flex flex-col items-center justify-center gap-1 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/15">
+                                        <div className="flex items-center gap-1.5">
+                                            <Users className="h-4 w-4 text-blue-500" />
+                                            <span className="text-2xl font-bold text-blue-500">{memberCount}</span>
+                                        </div>
+                                        <span className="text-[11px] text-muted-foreground font-medium">Team Members</span>
+                                    </div>
+                                    <div className="flex flex-col items-center justify-center gap-1 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/15">
+                                        <div className="flex items-center gap-1.5">
+                                            <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                                            <span className="text-2xl font-bold text-amber-500">
+                                                {(publisher.average_rating ?? 0).toFixed(1)}
+                                            </span>
+                                        </div>
+                                        <span className="text-[11px] text-muted-foreground font-medium">Avg Rating</span>
+                                    </div>
+                                </div>
 
-                            {/* Contact info */}
-                            <div className="space-y-2">
-                                <InfoRow icon={Mail} label="Email" value={publisher.email} />
-                                <InfoRow icon={Phone} label="Phone" value={publisher.phone} />
-                                <InfoRow icon={FileText} label="Registration ID" value={publisher.rgst_gov_id} />
-                                <InfoRow icon={Calendar} label="Registered Since" value={joinedDate} />
-                            </div>
+                                {/* Request status row */}
+                                <div className="flex items-center justify-between bg-muted/40 rounded-2xl px-4 py-3.5 border border-border/30">
+                                    <div>
+                                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Your Membership</p>
+                                        <p className="text-sm font-semibold text-foreground mt-0.5">Request Status</p>
+                                    </div>
+                                    <RequestStatusBadge status={assignmentStatus} />
+                                </div>
 
-                            {/* Leave Team */}
-                            {onLeave && (
-                                <div className="border-t border-border/50 pt-5">
+                                {/* Star rating */}
+                                <div className="flex items-center justify-between bg-gradient-to-r from-amber-500/5 to-orange-500/5 rounded-2xl px-4 py-3.5 border border-amber-500/10">
+                                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Publisher Rating</p>
+                                    <StarRating rating={publisher.average_rating || 0} />
+                                </div>
+
+                                {/* Divider */}
+                                <div className="flex items-center gap-3 py-1">
+                                    <div className="flex-1 h-px bg-border/40" />
+                                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Contact & Details</span>
+                                    <div className="flex-1 h-px bg-border/40" />
+                                </div>
+
+                                {/* Contact info card */}
+                                <div className="rounded-2xl border border-border/40 bg-card px-4">
+                                    <InfoRow icon={Mail} label="Email" value={publisher.email} />
+                                    <InfoRow icon={Phone} label="Phone" value={publisher.phone} />
+                                    <InfoRow icon={FileText} label="Registration ID" value={publisher.rgst_gov_id} />
+                                    <InfoRow icon={Calendar} label="Registered Since" value={joinedDate} />
+                                </div>
+
+                                {/* Leave button */}
+                                {onLeave && (
                                     <Button
                                         onClick={onLeave}
                                         disabled={isActionLoading}
                                         variant="outline"
-                                        className="w-full border-red-500/30 text-red-500 hover:bg-red-500/10"
+                                        className="w-full h-11 rounded-xl border-red-500/25 text-red-500 hover:bg-red-500/8 hover:border-red-500/40 gap-2 font-semibold"
                                     >
+                                        {isActionLoading
+                                            ? <span className="h-4 w-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin" />
+                                            : <LogOut className="h-4 w-4" />
+                                        }
                                         Leave This Publisher
                                     </Button>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </motion.div>
                 </>

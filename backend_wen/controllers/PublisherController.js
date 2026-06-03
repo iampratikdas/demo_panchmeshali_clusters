@@ -354,7 +354,7 @@ class PublisherController {
                 return res.status(404).json({ status: 404, message: "Publisher company not found for this user", data: {} });
             }
 
-            const pid = publisherCompany.pid;
+            const pid = publisherCompany[0].pid;
 
             // Verify assignment exists
             const existingRequest = await this.publisherFunc.findAssignedPublisher({ pid, writer_uid: writerUid });

@@ -156,6 +156,7 @@ class PublishersFunctions {
     }
 
     async findAssignedPublisher(query) {
+        // console.log("findAssignedPublisher==============>", query, await this.assignedPublishersModel.findOne(query).lean())
         return await this.assignedPublishersModel.findOne(query).lean();
     }
 

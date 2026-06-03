@@ -5,7 +5,7 @@ import {
     Building, Star, Users, Search,
     RefreshCw, LogOut, Inbox, ServerCrash, Plus, Globe
 } from 'lucide-react';
-import { fetchPublisherList, leavePublisherTeam, requestJoinPublisherByPid, fetchTeamRequestsByUid, fetchPublisherProfile } from '../../lib/api';
+import { fetchPublisherList, leavePublisherTeam, requestJoinPublisherByPid, fetchTeamRequestsByUid } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { useAtom } from 'jotai';
 import { currentUserAtom } from '../../store/atoms';
@@ -57,7 +57,7 @@ function PublisherCard({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="group bg-card border border-border/40 rounded-2xl p-5 hover:border-primary/20 hover:shadow-lg transition-all cursor-pointer"
+            className="group bg-white border border-border/40 rounded-2xl p-5 hover:border-primary/20 hover:shadow-lg transition-all cursor-pointer"
             onClick={() => onViewDetail(assignment)}
         >
             {/* Publisher header */}
@@ -156,7 +156,7 @@ function DiscoverPublishers({ existingPids }: { existingPids: Set<string> }) {
     return (
         <div className="space-y-4">
             {/* Toast */}
-            <div className="fixed bottom-6 right-6 z-[200] space-y-2 pointer-events-none">
+            <div className="fixed bottom-6 right-6 z-[200] space-y-2 pointer-events-none ">
                 <AnimatePresence>
                     {toasts.map(t => (
                         <motion.div
@@ -260,21 +260,29 @@ export function WriterTeamsView() {
     const [confirmLeave, setConfirmLeave] = useState<{ pid: string; name: string } | null>(null);
     const [leavingPid, setLeavingPid] = useState<string | null>(null);
 
-    const { data: teamRequestData, isLoading: isRequestLoading, isError: isRequestError, refetch: refetchRequest } = useQuery({
+    // ─── Single query: API returns array of { _id, publisher_details }
+    const {
+        data: teamRequestData,
+        isLoading,
+        isError,
+        refetch,
+    } = useQuery({
         queryKey: ['team-requests-by-uid', user.uid],
         queryFn: () => fetchTeamRequestsByUid(),
         staleTime: 30_000,
         enabled: !!user.uid,
     });
-    const teamRequest = teamRequestData?.data; // can be single object or null
 
-    const { data: assignedPublisherProfile, isLoading: isProfileLoading, refetch: refetchProfile } = useQuery({
-        queryKey: ['assigned-publisher-profile', teamRequest?.pid],
-        queryFn: () => fetchPublisherProfile(teamRequest.pid),
-        staleTime: 30_000,
-        enabled: !!teamRequest?.pid,
-    });
-
+    // Map each array item → flat publisher object enriched with assignment_status
+    const publisherList: any[] = Array.isArray(teamRequestData?.data)
+        ? teamRequestData.data.map((item: any) => ({
+            ...item.publisher_details,   // name, pid, description, logo_url, status, uids, email, phone, etc.
+            request_id: item._id,        // keep the request doc _id
+            // All items from team_requests_by_uid are active connections → show "Accepted" badge on card.
+            // The publisher's own account status (Active/Inactive) stays in `status` from publisher_details.
+            assignment_status: 'Accepted',
+        }))
+        : [];
     const leaveMutation = useMutation({
         mutationFn: (pid: string) => leavePublisherTeam(pid),
         onSuccess: () => {
@@ -291,23 +299,8 @@ export function WriterTeamsView() {
         },
     });
 
-    const publisherList: any[] = [];
-    if (teamRequest && assignedPublisherProfile) {
-        publisherList.push({
-            ...assignedPublisherProfile,
-            assignment_status: teamRequest.status,
-        });
-    }
-
-    const isLoading = isRequestLoading || (!!teamRequest?.pid && isProfileLoading);
-    const isError = isRequestError;
-    const refetch = () => {
-        refetchRequest();
-        refetchProfile();
-    };
-
-    // Only show accepted publishers on "My Publishers" tab
-    const acceptedPublishers = publisherList.filter((p: any) => p.assignment_status === 'Accepted');
+    // Show all publishers in "My Publishers"; filter accepted if needed in future
+    const acceptedPublishers = publisherList; // all entries from this endpoint are already linked
     const existingPids = new Set<string>(publisherList.map((p: any) => p.pid).filter(Boolean));
 
     return (
