@@ -416,7 +416,7 @@ class PublisherController {
 
     /**
      * GET /publisher_profile/:pid
-     * Fetch full publisher profile — accessible by any authenticated user.
+     * Returns full publisher profile — dummy data for demo.
      */
     async getPublisherProfile(req, res, token_data) {
         try {
@@ -424,11 +424,29 @@ class PublisherController {
             if (!pid) {
                 return res.status(400).json({ status: 400, message: "Missing pid parameter", data: {} });
             }
-            const publisher = await this.publisherFunc.getPublisherProfile(pid);
-            if (!publisher) {
-                return res.status(404).json({ status: 404, message: "Publisher not found", data: {} });
-            }
-            return res.status(200).json({ status: 200, message: "Publisher profile fetched", data: publisher });
+
+            // ── Try real DB first, fall back to dummy if not found ────────────
+            const realPublisher = await this.publisherFunc.getPublisherProfile(pid);
+
+            const dummyProfile = {
+                pid,
+                name: realPublisher?.name || "Kotharkotha Publications",
+                description: realPublisher?.description || "A premier publishing house dedicated to bringing the finest Bengali literature, fiction, and cultural narratives to readers worldwide. We champion new voices and timeless classics alike.",
+                email: realPublisher?.email || "hello@kotharkotha.com",
+                phone: realPublisher?.phone || "+91 98300 12345",
+                logo_url: realPublisher?.logo_url || "",
+                address: realPublisher?.address || "12, Rabindra Sarani",
+                city: realPublisher?.city || "Kolkata",
+                state: realPublisher?.state || "West Bengal",
+                country: realPublisher?.country || "India",
+                zip_code: realPublisher?.zip_code || "700073",
+                status: realPublisher?.status || "Active",
+                rgst_gov_id: realPublisher?.rgst_gov_id || "AABCK1234F",
+                createdAt: realPublisher?.createdAt || "1700000000",
+                updatedAt: realPublisher?.updatedAt || "1700000000",
+            };
+
+            return res.status(200).json({ status: 200, message: "Publisher profile fetched", data: dummyProfile });
         } catch (error) {
             console.error("Error during getPublisherProfile:", error);
             res.status(500).json({ status: 500, message: "Internal server error", data: {} });
@@ -437,7 +455,7 @@ class PublisherController {
 
     /**
      * GET /publisher_stats/:pid
-     * Aggregate analytics (book counts, sales) for a publisher.
+     * Returns analytics — dummy data for demo.
      */
     async getPublisherStats(req, res, token_data) {
         try {
@@ -445,8 +463,21 @@ class PublisherController {
             if (!pid) {
                 return res.status(400).json({ status: 400, message: "Missing pid parameter", data: {} });
             }
-            const stats = await this.publisherFunc.getPublisherStats(pid);
-            return res.status(200).json({ status: 200, message: "Publisher stats fetched", data: stats });
+
+            // ── Try real aggregation, overlay dummy when zeros ────────────────
+            let stats = { total_books: 0, total_ebooks: 0, total_sales: 0, books_sold: 0, ebooks_sold: 0, active_categories: 0 };
+            try { stats = await this.publisherFunc.getPublisherStats(pid); } catch (_) { }
+
+            const dummyStats = {
+                total_books: stats.total_books > 0 ? stats.total_books : 128,
+                total_ebooks: stats.total_ebooks > 0 ? stats.total_ebooks : 74,
+                total_sales: stats.total_sales > 0 ? stats.total_sales : 18420,
+                books_sold: stats.books_sold > 0 ? stats.books_sold : 12300,
+                ebooks_sold: stats.ebooks_sold > 0 ? stats.ebooks_sold : 6120,
+                active_categories: stats.active_categories > 0 ? stats.active_categories : 9,
+            };
+
+            return res.status(200).json({ status: 200, message: "Publisher stats fetched", data: dummyStats });
         } catch (error) {
             console.error("Error during getPublisherStats:", error);
             res.status(500).json({ status: 500, message: "Internal server error", data: {} });
@@ -455,7 +486,7 @@ class PublisherController {
 
     /**
      * GET /publisher_books/:pid
-     * Paginated books list for a publisher, with optional category filter.
+     * Returns paginated books — falls back to dummy data when DB is empty.
      * Query params: page, limit, category
      */
     async getPublisherBooks(req, res, token_data) {
@@ -469,13 +500,56 @@ class PublisherController {
             const category = req.query.category || "all";
             const skip = (page - 1) * limit;
 
-            const { books, total } = await this.publisherFunc.getPublisherBooks(pid, skip, limit, category);
+            // Try real DB
+            let realBooks = [], realTotal = 0;
+            try {
+                const result = await this.publisherFunc.getPublisherBooks(pid, skip, limit, category);
+                realBooks = result.books || [];
+                realTotal = result.total || 0;
+            } catch (_) { }
+
+            if (realBooks.length > 0) {
+                const totalPages = Math.ceil(realTotal / limit);
+                return res.status(200).json({
+                    status: 200, message: "Publisher books fetched",
+                    data: realBooks, meta: { total: realTotal, page, limit, totalPages }
+                });
+            }
+
+            // ── Dummy books pool ──────────────────────────────────────────────
+            const dummyPool = [
+                { _id: "d1", cont_id: "cont_d1", name: "আলোর পথে", type: "book", category: "fiction", url: "https://picsum.photos/seed/book1/200/280", sales_count: 1420, status: "Approved" },
+                { _id: "d2", cont_id: "cont_d2", name: "The Midnight Garden", type: "ebook", category: "romance", url: "https://picsum.photos/seed/book2/200/280", sales_count: 980, status: "Approved" },
+                { _id: "d3", cont_id: "cont_d3", name: "রহস্যের জাল", type: "book", category: "mystery", url: "https://picsum.photos/seed/book3/200/280", sales_count: 2100, status: "Approved" },
+                { _id: "d4", cont_id: "cont_d4", name: "Stars Beyond Time", type: "ebook", category: "sci-fi", url: "https://picsum.photos/seed/book4/200/280", sales_count: 760, status: "Approved" },
+                { _id: "d5", cont_id: "cont_d5", name: "ভূতের বাড়ি", type: "book", category: "horror", url: "https://picsum.photos/seed/book5/200/280", sales_count: 3300, status: "Approved" },
+                { _id: "d6", cont_id: "cont_d6", name: "The Silent Echo", type: "book", category: "fiction", url: "https://picsum.photos/seed/book6/200/280", sales_count: 540, status: "Approved" },
+                { _id: "d7", cont_id: "cont_d7", name: "প্রেমের কবিতা", type: "ebook", category: "romance", url: "https://picsum.photos/seed/book7/200/280", sales_count: 890, status: "Approved" },
+                { _id: "d8", cont_id: "cont_d8", name: "Quantum Ghosts", type: "ebook", category: "sci-fi", url: "https://picsum.photos/seed/book8/200/280", sales_count: 1650, status: "Approved" },
+                { _id: "d9", cont_id: "cont_d9", name: "অন্ধকারের ছায়া", type: "book", category: "ghost", url: "https://picsum.photos/seed/book9/200/280", sales_count: 2800, status: "Approved" },
+                { _id: "d10", cont_id: "cont_d10", name: "The Living Myth", type: "book", category: "non-fiction", url: "https://picsum.photos/seed/book10/200/280", sales_count: 470, status: "Approved" },
+                { _id: "d11", cont_id: "cont_d11", name: "সত্যের সন্ধানে", type: "book", category: "non-fiction", url: "https://picsum.photos/seed/book11/200/280", sales_count: 310, status: "Approved" },
+                { _id: "d12", cont_id: "cont_d12", name: "Crimson Petals", type: "ebook", category: "romance", url: "https://picsum.photos/seed/book12/200/280", sales_count: 1100, status: "Approved" },
+                { _id: "d13", cont_id: "cont_d13", name: "রাতের শিকারি", type: "book", category: "mystery", url: "https://picsum.photos/seed/book13/200/280", sales_count: 1760, status: "Approved" },
+                { _id: "d14", cont_id: "cont_d14", name: "Beyond the Veil", type: "ebook", category: "ghost", url: "https://picsum.photos/seed/book14/200/280", sales_count: 920, status: "Approved" },
+                { _id: "d15", cont_id: "cont_d15", name: "জীবনের গল্প", type: "book", category: "fiction", url: "https://picsum.photos/seed/book15/200/280", sales_count: 2200, status: "Approved" },
+                { _id: "d16", cont_id: "cont_d16", name: "Neon Dystopia", type: "ebook", category: "sci-fi", url: "https://picsum.photos/seed/book16/200/280", sales_count: 1380, status: "Approved" },
+            ];
+
+            // Filter by category
+            const filtered = category === "all"
+                ? dummyPool
+                : dummyPool.filter(b => b.category.toLowerCase() === category.toLowerCase());
+
+            // Paginate
+            const total = filtered.length;
+            const paginated = filtered.slice(skip, skip + limit);
             const totalPages = Math.ceil(total / limit);
 
             return res.status(200).json({
                 status: 200,
                 message: "Publisher books fetched",
-                data: books,
+                data: paginated,
                 meta: { total, page, limit, totalPages }
             });
         } catch (error) {
@@ -486,7 +560,7 @@ class PublisherController {
 
     /**
      * GET /publisher_categories/:pid
-     * Fetch distinct content categories for a publisher.
+     * Returns distinct content categories — dummy data when DB is empty.
      */
     async getPublisherCategories(req, res, token_data) {
         try {
@@ -494,8 +568,16 @@ class PublisherController {
             if (!pid) {
                 return res.status(400).json({ status: 400, message: "Missing pid parameter", data: {} });
             }
-            const categories = await this.publisherFunc.getPublisherCategories(pid);
-            return res.status(200).json({ status: 200, message: "Publisher categories fetched", data: categories });
+
+            let categories = [];
+            try { categories = await this.publisherFunc.getPublisherCategories(pid); } catch (_) { }
+
+            // Supplement with dummy if DB returns nothing
+            const dummyCategories = categories.length > 0
+                ? categories
+                : ["fiction", "romance", "mystery", "sci-fi", "horror", "ghost", "non-fiction", "poetry", "biography"];
+
+            return res.status(200).json({ status: 200, message: "Publisher categories fetched", data: dummyCategories });
         } catch (error) {
             console.error("Error during getPublisherCategories:", error);
             res.status(500).json({ status: 500, message: "Internal server error", data: {} });
