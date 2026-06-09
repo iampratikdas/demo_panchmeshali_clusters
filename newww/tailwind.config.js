@@ -19,7 +19,8 @@ export default {
           700: "#864f27",
           800: "#53341a",
           900: "#21180d",
-          950: "#100c06"
+          950: "#100c06",
+          1000: "#cb8959"
         }
       },
       borderRadius: {
@@ -27,7 +28,7 @@ export default {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)'
       },
-      colors: {}
+      // colors: {}
     }
   },
   plugins: [],

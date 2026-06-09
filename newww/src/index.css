@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@config "../tailwind.config.js";
 @plugin "@tailwindcss/typography";
 
 :root {
@@ -46,6 +47,15 @@ body {
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
 }
 
+.buttondefault {
+  background: #cb8959;
+  color: white;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+}
+
 .glass-dark {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
@@ -62,12 +72,14 @@ body {
   box-shadow: 0 4px 24px 0 rgba(31, 38, 135, 0.1);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.glass-card-no-animate{
+
+.glass-card-no-animate {
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.4);
 }
+
 .glass-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.2);
@@ -239,10 +251,14 @@ body {
   text-align: justify;
   text-indent: 1.8em;
 }
+
 .book-prose p:first-child {
   text-indent: 0;
 }
-.book-prose h1, .book-prose h2, .book-prose h3 {
+
+.book-prose h1,
+.book-prose h2,
+.book-prose h3 {
   font-family: Georgia, serif;
   font-weight: 700;
   margin-top: 1.6em;
@@ -251,26 +267,46 @@ body {
   text-align: center;
   text-indent: 0;
 }
-.book-prose h1 { font-size: 1.5rem; }
-.book-prose h2 { font-size: 1.25rem; }
-.book-prose h3 { font-size: 1.1rem; }
+
+.book-prose h1 {
+  font-size: 1.5rem;
+}
+
+.book-prose h2 {
+  font-size: 1.25rem;
+}
+
+.book-prose h3 {
+  font-size: 1.1rem;
+}
+
 .book-prose blockquote {
   border-left: 3px solid #c9a84c;
   padding: 0.5em 1.2em;
   margin: 1.2em 0;
   font-style: italic;
   color: #555;
-  background: rgba(201,168,76,0.06);
+  background: rgba(201, 168, 76, 0.06);
   border-radius: 0 6px 6px 0;
 }
-.book-prose ul, .book-prose ol {
+
+.book-prose ul,
+.book-prose ol {
   margin: 1em 0 1em 1.5em;
 }
+
 .book-prose li {
   margin-bottom: 0.4em;
 }
-.book-prose strong { color: #111; }
-.book-prose em { font-style: italic; }
+
+.book-prose strong {
+  color: #111;
+}
+
+.book-prose em {
+  font-style: italic;
+}
+
 .book-prose hr {
   border: none;
   border-top: 1px solid #e5c87a;

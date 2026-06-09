@@ -57,7 +57,7 @@ function PublisherCard({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="group bg-white border border-border/40 rounded-2xl p-5 hover:border-primary/20 hover:shadow-lg transition-all cursor-pointer"
+            className="group bg-secondary border border-border/40 rounded-2xl p-5 hover:border-primary/20 hover:shadow-lg transition-all cursor-pointer"
             onClick={() => onViewDetail(assignment)}
         >
             {/* Publisher header */}

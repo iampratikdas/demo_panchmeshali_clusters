@@ -68,7 +68,7 @@ function WriterCard({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="group bg-card border border-border/40 rounded-2xl p-5 hover:border-primary/20 hover:shadow-lg transition-all cursor-pointer"
+            className="group bg-primary-100 border border-border/40 rounded-2xl p-5 hover:border-primary/20 hover:shadow-lg transition-all cursor-pointer"
             onClick={() => onViewDetail(request)}
         >
             <div className="flex items-start gap-4">
@@ -121,7 +121,7 @@ function WriterCard({
                     <>
                         <Button
                             size="sm"
-                            className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white gap-1.5"
+                            className="flex-1 bg-red-500 hover:bg-emerald-600 text-white gap-1.5"
                             disabled={isLoading}
                             onClick={() => onAccept(w.uid)}
                         >
@@ -374,7 +374,7 @@ export function PublisherTeamsView() {
                 </div>
             ) : (
                 <AnimatePresence mode="popLayout">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid  grid-cols-1 md:grid-cols-2 gap-4">
                         {filtered.map(r => (
                             <WriterCard
                                 key={r.assignment_id}
