@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Building, Star, Users, Search,
-    RefreshCw, LogOut, Inbox, ServerCrash, Plus, Globe
+    RefreshCw, LogOut, Inbox, ServerCrash, Plus, Globe, MessageSquare
 } from 'lucide-react';
-import { fetchPublisherList, leavePublisherTeam, requestJoinPublisherByPid, fetchTeamRequestsByUid } from '../../lib/api';
+import { fetchPublisherList, leavePublisherTeam, requestJoinPublisherByPid, fetchTeamRequestsByUid, createChat } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { useAtom } from 'jotai';
 import { currentUserAtom } from '../../store/atoms';
@@ -41,11 +42,13 @@ function PublisherCard({
     assignment,
     onViewDetail,
     onLeave,
+    onChat,
     isLeaving,
 }: {
     assignment: any;
     onViewDetail: (a: any) => void;
     onLeave: (pid: string, name: string) => void;
+    onChat: (publisherUid: string) => void;
     isLeaving: boolean;
 }) {
     const pub = assignment; // merged publisher_details
@@ -93,12 +96,26 @@ function PublisherCard({
 
             </div>
 
-            {/* Leave button */}
-            <div onClick={e => e.stopPropagation()}>
+            {/* Action buttons */}
+            <div onClick={e => e.stopPropagation()} className="flex gap-2">
+                {pub.assignment_status === 'Accepted' && (
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 gap-2 border-primary/30 text-primary hover:bg-primary/10"
+                        onClick={() => {
+                            const publisherUid = pub.uids?.[0];
+                            if (publisherUid) onChat(publisherUid);
+                        }}
+                    >
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        Chat
+                    </Button>
+                )}
                 <Button
                     size="sm"
                     variant="outline"
-                    className="w-full border-red-500/20 text-red-500 hover:bg-red-500/10 gap-2"
+                    className="flex-1 border-red-500/20 text-red-500 hover:bg-red-500/10 gap-2"
                     disabled={isLeaving}
                     onClick={() => onLeave(pub.pid, pub.name)}
                 >
@@ -251,6 +268,7 @@ export function WriterTeamsView() {
     const [user] = useAtom(currentUserAtom);
     const { toast, toasts } = useToast();
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'my-publishers' | 'discover'>('my-publishers');
     const [selectedAssignment, setSelectedAssignment] = useState<any | null>(null);
     const [confirmLeave, setConfirmLeave] = useState<{ pid: string; name: string } | null>(null);
@@ -299,6 +317,18 @@ export function WriterTeamsView() {
     // Show all publishers in "My Publishers"; filter accepted if needed in future
     const acceptedPublishers = publisherList; // all entries from this endpoint are already linked
     const existingPids = new Set<string>(publisherList.map((p: any) => p.pid).filter(Boolean));
+
+    const handleChat = async (publisherUid: string) => {
+        try {
+            const chat = await createChat(publisherUid);
+            if (chat?.chatId) {
+                sessionStorage.setItem('pendingChatId', chat.chatId);
+            }
+            navigate({ to: '/chats' });
+        } catch (err: any) {
+            toast({ title: 'Error', description: err?.response?.data?.message || 'Could not open chat.', variant: 'destructive' });
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -388,6 +418,7 @@ export function WriterTeamsView() {
                                             assignment={a}
                                             onViewDetail={setSelectedAssignment}
                                             onLeave={(pid, name) => setConfirmLeave({ pid, name })}
+                                            onChat={handleChat}
                                             isLeaving={leavingPid === a.pid}
                                         />
                                     ))}
@@ -409,6 +440,10 @@ export function WriterTeamsView() {
                 assignmentStatus={selectedAssignment?.assignment_status}
                 onClose={() => setSelectedAssignment(null)}
                 onLeave={selectedAssignment ? () => setConfirmLeave({ pid: selectedAssignment.pid, name: selectedAssignment.name }) : undefined}
+                onChat={selectedAssignment?.assignment_status === 'Accepted' && selectedAssignment?.uids?.[0]
+                    ? () => handleChat(selectedAssignment.uids[0])
+                    : undefined
+                }
                 isActionLoading={leaveMutation.isPending}
             />
 

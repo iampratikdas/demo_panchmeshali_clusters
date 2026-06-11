@@ -36,27 +36,39 @@ class ChatController {
       }
 
       // 2. Role-based authorization
+      // Note: WritersAssignedPublishers schema has no publisher_uid field — only pid (company id).
+      // We look up the publisher company by uids array to obtain the pid first.
       if (myRole !== 'admin' && myRole !== 'both') {
         let isAuthorized = false;
-        
-        if (myRole === 'writer' && targetUser.role === 'publisher') {
-          // Check if assigned
-          const assignment = await WritersAssignedPublishers.findOne({
-            writer_uid: myUid,
-            publisher_uid: targetUid,
-            status: { $in: ['Pending', 'Accepted'] }
-          });
-          if (assignment) isAuthorized = true;
-        } else if (myRole === 'publisher' && targetUser.role === 'user') {
-          // Check if assigned (user = writer)
-          const assignment = await WritersAssignedPublishers.findOne({
-            writer_uid: targetUid,
-            publisher_uid: myUid,
-            status: { $in: ['Pending', 'Accepted'] }
-          });
-          if (assignment) isAuthorized = true;
+        const { Publisher } = await (async () => {
+          const db = await require('../db/mongodb/setupDatabase').getConnection();
+          return { Publisher: await require('../models/monogdb/Publishers')(db) };
+        })();
+
+        if (myRole === 'writer' && (targetUser.role === 'publisher' || targetUser.role === 'both')) {
+          // Find the publisher company that the target user owns
+          const publisherCompany = await Publisher.findOne({ uids: targetUid });
+          if (publisherCompany) {
+            const assignment = await WritersAssignedPublishers.findOne({
+              writer_uid: myUid,
+              pid: publisherCompany.pid,
+              status: { $in: ['Pending', 'Accepted'] }
+            });
+            if (assignment) isAuthorized = true;
+          }
+        } else if ((myRole === 'publisher' || myRole === 'both') && (targetUser.role === 'writer' || targetUser.role === 'user')) {
+          // Find the publisher company that the current user (publisher) owns
+          const publisherCompany = await Publisher.findOne({ uids: myUid });
+          if (publisherCompany) {
+            const assignment = await WritersAssignedPublishers.findOne({
+              writer_uid: targetUid,
+              pid: publisherCompany.pid,
+              status: { $in: ['Pending', 'Accepted'] }
+            });
+            if (assignment) isAuthorized = true;
+          }
         }
-        
+
         if (!isAuthorized) {
           return res.status(403).json({ status: 403, message: "Unauthorized to chat with this user" });
         }

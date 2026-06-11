@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users, CheckCircle, XCircle, UserMinus, Search,
-    Star, BookOpen, RefreshCw, Inbox, ServerCrash
+    Star, BookOpen, RefreshCw, Inbox, ServerCrash, MessageSquare
 } from 'lucide-react';
-import { fetchTeamRequests, updateTeamRequest, fetchPublisherProfile } from '../../lib/api';
+import { fetchTeamRequests, updateTeamRequest, fetchPublisherProfile, createChat } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { Button } from '../../ui/button';
 import { TeamStatusBadge } from './TeamStatusBadge';
@@ -47,6 +48,7 @@ function WriterCard({
     onAccept,
     onReject,
     onRemove,
+    onChat,
     loadingUid,
 }: {
     request: any;
@@ -54,6 +56,7 @@ function WriterCard({
     onAccept: (uid: string) => void;
     onReject: (uid: string) => void;
     onRemove: (uid: string) => void;
+    onChat: (uid: string) => void;
     loadingUid: string | null;
 }) {
     const w = request.writer;
@@ -141,16 +144,27 @@ function WriterCard({
                     </>
                 )}
                 {request.status === 'Accepted' && (
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 border-red-500/30 text-red-500 hover:bg-red-500/10 gap-1.5"
-                        disabled={isLoading}
-                        onClick={() => onRemove(w.uid)}
-                    >
-                        <UserMinus className="h-3.5 w-3.5" />
-                        Remove from Team
-                    </Button>
+                    <>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+                            onClick={() => onChat(w.uid)}
+                        >
+                            <MessageSquare className="h-3.5 w-3.5" />
+                            Chat
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 border-red-500/30 text-red-500 hover:bg-red-500/10 gap-1.5"
+                            disabled={isLoading}
+                            onClick={() => onRemove(w.uid)}
+                        >
+                            <UserMinus className="h-3.5 w-3.5" />
+                            Remove from Team
+                        </Button>
+                    </>
                 )}
                 {request.status === 'Rejected' && (
                     <Button
@@ -178,6 +192,7 @@ function WriterCard({
 export function PublisherTeamsView() {
     const { toast, toasts } = useToast();
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
     const [filterTab, setFilterTab] = useState<FilterTab>('all');
     const [search, setSearch] = useState('');
     const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
@@ -187,6 +202,7 @@ export function PublisherTeamsView() {
         writerName: string;
     } | null>(null);
     const [loadingUid, setLoadingUid] = useState<string | null>(null);
+    const [chattingUid, setChattingUid] = useState<string | null>(null);
 
     const [user] = useAtom(currentUserAtom);
 
@@ -239,6 +255,21 @@ export function PublisherTeamsView() {
             mutation.mutate({ uid, type });
         } else {
             setConfirmAction({ type, writerUid: uid, writerName });
+        }
+    };
+
+    const handleChat = async (writerUid: string) => {
+        setChattingUid(writerUid);
+        try {
+            const chat = await createChat(writerUid);
+            if (chat?.chatId) {
+                sessionStorage.setItem('pendingChatId', chat.chatId);
+            }
+            navigate({ to: '/chats' });
+        } catch (err: any) {
+            toast({ title: 'Error', description: err?.response?.data?.message || 'Could not open chat.', variant: 'destructive' });
+        } finally {
+            setChattingUid(null);
         }
     };
 
@@ -383,6 +414,7 @@ export function PublisherTeamsView() {
                                 onAccept={uid => handleAction(uid, 'Accepted', r.writer?.full_name || 'Writer')}
                                 onReject={uid => handleAction(uid, 'Rejected', r.writer?.full_name || 'Writer')}
                                 onRemove={uid => handleAction(uid, 'Cancelled', r.writer?.full_name || 'Writer')}
+                                onChat={handleChat}
                                 loadingUid={loadingUid}
                             />
                         ))}
@@ -399,6 +431,7 @@ export function PublisherTeamsView() {
                 onAccept={() => selectedRequest && handleAction(selectedRequest.writer?.uid, 'Accepted', selectedRequest.writer?.full_name)}
                 onReject={() => selectedRequest && handleAction(selectedRequest.writer?.uid, 'Rejected', selectedRequest.writer?.full_name)}
                 onRemove={() => selectedRequest && handleAction(selectedRequest.writer?.uid, 'Cancelled', selectedRequest.writer?.full_name)}
+                onChat={selectedRequest?.writer?.uid ? () => handleChat(selectedRequest.writer.uid) : undefined}
                 isActionLoading={mutation.isPending}
             />
 

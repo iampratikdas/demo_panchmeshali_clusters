@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     X, ArrowRightToLine, Star, Users, BookOpen, Calendar, Activity,
-    Tag, Mail, User, BarChart3, Clock
+    Tag, Mail, User, BarChart3, Clock, MessageSquare
 } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { TeamStatusBadge } from './TeamStatusBadge';
@@ -14,6 +14,7 @@ interface WriterDetailModalProps {
     onAccept?: () => void;
     onReject?: () => void;
     onRemove?: () => void;
+    onChat?: () => void;
     isActionLoading?: boolean;
 }
 
@@ -47,7 +48,7 @@ function StatCard({ icon: Icon, label, value, color }: any) {
 
 export function WriterDetailModal({
     writer, assignmentStatus, open, onClose,
-    onAccept, onReject, onRemove, isActionLoading
+    onAccept, onReject, onRemove, onChat, isActionLoading
 }: WriterDetailModalProps) {
     if (!writer) return null;
 
@@ -207,15 +208,29 @@ export function WriterDetailModal({
                                             )}
                                         </div>
                                     )}
-                                    {assignmentStatus === 'Accepted' && onRemove && (
-                                        <Button
-                                            onClick={onRemove}
-                                            disabled={isActionLoading}
-                                            variant="outline"
-                                            className="w-full border-red-500/30 text-red-500 hover:bg-red-500/10"
-                                        >
-                                            Remove from Team
-                                        </Button>
+                                    {assignmentStatus === 'Accepted' && (
+                                        <div className="space-y-2">
+                                            {onChat && (
+                                                <Button
+                                                    onClick={onChat}
+                                                    variant="outline"
+                                                    className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/10"
+                                                >
+                                                    <MessageSquare className="h-4 w-4" />
+                                                    Chat
+                                                </Button>
+                                            )}
+                                            {onRemove && (
+                                                <Button
+                                                    onClick={onRemove}
+                                                    disabled={isActionLoading}
+                                                    variant="outline"
+                                                    className="w-full border-red-500/30 text-red-500 hover:bg-red-500/10"
+                                                >
+                                                    Remove from Team
+                                                </Button>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             )}

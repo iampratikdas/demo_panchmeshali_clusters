@@ -43,6 +43,19 @@ export default function Chats() {
         enabled: !!selectedChatId,
     });
 
+    // Auto-select chat from navigation if pending
+    useEffect(() => {
+        const pendingChatId = sessionStorage.getItem('pendingChatId');
+        if (pendingChatId && chats) {
+            // Optional: check if chat exists in the list
+            const exists = chats.find((c: Chat) => c.chatId === pendingChatId);
+            if (exists) {
+                setSelectedChatId(pendingChatId);
+                sessionStorage.removeItem('pendingChatId');
+            }
+        }
+    }, [chats]);
+
     // Setup Socket
     useEffect(() => {
         const socket = initSocket();

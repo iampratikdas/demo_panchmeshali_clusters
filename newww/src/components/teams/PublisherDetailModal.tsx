@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowLeftToLine, Star, Users, Calendar, Mail, Phone, Building, FileText, LogOut } from 'lucide-react';
+import { X, ArrowLeftToLine, Star, Users, Calendar, Mail, Phone, Building, FileText, LogOut, MessageSquare } from 'lucide-react';
 import { Button } from '../../ui/button';
 
 interface PublisherDetailModalProps {
@@ -8,6 +8,7 @@ interface PublisherDetailModalProps {
     open: boolean;
     onClose: () => void;
     onLeave?: () => void;
+    onChat?: () => void;
     isActionLoading?: boolean;
 }
 
@@ -65,7 +66,7 @@ function RequestStatusBadge({ status }: { status?: string }) {
 
 // ─── Main Modal ──────────────────────────────────────────────────────────────
 export function PublisherDetailModal({
-    publisher, assignmentStatus, open, onClose, onLeave, isActionLoading,
+    publisher, assignmentStatus, open, onClose, onLeave, onChat, isActionLoading,
 }: PublisherDetailModalProps) {
     if (!publisher) return null;
 
@@ -240,6 +241,18 @@ export function PublisherDetailModal({
                                     <InfoRow icon={FileText} label="Registration ID" value={publisher.rgst_gov_id} />
                                     <InfoRow icon={Calendar} label="Registered Since" value={joinedDate} />
                                 </div>
+
+                                {/* Chat button — only when Accepted */}
+                                {assignmentStatus === 'Accepted' && onChat && (
+                                    <Button
+                                        onClick={onChat}
+                                        variant="outline"
+                                        className="w-full h-11 rounded-xl gap-2 font-semibold border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50"
+                                    >
+                                        <MessageSquare className="h-4 w-4" />
+                                        Chat
+                                    </Button>
+                                )}
 
                                 {/* Leave button */}
                                 {onLeave && (
