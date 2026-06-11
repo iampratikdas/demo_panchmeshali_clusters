@@ -30,7 +30,12 @@ class PublishersFunctions {
     async publisherListByData(data, skip = 0, limit = 0) {
         return await this.publishermodel.find(data).skip(skip).limit(limit).sort({ createdAt: -1 }).lean()
     }
-
+    /**
+     * writer left the team 
+     */
+    async cancelledAssignedPublisher(filter) {
+        return await this.assignedPublishersModel.deleteOne(filter).lean();
+    }
     /**
      * Get all publishers assigned to a writer (by writer_uid).
      * Joins with Publishers collection on pid.
@@ -85,9 +90,12 @@ class PublishersFunctions {
                 },
                 {
                     $project: {
-                        publisher_details: 1
-                    }
-                }
+                        publisher_details: 1,
+                        assignment_status: "$status"
+                    },
+                },
+
+
             ]);
             return re;
 

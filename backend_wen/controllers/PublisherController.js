@@ -238,7 +238,7 @@ class PublisherController {
                 return res.status(404).json({ status: 404, message: "Assignment not found between this publisher and writer", data: {} });
             }
 
-            await this.publisherFunc.updateAssignedPublisher({ pid, writer_uid }, { status: request_type });
+            request_type === "Cancelled" || request_type === "Rejected" ? await this.publisherFunc.cancelledAssignedPublisher({ pid, writer_uid }) : await this.publisherFunc.updateAssignedPublisher({ pid, writer_uid }, { status: request_type })
 
             return res
                 .status(200)
@@ -361,8 +361,7 @@ class PublisherController {
             if (!existingRequest) {
                 return res.status(404).json({ status: 404, message: "Assignment not found between this publisher and writer", data: {} });
             }
-
-            await this.publisherFunc.updateAssignedPublisher(
+            request_type === "Cancelled" ? await this.publisherFunc.cancelledAssignedPublisher({ pid, writer_uid: writerUid }) : await this.publisherFunc.updateAssignedPublisher(
                 { pid, writer_uid: writerUid },
                 { status: request_type, updatedAt: moment().unix().toString() }
             );

@@ -50,7 +50,7 @@ function PublisherCard({
 }) {
     const pub = assignment; // merged publisher_details
     const memberCount = Array.isArray(pub.uids) ? pub.uids.length : 0;
-
+    console.log("pub data ==============>", pub)
     return (
         <motion.div
             layout
@@ -90,11 +90,7 @@ function PublisherCard({
                     <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
                     {(pub.average_rating ?? 0).toFixed(1)} rating
                 </span>
-                {pub.status && (
-                    <span className={`px-2 py-0.5 rounded-full font-medium ${pub.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground'}`}>
-                        {pub.status}
-                    </span>
-                )}
+
             </div>
 
             {/* Leave button */}
@@ -280,9 +276,10 @@ export function WriterTeamsView() {
             request_id: item._id,        // keep the request doc _id
             // All items from team_requests_by_uid are active connections → show "Accepted" badge on card.
             // The publisher's own account status (Active/Inactive) stays in `status` from publisher_details.
-            assignment_status: 'Accepted',
+            assignment_status: item.assignment_status,
         }))
         : [];
+    // console.log("publisherList =============> ", publisherList, teamRequestData)
     const leaveMutation = useMutation({
         mutationFn: (pid: string) => leavePublisherTeam(pid),
         onSuccess: () => {
