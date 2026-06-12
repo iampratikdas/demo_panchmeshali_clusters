@@ -8,8 +8,15 @@ const eventSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  logo_url: {
+    type: String,
+    trim: true,
+    required: true
+  },
   name: {
-    type: String
+    type: String,
+    trim: true,
+    required: true
   },
   paid: {
     type: Boolean,
@@ -21,6 +28,46 @@ const eventSchema = new mongoose.Schema({
   },
   description: {
     type: String
+  },
+  competition: {
+    type: Boolean,
+    default: false
+  },
+  is_book: {
+    type: Boolean,
+    default: false
+  },
+  is_app: {
+    type: Boolean,
+    default: false
+  },
+
+  event_type: {
+    type: String,
+    enum: [
+      'Novel',
+      'Novella / Short novel',
+      'Essay / Article',
+      'Story',
+      'Long story',
+      'Short story',
+      'Micro story',
+      'Nano story / Ultra-short story',
+      'Dramatic story',
+      'Verse',
+      'Rhyme / Rhyming poem',
+      'Poem',
+      'Prose poem',
+      'Haiku',
+      'Limerick',
+      'Movie',
+      'Web Series',
+      'Short-stories'
+    ]
+  },
+  episode_wise: {
+    type: Boolean,
+    default: false
   },
   active: {
     type: Boolean

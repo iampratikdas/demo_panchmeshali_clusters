@@ -143,6 +143,8 @@ All routes are registered in `src/App.tsx` using `@tanstack/react-router`. Every
 | `/chats` | `routes/Chats.tsx` | Admin–Writer chat interface |
 | `/workspace` | `routes/Workspace.tsx` | Folder tree & file workspace |
 | `/settings` | `routes/Settings.tsx` | Application settings |
+| `/publishers` | `routes/Publishers.tsx` | Publisher management — list companies and create publishers (Admin) |
+| `/publishers/$pid` | `routes/PublisherDetail.tsx` | Publisher detail page showing profile details, categories, listed books, and statistics |
 
 ---
 
@@ -329,6 +331,28 @@ All API calls use **Axios** with a Bearer token set in the `Authorization` heade
 | `markNotificationAsRead` | `(notificationId) → void` | Marks a single notification as read. 200 ms delay. |
 | `markAllNotificationsAsRead` | `() → void` | Marks all notifications as read. 300 ms delay. |
 | `getUnreadNotificationsCount` | `() → number` | Returns count of unread notifications. 100 ms delay. |
+
+---
+
+### Publisher & Teams Functions
+
+| Function | Signature | Description |
+|---|---|---|
+| `createPublisherCompany` | `(data) → any` | **Live API.** Creates a new publisher company. |
+| `fetchAllPublisherCompanies` | `() → any[]` | **Live API.** Fetches all publisher companies in the system. |
+| `fetchPublisherList` | `(uid) → any[]` | **Live API.** Fetches all publishers assigned/visible to the writer. |
+| `requestJoinPublisher` | `(publisherUid) → any` | **Live API.** Sends a request for a writer to join a publisher. |
+| `removePublisherAssignment` | `(pid) → any` | **Live API.** Cancels/removes a publisher assignment. |
+| `fetchTeamRequests` | `() → any` | **Live API.** Publisher fetches all writer requests/members for their company. |
+| `updateTeamRequest` | `(writerUid, requestType) → any` | **Live API.** Accepts, rejects, or cancels a team request/membership for a writer. |
+| `fetchWriterStats` | `(writerUid) → any` | **Live API.** Fetches profile stats for a specific writer. |
+| `leavePublisherTeam` | `(pid) → any` | **Live API.** Writer requests to leave/cancel their assignment with a publisher. |
+| `requestJoinPublisherByPid` | `(pid) → any` | **Live API.** Writer requests to join a publisher by their publisher company ID. |
+| `fetchPublisherProfile` | `(pid) → any` | **Live API.** Fetches profile details for a publisher company. |
+| `fetchPublisherStats` | `(pid) → any` | **Live API.** Fetches analytics/statistics for a publisher company. |
+| `fetchPublisherBooks` | `(pid, page, limit, category) → any` | **Live API.** Fetches paginated list of books/ebooks for a publisher company. |
+| `fetchPublisherCategories` | `(pid) → string[]` | **Live API.** Fetches unique categories represented in a publisher's books. |
+| `fetchTeamRequestsByUid` | `() → any` | **Live API.** Fetches team requests/assignments for the logged-in writer. |
 
 ---
 
@@ -537,3 +561,13 @@ Two boolean fields on an `Event` control the Write step behaviour:
 | `true` | `true` | **Book/Episode mode**: one episode card (title + content) pre-rendered; "Add episode" button appends more cards; each card (except the last) has a remove button |
 
 These flags are set when creating an event via the **Events Management** page (`/events`) using the three toggle checkboxes: *Event is Active*, *Episode Wise*, and *For Book*.
+
+---
+
+## Future Roadmap (Planned Features)
+
+We need to implement the following features next:
+1. **Publisher Book Listing**: Add a feature where publishers can add the books or ebooks they have in the market that they are listing in publisher details.
+2. **Sales Tracking**: Enable publishers to track and record how many sales happened on respective books/ebooks.
+3. **Royalty Tracking (Optional)**: Add a feature to track how much royalty is provided to the authors.
+

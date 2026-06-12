@@ -360,6 +360,57 @@ Auxiliary schema for tracking content approval state transitions.
 
 ---
 
+### `Publishers` — `models/monogdb/Publishers.js`
+
+Collection: **`publishers`** (stores registered publisher companies)
+
+| Field | Type | Notes |
+|---|---|---|
+| `pid` | String (unique) | Unique publisher ID |
+| `uids` | Array of Strings | Linked managers/publishers user UIDs |
+| `name` | String (required) | Company name |
+| `description` | String | Description of the publisher |
+| `email` | String | Contact email |
+| `phone` | String | Contact phone |
+| `logo_url` | String | URL of the publisher logo |
+| `rgst_gov_id` | String | Government registration ID |
+| `status` | String | Active, Pending, Inactive (default: Pending) |
+| `address` / `city` / `state` / `country` / `zip_code` | String | Address details |
+| `createdAt` / `updatedAt` | String | Unix timestamps |
+
+---
+
+### `WritersAssignedPublishers` — `models/monogdb/WritersAssignedPublishers.js`
+
+Collection: **`writersassignedpublishers`** (stores connection status/assignments between writers and publishers)
+
+| Field | Type | Notes |
+|---|---|---|
+| `pid` | String (required) | Publisher ID |
+| `writer_uid` | String (required) | Writer user UID |
+| `status` | String | Connection status (Pending, Accepted, Cancelled) |
+| `requested_by` | String | Initiator role (publisher, writer) |
+| `createdAt` / `updatedAt` | String | Unix timestamps |
+
+---
+
+### `WriterStats` — `models/monogdb/WriterStats.js`
+
+Collection: **`writerstats`** (stores aggregate writer statistics and profile details)
+
+| Field | Type | Notes |
+|---|---|---|
+| `writer_uid` | String (required, unique) | Writer user UID |
+| `followers_count` | Number | Total followers |
+| `average_rating` | Number | Average user rating (0 to 5) |
+| `total_ratings` | Number | Count of ratings |
+| `bio` | String | Writer bio |
+| `genre_specialization` | Array of Strings | Specialized genres |
+| `activity_status` | String | active, inactive, on_leave |
+| `createdAt` / `updatedAt` | String | Unix timestamps |
+
+---
+
 ## Routes — Complete API Reference
 
 All routes are mounted at the `/api` prefix.  
@@ -424,6 +475,27 @@ All routes are mounted at the `/api` prefix.
 | `GET` | `/api/top_5_contents?eid=<eid>&top=<N>` | — | — | Top-N voted contents for an event |
 | `POST` | `/api/vote_a_content` | ✅ JWT | any | Cast a vote for a content piece |
 | `POST` | `/api/vote_counts_derivatives` | ✅ JWT | any | Vote count analytics / derivatives |
+
+---
+
+### 🏢 Publisher & Teams Routes — `Route/AppRoutes/PublisherRoutes.js`
+
+| Method | Path | Auth | Role | Description |
+|---|---|---|---|---|
+| `GET` | `/api/publisher_lists/:uid` | ✅ JWT | any | Fetch assigned publishers for a writer |
+| `GET` | `/api/publisher_companies` | ✅ JWT | admin | Fetch all publisher companies |
+| `POST` | `/api/create_publisher_company` | ✅ JWT | admin | Create a new publisher company |
+| `POST` | `/api/request_publisher_users/:uid` | ✅ JWT | any | Send a join request between publisher and writer |
+| `POST` | `/api/update_publisher_users/:uid` | ✅ JWT | any | Update a publisher-writer assignment/connection |
+| `GET` | `/api/team_requests` | ✅ JWT | publisher, both | Publisher fetches writer requests/members for their company |
+| `GET` | `/api/team_requests_by_uid` | ✅ JWT | writer | Writer fetches their own requests |
+| `POST` | `/api/update_team_request/:writerUid` | ✅ JWT | publisher, both | Publisher accepts, rejects, or removes a writer |
+| `GET` | `/api/writer_stats/:writerUid` | ✅ JWT | any | Fetch writer stats |
+| `POST` | `/api/writer_stats/:writerUid` | ✅ JWT | any | Update writer stats (bio, genres, activity) |
+| `GET` | `/api/publisher_profile/:pid` | ✅ JWT | any | Fetch publisher profile details |
+| `GET` | `/api/publisher_stats/:pid` | ✅ JWT | any | Fetch publisher statistics |
+| `GET` | `/api/publisher_books/:pid` | ✅ JWT | any | Fetch publisher's listed books (paginated) |
+| `GET` | `/api/publisher_categories/:pid` | ✅ JWT | any | Fetch distinct book categories for a publisher |
 
 ---
 
@@ -725,3 +797,13 @@ http://localhost:5000/api-docs
 ```
 
 Uses `swagger-jsdoc` to generate spec from JSDoc comments in route files (if annotated). The `swagger.js` file exports the resolved `swaggerSpec` object passed to `swagger-ui-express`.
+
+---
+
+## Future Roadmap (Planned Features)
+
+We need to implement the following features next:
+1. **Publisher Book Listing**: Add a feature where publishers can add the books or ebooks they have in the market that they are listing in publisher details.
+2. **Sales Tracking**: Enable publishers to track and record how many sales happened on respective books/ebooks.
+3. **Royalty Tracking (Optional)**: Add a feature to track how much royalty is provided to the authors.
+

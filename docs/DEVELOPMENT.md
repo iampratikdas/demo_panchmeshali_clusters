@@ -483,9 +483,25 @@ MongoDB + MySQL (existing databases)
 | Push Notifications | Expo Notifications + Firebase Cloud Messaging |
 | Auth Token Storage | `expo-secure-store` for JWT storage on device |
 
+### 5.4 Functional Platform Roadmap
+
+We need to implement the following features next:
+1. **Publisher Book Listing**: Add a feature where publishers can add the books or ebooks they have in the market that they are listing in publisher details.
+2. **Sales Tracking**: Enable publishers to track and record how many sales happened on respective books/ebooks.
+3. **Royalty Tracking (Optional)**: Add a feature to track how much royalty is provided to the authors.
+
 ---
 
 ## 6. Changelog
+
+### June 2026
+
+| Date | Change | Files Affected |
+|---|---|---|
+| 12 Jun | Publisher and Teams Management features — added publisher companies API, writer request/assignment system, and writer stats | `PublisherController.js`, `PublisherRoutes.js`, `Publishers.js`, `WritersAssignedPublishers.js`, `WriterStats.js` |
+| 12 Jun | Client / Publisher Management Dashboard UI — view registered companies and create publishers | `Publishers.tsx` |
+| 12 Jun | Publisher details views — profile, listed books, active categories, and stats | `PublisherDetail.tsx` |
+| 12 Jun | Teams management views — writer and publisher team request lists and status updates | `WriterTeamsView.tsx`, `PublisherTeamsView.tsx` |
 
 ### March 2026
 
