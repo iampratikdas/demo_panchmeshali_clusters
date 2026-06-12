@@ -24,7 +24,7 @@ export default function Chats() {
     const { toast } = useToast();
 
     // The user object stored in localStorage
-    const currentUid = localStorage.getItem('uid');
+    const currentUid = localStorage.getItem('uid') || '';
 
     const { data: chats, isLoading: chatsLoading } = useQuery({
         queryKey: ['chats'],
@@ -140,27 +140,27 @@ export default function Chats() {
 
     const checkIsSpamUrl = (text: string) => {
         const lowerText = text.toLowerCase();
-        
+
         // 1. Exact protocols
         if (/(https?|ftp):\/\//.test(lowerText)) return true;
-        
+
         // 2. WWW prefix
         if (/www\.[a-z0-9-]+/.test(lowerText)) return true;
-        
+
         // 3. Spaced-out or bracket-obfuscated known domains
         const noObfuscation = lowerText.replace(/\s+/g, '').replace(/\[dot\]|\(dot\)|\{dot\}|<dot>/g, '.');
         const blockedDomains = [
-            'youtube.com', 'youtu.be', 't.me', 'wa.me', 'instagram.com', 
-            'facebook.com', 'tiktok.com', 'bit.ly', 'tinyurl.com', 
+            'youtube.com', 'youtu.be', 't.me', 'wa.me', 'instagram.com',
+            'facebook.com', 'tiktok.com', 'bit.ly', 'tinyurl.com',
             'twitter.com', 'x.com', 'linkedin.com', 'discord.gg', 'discord.com'
         ];
         if (blockedDomains.some(domain => noObfuscation.includes(domain))) return true;
-        
+
         // 4. Obfuscated strict TLDs (e.g. "google dot com", "google . net")
         const strictTlds = "com|org|edu|gov|io|xyz|ly|net|biz";
         const obfuscatedRegex = new RegExp(`\\b[a-z0-9-]{2,63}\\s*(?:\\.|\\sdot\\s|\\[dot\\]|\\(dot\\))\\s*(?:${strictTlds})\\b`, 'i');
         if (obfuscatedRegex.test(lowerText)) return true;
-        
+
         // 5. Any TLD followed by a slash (e.g. "youtube .to / watch")
         const anyTldWithSlash = /\b[a-z0-9-]{2,63}\s*(?:\.|\sdot\s|\[dot\]|\(dot\))\s*[a-z]{2,6}\s*\//i;
         if (anyTldWithSlash.test(lowerText)) return true;
@@ -429,7 +429,7 @@ export default function Chats() {
                                                         <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.message}</p>
                                                         <div className={`text-xs mt-1 flex justify-between items-center ${msg.senderId === currentUid ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                                                             {msg.senderId === currentUid ? (
-                                                                <button 
+                                                                <button
                                                                     onClick={() => handleDeleteMessage(msg.messageId, msg.chatId)}
                                                                     className="hover:text-red-500 transition-colors opacity-50 hover:opacity-100 p-1"
                                                                     title="Delete message"

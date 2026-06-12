@@ -48,7 +48,7 @@ class PublishersFunctions {
 
                     writer_uid: writer_uid,
                     status: {
-                        $in: ['Active', 'Pending'],
+                        $in: ['Accepted', 'Pending'],
                     },
                 })
                 .distinct('pid');

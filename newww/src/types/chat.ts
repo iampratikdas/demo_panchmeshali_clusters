@@ -21,7 +21,7 @@ export interface Chat {
     chatId: string;
     participants: Participant[];
     lastMessage?: ChatMessage;
-    unreadCounts: Record<string, number>;
+    unreadCounts: Record<string, number> | number | any;
     createdAt: string;
     updatedAt: string;
 }
