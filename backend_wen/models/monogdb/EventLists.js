@@ -33,6 +33,14 @@ const eventSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  is_social_media: {
+    type: Boolean,
+    default: false
+  },
+  default_folder: {
+    type: String,
+    trim: true
+  },
   is_book: {
     type: Boolean,
     default: false
