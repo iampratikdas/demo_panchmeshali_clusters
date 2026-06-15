@@ -1,4 +1,4 @@
-import type { Content, Comment, Story, Poem, ContentStatus } from '../types/content';
+﻿import type { Content, Comment, Story, Poem, ContentStatus } from '../types/content';
 import type { AIQualityResponse, AIProofreadResponse, PaginatedResponse } from '../types/api';
 import type { Event, CreateEventData } from '../types/event';
 import type { User, CreateUserData, EmailData } from '../types/user';
@@ -72,82 +72,147 @@ const mockNotifications: Notification[] = [
 
 
 // Mock chats data storage
-// const mockChats: Chat[] = [
-//     {
-//         id: 'chat1',
-//         writerId: 'u1',
-//         writerName: 'John Doe',
-//         writerEmail: 'john.doe@example.com',
-//         unreadCount: 2,
-//         createdAt: '2025-11-20T10:00:00Z',
-//         updatedAt: '2025-11-22T14:30:00Z',
-//     },
-//     {
-//         id: 'chat2',
-//         writerId: 'u2',
-//         writerName: 'Jane Smith',
-//         writerEmail: 'jane.smith@example.com',
-//         unreadCount: 0,
-//         createdAt: '2025-11-18T09:00:00Z',
-//         updatedAt: '2025-11-21T16:00:00Z',
-//     },
-// ];
+const mockChats: Chat[] = [
+    {
+        id: 'chat1',
+        writerId: 'u1',
+        writerName: 'John Doe',
+        writerEmail: 'john.doe@example.com',
+        unreadCount: 2,
+        createdAt: '2025-11-20T10:00:00Z',
+        updatedAt: '2025-11-22T14:30:00Z',
+    },
+    {
+        id: 'chat2',
+        writerId: 'u2',
+        writerName: 'Jane Smith',
+        writerEmail: 'jane.smith@example.com',
+        unreadCount: 0,
+        createdAt: '2025-11-18T09:00:00Z',
+        updatedAt: '2025-11-21T16:00:00Z',
+    },
+];
 
-// const mockMessages: ChatMessage[] = [
-//     {
-//         id: 'msg1',
-//         chatId: 'chat1',
-//         senderId: 'admin1',
-//         senderName: 'Admin',
-//         senderRole: 'admin',
-//         message: 'Hi John! I reviewed your latest submission. Great work!',
-//         timestamp: '2025-11-22T10:00:00Z',
-//         read: true,
-//     },
-//     {
-//         id: 'msg2',
-//         chatId: 'chat1',
-//         senderId: 'u1',
-//         senderName: 'John Doe',
-//         senderRole: 'writer',
-//         message: 'Thank you! I appreciate the feedback.',
-//         timestamp: '2025-11-22T11:30:00Z',
-//         read: true,
-//     },
-//     {
-//         id: 'msg3',
-//         chatId: 'chat1',
-//         senderId: 'admin1',
-//         senderName: 'Admin',
-//         senderRole: 'admin',
-//         message: 'Would you be interested in writing another piece for our winter collection?',
-//         timestamp: '2025-11-22T14:30:00Z',
-//         read: false,
-//     },
-//     {
-//         id: 'msg4',
-//         chatId: 'chat2',
-//         senderId: 'u2',
-//         senderName: 'Jane Smith',
-//         senderRole: 'writer',
-//         message: 'Hello! I have a question about the submission guidelines.',
-//         timestamp: '2025-11-21T12:00:00Z',
-//         read: true,
-//     },
-//     {
-//         id: 'msg5',
-//         chatId: 'chat2',
-//         senderId: 'admin1',
-//         senderName: 'Admin',
-//         senderRole: 'admin',
-//         message: 'Sure! What would you like to know?',
-//         timestamp: '2025-11-21T16:00:00Z',
-//         read: true,
-//     },
-// ];
+const mockMessages: ChatMessage[] = [
+    {
+        id: 'msg1',
+        chatId: 'chat1',
+        senderId: 'admin1',
+        senderName: 'Admin',
+        senderRole: 'admin',
+        message: 'Hi John! I reviewed your latest submission. Great work!',
+        timestamp: '2025-11-22T10:00:00Z',
+        read: true,
+    },
+    {
+        id: 'msg2',
+        chatId: 'chat1',
+        senderId: 'u1',
+        senderName: 'John Doe',
+        senderRole: 'writer',
+        message: 'Thank you! I appreciate the feedback.',
+        timestamp: '2025-11-22T11:30:00Z',
+        read: true,
+    },
+    {
+        id: 'msg3',
+        chatId: 'chat1',
+        senderId: 'admin1',
+        senderName: 'Admin',
+        senderRole: 'admin',
+        message: 'Would you be interested in writing another piece for our winter collection?',
+        timestamp: '2025-11-22T14:30:00Z',
+        read: false,
+    },
+    {
+        id: 'msg4',
+        chatId: 'chat2',
+        senderId: 'u2',
+        senderName: 'Jane Smith',
+        senderRole: 'writer',
+        message: 'Hello! I have a question about the submission guidelines.',
+        timestamp: '2025-11-21T12:00:00Z',
+        read: true,
+    },
+    {
+        id: 'msg5',
+        chatId: 'chat2',
+        senderId: 'admin1',
+        senderName: 'Admin',
+        senderRole: 'admin',
+        message: 'Sure! What would you like to know?',
+        timestamp: '2025-11-21T16:00:00Z',
+        read: true,
+    },
+];
 
 
 // Mock users data storage
+// const mockUsers: User[] = [
+//     {
+//         id: 'u1',
+//         fullName: 'John Doe',
+//         email: 'john.doe@example.com',
+//         password: 'hashed_password_123',
+//         status: 'active',
+//         createdAt: '2025-01-15T10:00:00Z',
+//         lastLogin: '2025-11-22T08:30:00Z',
+//     },
+//     {
+//         id: 'u2',
+//         fullName: 'Jane Smith',
+//         email: 'jane.smith@example.com',
+//         password: 'hashed_password_456',
+//         status: 'active',
+//         createdAt: '2025-02-20T14:30:00Z',
+//         lastLogin: '2025-11-21T16:45:00Z',
+//     },
+//     {
+//         id: 'u3',
+//         fullName: 'Mike Johnson',
+//         email: 'mike.johnson@example.com',
+//         password: 'hashed_password_789',
+//         status: 'banned',
+//         createdAt: '2025-03-10T09:15:00Z',
+//         lastLogin: '2025-10-05T12:20:00Z',
+//     },
+// ];
+
+
+// Mock event data storage
+const mockEvents: Event[] = [
+    {
+        "eid": "12345",
+        "name": "অণুতে অনন্ত ( প্রথম )",
+        "description": "First Phase of this competition is over , Please Select the next one অণুতে অনন্ত( দ্বিতীয় ) .",
+        "active": true,
+        "created_by": "aoSTu6D8pq",
+        "team": [
+            "অনুপ কুমার বিশ্বাস ",
+            "তন্দ্রা নাথ ",
+            "সুনন্দা শেঠ "
+        ],
+        "episode_wise": true, // if false then show episode wise submission .
+        //  in dropdwon of Is this a new submission or an update to an existing submission?
+        //  in dropdown only new submission but if it is true then also add next  episode in option
+
+        "st_dt": "1755761755",
+        "sh_list": 50,
+        "en_dt": "1758440155",
+        "parent": "",
+        "w_count": 200,
+        "for_book": true,
+        "categories": [],
+        "createdAt": "1758719262",
+        "updatedAt": "1758719262",
+        "__v": 0,
+        "logo": "https://admin.panchmeshali.com/logo.png",
+        "result": true,
+        "type": "vote"
+    }
+];
+
+
 // Mock data storage
 const mockContents: Content[] = [
     {
@@ -374,67 +439,49 @@ export const proofreadAI = async (content: string): Promise<AIProofreadResponse>
         summary: 'Found 2 corrections. Overall grammar and structure look good!',
     };
 };
-// const mockUsers: User[] = [
-//     {
-//         id: 'u1',
-//         fullName: 'John Doe',
-//         email: 'john.doe@example.com',
-//         password: 'hashed_password_123',
-//         status: 'active',
-//         createdAt: '2025-01-15T10:00:00Z',
-//         lastLogin: '2025-11-22T08:30:00Z',
-//     },
-//     {
-//         id: 'u2',
-//         fullName: 'Jane Smith',
-//         email: 'jane.smith@example.com',
-//         password: 'hashed_password_456',
-//         status: 'active',
-//         createdAt: '2025-02-20T14:30:00Z',
-//         lastLogin: '2025-11-21T16:45:00Z',
-//     },
-//     {
-//         id: 'u3',
-//         fullName: 'Mike Johnson',
-//         email: 'mike.johnson@example.com',
-//         password: 'hashed_password_789',
-//         status: 'banned',
-//         createdAt: '2025-03-10T09:15:00Z',
-//         lastLogin: '2025-10-05T12:20:00Z',
-//     },
-// ];
-
 
 // Events API Functions
 export const fetchEvents = async (): Promise<Event[]> => {
-    const response = await axios.get(`${API_BASE_URL}/event_lists`, { headers: getAuthHeaders() });
-    return response.data?.data || [];
+    await delay(600);
+    return [...mockEvents].sort((a, b) =>
+        parseInt(b.createdAt) - parseInt(a.createdAt)
+    );
 };
 
 export const fetchEventById = async (id: string): Promise<Event | null> => {
-    // Backend doesn't have an explicit find by ID route, but we can fetch all and filter,
-    // or assume we already have it in the list.
-    const events = await fetchEvents();
-    return events.find(e => e.eid === id) || null;
+    await delay(400);
+    return mockEvents.find(e => e.eid === id) || null;
 };
 
 export const createEvent = async (data: CreateEventData): Promise<Event> => {
-    const response = await axios.post(`${API_BASE_URL}/create_events`, data, { headers: getAuthHeaders() });
-    return response.data?.data;
-};
+    await delay(1000);
 
-export const updateEvent = async (eid: string, data: Partial<CreateEventData>): Promise<Event> => {
-    const response = await axios.put(`${API_BASE_URL}/update_events?eid=${eid}`, data, { headers: getAuthHeaders() });
-    return response.data?.data;
-};
+    const now = Math.floor(Date.now() / 1000).toString();
 
-export const deleteEvent = async (eid: string): Promise<void> => {
-    await axios.delete(`${API_BASE_URL}/delete_events?eid=${eid}`, { headers: getAuthHeaders() });
-};
+    const newEvent: Event = {
+        eid: `ev${mockEvents.length + 1}`,
+        name: data.name,
+        description: data.description,
+        active: data.active,
+        created_by: 'admin1', // Default admin ID
+        team: data.team,
+        st_dt: data.st_dt,
+        en_dt: data.en_dt,
+        parent: data.parent || '',
+        w_count: data.w_count,
+        sh_list: data.sh_list,
+        categories: data.categories,
+        episode_wise: false, // Default to false for new events
+        logo: data.logo,
+        result: false, // New events don't have results yet
+        type: data.type,
+        createdAt: now,
+        updatedAt: now,
+        __v: 0,
+    };
 
-export const fetchPublisherTeamLists = async (): Promise<any[]> => {
-    const response = await axios.get(`${API_BASE_URL}/publisher_team_lists`, { headers: getAuthHeaders() });
-    return response.data?.data || [];
+    mockEvents.unshift(newEvent);
+    return newEvent;
 };
 
 // Users API Functions

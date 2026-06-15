@@ -93,20 +93,27 @@ class EventController {
   async createEvents(req, res, token_data) {
     try {
       const {
-        eid,
-        name,
-        description,
         active,
-        created_by,
-        team,
-        st_dt,
+        categories,
+        description,
+        eid,
         en_dt,
-        sh_list,
-        w_count,
+        competition,
+        default_folder,
+        episode_wise,
+        event_type,
+        is_app,
+        is_book,
+        is_social_media,
+        logo_url,
+        parent,
+        name,
         paid,
         paid_amt,
-        categories,
-        type
+        sh_list,
+        st_dt,
+        team,
+        w_count
       } = req.body;
 
       // Check if parent param present
@@ -127,15 +134,22 @@ class EventController {
         name,
         description,
         active,
-        created_by: created_by || token_data?.uid, // if you want to use token_data
+        created_by: token_data?.uid, // if you want to use token_data
         team,
         paid,
+        competition,
+        default_folder,
+        episode_wise,
+        is_app,
+        is_book,
+        is_social_media,
+        logo_url,
         paid_amt,
         st_dt: st_dt || moment().unix(),
         en_dt: en_dt || moment().unix(),
         sh_list, // number of short listing candidates on that events
         w_count,
-        type: type || "vote",
+        type: event_type || "vote",
         categories,
         parent: parentEvent ? parentEvent.eid : "", // if parent exist set else empty
         createdAt: moment().unix(),
@@ -174,15 +188,26 @@ class EventController {
 
       // prepare updated data
       const {
-        name,
-        description,
         active,
-        team,
-        st_dt,
-        en_dt,
-        sh_list,
-        w_count,
         categories,
+        description,
+        en_dt,
+        competition,
+        default_folder,
+        episode_wise,
+        event_type,
+        is_app,
+        is_book,
+        is_social_media,
+        logo_url,
+        parent,
+        name,
+        paid,
+        paid_amt,
+        sh_list,
+        st_dt,
+        team,
+        w_count
         // parent,
       } = req.body;
 
@@ -196,12 +221,24 @@ class EventController {
         ...(sh_list !== undefined && { sh_list }),
         ...(w_count !== undefined && { w_count }),
         ...(categories !== undefined && { categories }),
+        ...(competition !== undefined && { competition }),
+        ...(default_folder !== undefined && { default_folder }),
+        ...(episode_wise !== undefined && { episode_wise }),
+        ...(event_type !== undefined && { event_type }),
+        ...(is_app !== undefined && { is_app }),
+        ...(is_book !== undefined && { is_book }),
+        ...(is_social_media !== undefined && { is_social_media }),
+        ...(logo_url !== undefined && { logo_url }),
+        ...(parent !== undefined && { parent }),
+        ...(paid !== undefined && { paid }),
+        ...(paid_amt !== undefined && { paid_amt }),
         // ...(parent !== undefined && { parent }),
         updatedAt: moment().unix(),
       };
-
+      console.log("updatedData================>", updatedData, eid)
       // update event
-      const updatedEvent = await this.eventFunc.updateEvent({ eid }, updatedData);
+      const updatedEvent = await this.eventFunc.updateEvent(eid, updatedData);
+      console.log("updatedEvent================>", updatedEvent)
 
       return res.status(200).json({
         message: "Event updated successfully",

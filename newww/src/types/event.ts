@@ -1,7 +1,37 @@
+export type EventType =
+    | 'Novel'
+    | 'Novella / Short novel'
+    | 'Essay / Article'
+    | 'Story'
+    | 'Long story'
+    | 'Short story'
+    | 'Micro story'
+    | 'Nano story / Ultra-short story'
+    | 'Dramatic story'
+    | 'Verse'
+    | 'Rhyme / Rhyming poem'
+    | 'Poem'
+    | 'Prose poem'
+    | 'Haiku'
+    | 'Limerick'
+    | 'Movie'
+    | 'Web Series'
+    | 'Short-stories';
+
 export interface Event {
     eid: string;                    // Event ID
+    logo_url: string;               // Event logo
     name: string;                   // Event name
+    paid: boolean;                  // Paid event
+    paid_amt: number;               // Paid amount
     description: string;            // Event description
+    competition: boolean;           // Is it a competition
+    is_social_media: boolean;       // For social media
+    default_folder: string;         // Default folder
+    is_book: boolean;               // Is book
+    is_app: boolean;                // Is app
+    event_type: EventType;          // Event Type enum
+    episode_wise: boolean;          // Episode wise submissions allowed
     active: boolean;                // Is event currently active
     created_by: string;             // User ID who created the event
     team: string[];                 // Team member names
@@ -11,30 +41,31 @@ export interface Event {
     parent: string;                 // Parent/sibling event ID (empty string if none)
     w_count: number;                // Word count limit
     categories: string[];           // Event categories
-    episode_wise: boolean;          // If false: only show "new submission", If true: also show "next episode"
-    for_book?: boolean;             // If true (along with episode_wise): show multi-episode input UI
     createdAt: string;              // ISO timestamp
     updatedAt: string;              // ISO timestamp
-    __v: number;                    // Version key (MongoDB)
-    logo: string;                   // Logo URL
-    result: boolean;                // Results released status
-    type: string;                   // Event type (e.g., "vote")
+    __v?: number;                    // Version key (MongoDB)
 }
 
-
 export interface CreateEventData {
-    name: string;
-    description: string;
-    active: boolean;
-    team: string[];
+    eid: string;                    // Event ID
+    logo_url: string;               // Event logo
+    name: string;                   // Event name
+    paid: boolean;                  // Paid event
+    paid_amt: number;               // Paid amount
+    description: string;            // Event description
+    competition: boolean;           // Is it a competition
+    is_social_media: boolean;       // For social media
+    default_folder: string;         // Default folder
+    is_book: boolean;               // Is book
+    is_app: boolean;                // Is app
+    event_type: EventType;          // Event Type enum
+    episode_wise: boolean;          // Episode wise submissions allowed
+    active: boolean;                // Is event currently active
+    team: string[];                 // Team member names
     st_dt: string;                  // Unix timestamp as string
     en_dt: string;                  // Unix timestamp as string
     parent?: string;                // Optional parent event ID
     w_count: number;
     sh_list: number;
     categories: string[];
-    logo: string;
-    type: string;
-    episode_wise: boolean;          // Whether episode-wise submissions are allowed
-    for_book: boolean;              // Whether multi-episode book-mode is enabled
 }

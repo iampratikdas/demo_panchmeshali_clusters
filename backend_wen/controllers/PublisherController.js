@@ -597,6 +597,50 @@ class PublisherController {
             res.status(500).json({ status: 500, message: "Internal server error", data: {} });
         }
     }
+
+    /**
+     * GET /publisher_team_lists
+     * Fetches the users mentioned in the uids array of the publisher company.
+     */
+    async getPublisherTeamLists(req, res, token_data) {
+        try {
+            const role = token_data.role;
+            if (!["publisher", "admin", "manager"].includes(role)) {
+                return res.status(403).json({ status: 403, message: "Access denied.", data: {} });
+            }
+
+            // Find the publisher company for the logged-in publisher
+            const publisherCompany = await this.publisherFunc.findOnePublisher({ uids: { "$in": [token_data.uid] } });
+            if (!publisherCompany || publisherCompany.length === 0) {
+                return res.status(404).json({ status: 404, message: "No publisher company found for this user", data: [] });
+            }
+
+            const company = publisherCompany[0];
+            const uids = company.uids || [];
+
+            if (uids.length === 0) {
+                return res.status(200).json({ status: 200, message: "No team members found", data: [] });
+            }
+
+            // Fetch users based on uids
+            // Wait, we need to query user collection
+            const teamUsers = await this.userFunc.userListByData({ uid: { "$in": uids } });
+
+            const formattedUsers = teamUsers.map(user => ({
+                uid: user.uid,
+                full_name: user.full_name,
+                email: user.email,
+                profileImage: user.profileImage,
+                skills: user.skills
+            }));
+
+            return res.status(200).json({ status: 200, message: "Team list fetched successfully", data: formattedUsers });
+
+        } catch (error) {
+            console.error("Error fetching publisher team lists:", error);
+            res.status(500).json({ status: 500, message: "Internal server error", data: {} });
+        }
+    }
 }
 
 module.exports = PublisherController;

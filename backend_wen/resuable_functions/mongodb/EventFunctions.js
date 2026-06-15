@@ -19,7 +19,7 @@ class EventFunctions {
     async findOneEvent(data) {
         return await this.eventmodel.findOne(data).lean()
     }
-    async findAllEvents(data= {}){
+    async findAllEvents(data = {}) {
         return await this.eventmodel.find(data).sort({ createdAt: -1 }).lean()
     }
     async eventCount(data) {
@@ -28,20 +28,21 @@ class EventFunctions {
     async eventListByData(data, skip = 0, limit = 0) {
         return await this.eventmodel.find(data).skip(skip).limit(limit).sort({ createdAt: -1 }).lean()
     }
-     async deleteEvent(data) {
+    async deleteEvent(data) {
         return await this.eventmodel.deleteOne(data).lean()
     }
     async insertEvent(eventData) {
-       try {
+        try {
             return await this.eventmodel.insertOne(eventData);
         } catch (error) {
             console.error("Error inserting event:", error);
             throw new Error("Failed to insert event");
         }
     }
-     async updateEvent(eventData, uid) {
+    async updateEvent(eid, eventData) {
         try {
-            return await this.eventmodel.updateOne({ uid: uid },{ $set: eventData });
+            // console.log("check==========================>", eid, eventData)
+            return await this.eventmodel.updateOne({ eid: eid }, { $set: eventData });
         } catch (error) {
             console.error("Error updating event:", error);
             throw new Error("Failed to update event");

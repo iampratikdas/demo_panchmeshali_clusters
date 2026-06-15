@@ -11,7 +11,6 @@ const eventSchema = new mongoose.Schema({
   logo_url: {
     type: String,
     trim: true,
-    required: true
   },
   name: {
     type: String,
