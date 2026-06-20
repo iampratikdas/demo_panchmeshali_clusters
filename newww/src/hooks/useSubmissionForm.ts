@@ -98,7 +98,7 @@ export function useSubmissionForm() {
     const [newContent, setNewContent] = useState<string>('');
     const [category, setCategory] = useState<string>('');
     const [episodeNumber, setEpisodeNumber] = useState<string>('');
-    const [parent_id, setParentEid] = useState<string>('');
+    const [h_title, setHeadTitle] = useState<string>('');
     const [backgroundImage, setBackgroundImage] = useState<string>('');
     const [coverImage, setCoverImage] = useState<string>('');
     const [destination, setDestination] = useState<string>('');
@@ -162,7 +162,7 @@ export function useSubmissionForm() {
         if (!event) return;
 
         setCategory('');
-        setParentEid('');
+        setHeadTitle('');
         setEpisodeNumber('');
 
         if (event.event_type) {
@@ -187,7 +187,7 @@ export function useSubmissionForm() {
 
     useEffect(() => {
         if (newSubmission) {
-            setParentEid('');
+            setHeadTitle('');
         }
     }, [newSubmission]);
 
@@ -204,6 +204,11 @@ export function useSubmissionForm() {
     useEffect(() => {
         setDestination(getStoryName(selectedEventId, title, story_title, newSubmission));
     }, [selectedEventId, title, story_title, newSubmission]);
+
+    const resolvedParentId = useMemo(
+        () => selectedEvent?.parent_id || selectedEvent?.parent || '',
+        [selectedEvent]
+    );
 
     const resolvedDestination = useMemo(
         () => getStoryName(selectedEventId, title, story_title, newSubmission),
@@ -245,7 +250,8 @@ export function useSubmissionForm() {
                 publisher: selectedPublisher,
                 selectedEventId,
                 wordCount,
-                parent_id,
+                parent_id: resolvedParentId,
+                h_title,
                 folders
             };
 
@@ -295,10 +301,10 @@ export function useSubmissionForm() {
             return;
         }
 
-        if (selectedEvent?.episode_wise && !newSubmission && !parent_id) {
+        if (selectedEvent?.episode_wise && !newSubmission && !h_title) {
             toast({
-                title: 'Parent episode required',
-                description: 'Please select the previous episode before submitting.',
+                title: 'Head title required',
+                description: 'Please select the head title before submitting.',
                 variant: 'destructive',
             });
             return;
@@ -346,7 +352,7 @@ export function useSubmissionForm() {
         setNewContent('');
         setCategory('');
         setEpisodeNumber('');
-        setParentEid('');
+        setHeadTitle('');
         setBackgroundImage('');
         setCoverImage('');
         setDestination('');
@@ -386,7 +392,8 @@ export function useSubmissionForm() {
             newContent,
             category,
             episodeNumber,
-            parent_id,
+            h_title,
+            resolvedParentId,
             backgroundImage,
             coverImage,
             destination: resolvedDestination,
@@ -416,7 +423,7 @@ export function useSubmissionForm() {
             setNewContent,
             setCategory,
             setEpisodeNumber,
-            setParentEid,
+            setHeadTitle,
             setBackgroundImage,
             setCoverImage,
             setDestination,

@@ -41,6 +41,7 @@ export interface Event {
     sh_list: number;                // Short list count
     en_dt: string;                  // End date (Unix timestamp as string)
     parent: string;                 // Parent/sibling event ID (empty string if none)
+    parent_id?: string;             // Alias from API (same as parent)
     w_count: number;                // Word count limit
     categories: string[];           // Event categories
     createdAt: string;              // ISO timestamp

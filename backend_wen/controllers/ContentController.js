@@ -176,7 +176,8 @@ class ContentController {
         destination,
         episodeNumber,
         publisher,
-        wordCount
+        wordCount,
+        h_title,
       } = req.body;
 
       const todaysdate = moment().local().unix();
@@ -185,11 +186,18 @@ class ContentController {
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
       }
+      if(event.episode_wise === true){
+        if(!h_title){
+          return res.status(400).json({ message: "Please provide the h_title" });
+        }
+      }
       if (eid != "") {
 
-        // console.log("parent_id:================>", (!parent_id || parent_id === "") , event.parent_id , event)
-        if ( event.parent_id != "") {
-          return res.status(404).json({ message: "Please provide the parent event eid" });
+        // console.log("parent_id:================>", (!parent_id || parent_id === "") , event.parent , event)
+        const eventParentId = event.parent || event.parent_id || "";
+        parent_id = parent_id || eventParentId;
+        if (eventParentId !== "" && parent_id === "") {
+          return res.status(400).json({ message: "Please provide the parent event eid" });
         }
 
         const now = Number(todaysdate); // make sure todaysdate is number
@@ -259,7 +267,9 @@ class ContentController {
         destination,
         episodeNumber,
         publisher,
-        wordCount
+        wordCount,
+        parent_id: parent_id || "",
+        h_title: event.episode_wise ? (h_title || "") : "",
       }
       let existingContent = await this.contentFunc.findOneEvenTContentAll({ eid: eid, uid: token_data.uid, event_content: event_content });
 
@@ -291,6 +301,9 @@ class ContentController {
             });
           }
           contents.episodeNumber = episodeNumber;
+          if (!contents.h_title) {
+            contents.h_title = contents.cont_id;
+          }
         }
       }
 

@@ -307,6 +307,7 @@ export const submitContent = async (
         destination: formData.destination ?? "",
         wordCount: formData.wordCount ?? 0,
         parent_id: formData.parent_id ?? "",
+        h_title: formData.h_title ?? "",
     }
     console.log("formData:================>", form_data);
     const response = await axios.post(`${API_BASE_URL}${apiJson.submitContents.url}`, { ...form_data }, { headers: apiJson.submitContents.headers });

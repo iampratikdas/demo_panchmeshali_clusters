@@ -404,11 +404,11 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
     const isEpisodeWise = !!selectedEvent?.episode_wise;
     const hasNoEpisodes = !state.eventEpisodes?.length;
     const isNextEpisodeBlocked =
-        isEpisodeWise && !state.newSubmission && (hasNoEpisodes || !state.parent_id);
+        isEpisodeWise && !state.newSubmission && (hasNoEpisodes || !state.h_title);
     const isEpisodeNumberBlocked = isEpisodeWise && !!state.episodeNumberError;
 
-    const parentEpisodeOptions = [
-        { value: '', label: 'Choose parent episode...' },
+    const headTitleOptions = [
+        { value: '', label: 'Choose head title...' },
         ...(state.eventEpisodes?.map(ep => ({
             value: ep.cont_id,
             label: ep.episodeNumber
@@ -489,19 +489,19 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                     {!state.newSubmission && (
                                         <Card>
                                             <CardHeader>
-                                                <CardTitle>Parent Episode</CardTitle>
-                                                <CardDescription>Select the previous episode this continues from</CardDescription>
+                                                <CardTitle>Head Title</CardTitle>
+                                                <CardDescription>Select the story series this episode belongs to</CardDescription>
                                             </CardHeader>
                                             <CardContent>
                                                 {state.eventEpisodes && state.eventEpisodes.length > 0 ? (
                                                     <AnimatedSelect
-                                                        options={parentEpisodeOptions}
-                                                        value={state.parent_id}
-                                                        onChange={actions.setParentEid}
+                                                        options={headTitleOptions}
+                                                        value={state.h_title}
+                                                        onChange={actions.setHeadTitle}
                                                     />
                                                 ) : (
                                                     <p className="text-sm text-muted-foreground">
-                                                        No existing episodes found for this event. Submit a new episode first.
+                                                        No existing stories found for this event. Submit a new story first.
                                                     </p>
                                                 )}
                                             </CardContent>

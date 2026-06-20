@@ -57,7 +57,10 @@ const contentSchema = new mongoose.Schema({
     default: "",
   },
 
-
+  h_title: {
+    type: String,
+    default: "",
+  },
 
   event_content: {
     type: Boolean,
