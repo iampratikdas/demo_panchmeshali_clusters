@@ -17,6 +17,11 @@ const eventRequestSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  parent_eid: {
+    type: String,
+    default: '',
+    trim: true
+  },
   status: {
     type: String,
     enum: ['Pending', 'Accepted', 'Rejected'],

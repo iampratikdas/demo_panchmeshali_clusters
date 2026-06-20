@@ -4,8 +4,8 @@ import { Input } from '../../ui/input';
 import { CONTENT_TYPES, CATEGORY_TYPES } from '../../constants/submission';
 
 interface SubmissionTypeCardProps {
-    newSubmission: string;
-    setNewSubmission: (value: string) => void;
+    newSubmission: boolean;
+    setNewSubmission: (value: boolean) => void;
     type: string;
     setType: (value: string) => void;
     newContent: string;
@@ -28,12 +28,11 @@ export function SubmissionTypeCard({
     category,
     setCategory
 }: SubmissionTypeCardProps) {
-    console.log("eventSubmissionOptions===============>", newSubmission, newSubmission === 'Add next episode')
     return (
         <>
 
 
-            {newSubmission === 'new' && (
+            {newSubmission && (
                 <>
                     <Card>
                         <CardHeader>
@@ -65,7 +64,7 @@ export function SubmissionTypeCard({
                 </>
             )}
 
-            {newSubmission === 'Add next episode' && (
+            {!newSubmission && (
                 <>
                     <Card>
                         <CardHeader>

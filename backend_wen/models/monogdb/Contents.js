@@ -1,72 +1,136 @@
-const { required } = require('joi');
 const mongoose = require('mongoose');
 const moment = require("moment");
+
 const contentSchema = new mongoose.Schema({
   uid: {
     type: String,
     required: true,
   },
-  token:{
- type: String,
+
+  token: {
+    type: String,
   },
+
   type: {
     type: String,
-    // enum: ['story', 'media'],
-    // default: 'story'
-  },
-  name:{
-     type: String,
-  },
-  author_name:{
-    type: String
-  },
-  status:{
-    type: String,
-    default : "Pending"
-  },
-  content:{
-    type: String
-  },
-  marks:{
-    type: Array
-  },
-  url:{
-    type: String
-  },
-  eid:{
-    //this is for event id
-    type: String
   },
 
-  event_content:{
- type: Boolean,
-  },
- orgin_content:{
-  type: Boolean,
-  required: true
- },
- cont_id:{
-  type: String,
-    required: true,
-    trim: true
- },
- page_id:{
+  name: {
     type: String,
-    default: ''
-    // required: true,
-    // trim: true
- },
- createdAt: {
-   type: String,
-   default: moment().unix()
   },
+
+  storyName: {
+    type: String,
+  },
+
+  author_name: {
+    type: String,
+  },
+
+  status: {
+    type: String,
+    default: "Pending",
+  },
+
+  content: {
+    type: String,
+  },
+
+  storyContent: {
+    type: String,
+  },
+
+  marks: {
+    type: Array,
+  },
+
+  url: {
+    type: String,
+  },
+
+  eid: {
+    type: String,
+  },
+
+  parent_eid: {
+    type: String,
+    default: "",
+  },
+
+  page_id: {
+    type: String,
+    default: "",
+  },
+
+  event_content: {
+    type: Boolean,
+    default: false,
+  },
+
+  orgin_content: {
+    type: Boolean,
+    required: true,
+  },
+
+  isOriginalWork: {
+    type: Boolean,
+    default: false,
+  },
+
+  cont_id: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+
+  backgroundImage: {
+    type: String,
+    default: "",
+  },
+
+  coverImage: {
+    type: String,
+    default: "",
+  },
+
+  category: {
+    type: String,
+    default: "",
+  },
+
+  destination: {
+    type: String,
+    default: "app",
+  },
+
+  episodeNumber: {
+    type: String,
+    default: "",
+  },
+
+  publisher: {
+    type: String,
+    default: "",
+  },
+
+  wordCount: {
+    type: Number,
+    default: 0,
+  },
+
+  createdAt: {
+    type: String,
+    default: moment().unix(),
+  },
+
   updatedAt: {
-     type: String,
-    default: moment().unix()
-  }
+    type: String,
+    default: moment().unix(),
+  },
 });
 
-async function Contentschema (db){
- return db.model('Contents', contentSchema)
+async function Contentschema(db) {
+  return db.model('Contents', contentSchema);
 }
+
 module.exports = Contentschema;

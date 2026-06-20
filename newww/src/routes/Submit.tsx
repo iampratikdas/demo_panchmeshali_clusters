@@ -1,5 +1,5 @@
 import { Loader2, Send, FileText, CalendarDays, ChevronRight, ChevronLeft, Check, PlusCircle, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSubmissionForm } from '../hooks/useSubmissionForm';
 import { CONTENT_TYPES } from '../constants/submission';
 import { RichTextEditor } from '../components/RichTextEditor';
@@ -8,7 +8,9 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { AnimatedSelect } from '../ui/animated-select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
-// Sub-components
+import { ConfirmModal } from '../components/teams/ConfirmModal';
+import { WordCountDisplay } from '../components/submission/WordCountDisplay';
+import { countWordsFromHtml } from '../lib/wordCount';// Sub-components
 import { EventSubmissionCard } from '../components/submission/EventSubmissionCard';
 import { PublicationDestinationCard } from '../components/submission/PublicationDestinationCard';
 import { SubmissionTypeCard } from '../components/submission/SubmissionTypeCard';
@@ -99,9 +101,10 @@ interface NavButtonsProps {
     isOriginal?: boolean;
     submitLabel?: string;
     disableNext?: boolean;
+    disableSubmit?: boolean;
 }
 
-function NavButtons({ step, totalSteps, onBack, onNext, onSubmit, onDraft, isPending, isOriginal, submitLabel, disableNext }: NavButtonsProps) {
+function NavButtons({ step, totalSteps, onBack, onNext, onSubmit, onDraft, isPending, isOriginal, submitLabel, disableNext, disableSubmit }: NavButtonsProps) {
     const isLastStep = step === totalSteps - 1;
 
     return (
@@ -132,7 +135,7 @@ function NavButtons({ step, totalSteps, onBack, onNext, onSubmit, onDraft, isPen
                 {isLastStep ? (
                     <Button
                         onClick={onSubmit}
-                        disabled={!isOriginal || isPending}
+                        disabled={!isOriginal || isPending || disableSubmit}
                         className="w-full sm:w-auto min-h-[44px] gap-2 cursor-pointer"
                     >
                         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -196,16 +199,13 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
                                 <CardContent>
                                     <AnimatedSelect
                                         options={contentSubmissionOptions}
-                                        value={state.newSubmission}
-                                        onChange={(e) => {
-                                            console.log("e.target.value===============>", e);
-                                            actions.setNewSubmission(e);
-                                        }}
+                                        value={String(state.newSubmission)}
+                                        onChange={(value) => actions.setNewSubmission(value === 'true')}
                                     />
                                 </CardContent>
                             </Card>
                             {
-                                state.newSubmission === 'new' && (
+                                state.newSubmission && (
                                     <PublicationDestinationCard
                                         selectedPublisher={state.selectedPublisher}
                                         setSelectedPublisher={actions.setSelectedPublisher}
@@ -215,8 +215,8 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
                                 )
                             }
                             <CheckForApp
-                                selectedDestination={state.destination}
-                                setSelectedDestination={actions.setDestination}
+                                selectedDestination={state.publicationDestination}
+                                setSelectedDestination={actions.setPublicationDestination}
                             />
                         </div>
                     )}
@@ -224,7 +224,7 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
                     {/* Step 2 – Details */}
                     {step === 1 && (
                         <div className="space-y-4 sm:space-y-6">
-                            {state.newSubmission === 'new' && (
+                            {state.newSubmission && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                     <ImageUploadField
                                         title="Background Image"
@@ -250,18 +250,29 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
                                 </div>
                             )}
 
-                            {state.newSubmission === 'new' && (
+                            {state.newSubmission && (
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>Story Title</CardTitle>
                                         <CardDescription>Enter a compelling title for your story</CardDescription>
                                     </CardHeader>
-                                    <CardContent>
+                                    <CardContent className="space-y-4">
                                         <Input
                                             placeholder="Enter your story title..."
                                             value={state.story_title}
                                             onChange={(e) => actions.setStoryTitle(e.target.value)}
                                         />
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Destination</label>
+                                            <Input
+                                                value={state.destination || state.story_title}
+                                                readOnly
+                                                disabled
+                                                placeholder="Auto-generated from story title"
+                                                className="bg-muted/50"
+                                            />
+                                            <p className="text-xs text-muted-foreground">Auto-generated from your story title</p>
+                                        </div>
                                     </CardContent>
                                 </Card>
                             )}
@@ -279,7 +290,7 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
                                 setCategory={actions.setCategory}
                             />
 
-                            {state.newSubmission === 'Add next episode' && (
+                            {!state.newSubmission && (
                                 <Card>
                                     <CardHeader>
                                         <CardTitle>Episode Title</CardTitle>
@@ -311,6 +322,7 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
                                         onChange={actions.setContent}
                                         placeholder={`Start writing your ${state.type}...`}
                                     />
+                                    <WordCountDisplay count={state.wordCount} />
                                 </CardContent>
                             </Card>
                         </div>
@@ -337,10 +349,10 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
                         isOriginal={state.isOriginal}
                         submitLabel={`Submit ${contentTypeLabel}`}
                         disableNext={
-                            (step === 0 && state.newSubmission === 'new' && !state.selectedPublisher) ||
+                            (step === 0 && state.newSubmission && !state.selectedPublisher) ||
                             (step === 1 && (
                                 !state.type ||
-                                (state.newSubmission === 'new' && (!state.story_title || !state.category))
+                                (state.newSubmission && (!state.story_title || !state.category))
                             ))
                         }
                     />
@@ -375,11 +387,33 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
     const [step, setStep] = useState(0);
     const total = EVENT_STEPS.length;
 
-    // Multi-episode mode: episode_wise AND for_book both true
     const isEpisodeMode = !!(selectedEvent as any)?.episode_wise && !!(selectedEvent as any)?.for_book;
 
-    // Local episodes list – starts with one empty episode
     const [episodes, setEpisodes] = useState<Episode[]>([{ id: Date.now(), title: '', content: '' }]);
+
+    const episodeWordCount = useMemo(
+        () => episodes.reduce((sum, ep) => sum + countWordsFromHtml(ep.content), 0),
+        [episodes]
+    );
+
+    const categoryOptions = [
+        { value: '', label: 'Choose a category...' },
+        ...(selectedEvent?.categories?.map(cat => ({ value: cat, label: cat })) ?? []),
+    ];
+
+    const handleSubmit = () => {
+        if (isEpisodeMode) {
+            actions.attemptSubmit(episodeWordCount);
+        } else {
+            actions.attemptSubmit();
+        }
+    };
+
+    const currentWordCount = isEpisodeMode ? episodeWordCount : state.modalWordCount;
+    const disableSubmit = !!(
+        (selectedEvent?.w_count ?? 0) > 0 &&
+        currentWordCount > (selectedEvent?.w_count ?? 0)
+    );
 
     const addEpisode = () =>
         setEpisodes(prev => [...prev, { id: Date.now(), title: '', content: '' }]);
@@ -392,7 +426,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
 
     const goNext = () => setStep(s => Math.min(s + 1, total - 1));
     const goBack = () => setStep(s => Math.max(s - 1, 0));
-    console.log("state of the publication======>", state);
+
     return (
         <div>
             <StepIndicator steps={EVENT_STEPS} currentStep={step} />
@@ -406,6 +440,21 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                 setSelectedEventId={actions.setSelectedEventId}
                                 events={state.events}
                             />
+                            {state.selectedEventId && selectedEvent?.categories && selectedEvent.categories.length > 0 && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Category</CardTitle>
+                                        <CardDescription>Select a category for your submission</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <AnimatedSelect
+                                            options={categoryOptions}
+                                            value={state.category}
+                                            onChange={actions.setCategory}
+                                        />
+                                    </CardContent>
+                                </Card>
+                            )}
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Submission Type</CardTitle>
@@ -414,8 +463,8 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                 <CardContent>
                                     <AnimatedSelect
                                         options={eventSubmissionOptions}
-                                        value={state.newSubmission}
-                                        onChange={actions.setNewSubmission}
+                                        value={String(state.newSubmission)}
+                                        onChange={(value) => actions.setNewSubmission(value === 'true')}
                                     />
                                 </CardContent>
                             </Card>
@@ -464,6 +513,11 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                                         onChange={(val) => updateEpisode(ep.id, 'content', val)}
                                                         placeholder="Write episode content..."
                                                     />
+                                                    <WordCountDisplay
+                                                        count={countWordsFromHtml(ep.content)}
+                                                        requiredCount={selectedEvent?.w_count}
+                                                        isPaid={selectedEvent?.paid}
+                                                    />
                                                 </div>
                                             </CardContent>
                                         </Card>
@@ -480,6 +534,11 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                             Add episode
                                         </Button>
                                     </div>
+                                    <WordCountDisplay
+                                        count={episodeWordCount}
+                                        requiredCount={selectedEvent?.w_count}
+                                        isPaid={selectedEvent?.paid}
+                                    />
                                 </>
                             ) : (
                                 /* ── Normal mode ── */
@@ -489,12 +548,23 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                             <CardTitle>Title</CardTitle>
                                             <CardDescription>Enter a compelling title for your {state.type}</CardDescription>
                                         </CardHeader>
-                                        <CardContent>
+                                        <CardContent className="space-y-4">
                                             <Input
                                                 placeholder={`Enter your ${state.type} title...`}
                                                 value={state.title}
                                                 onChange={(e) => actions.setTitle(e.target.value)}
                                             />
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Destination</label>
+                                                <Input
+                                                    value={state.destination || state.title}
+                                                    readOnly
+                                                    disabled
+                                                    placeholder="Auto-generated from story title"
+                                                    className="bg-muted/50"
+                                                />
+                                                <p className="text-xs text-muted-foreground">Auto-generated from your story title</p>
+                                            </div>
                                         </CardContent>
                                     </Card>
 
@@ -508,6 +578,11 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                                 content={state.content}
                                                 onChange={actions.setContent}
                                                 placeholder={`Start writing your ${state.type}...`}
+                                            />
+                                            <WordCountDisplay
+                                                count={state.wordCount}
+                                                requiredCount={selectedEvent?.w_count}
+                                                isPaid={selectedEvent?.paid}
                                             />
                                         </CardContent>
                                     </Card>
@@ -523,6 +598,16 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                 isOriginal={state.isOriginal}
                                 setIsOriginal={actions.setIsOriginal}
                             />
+                            {disableSubmit && (
+                                <p className="text-sm text-destructive font-medium rounded-lg border border-destructive/90 bg-black/10 px-4 py-3">
+                                    Your word count ({currentWordCount}) exceeds the allowed limit of {selectedEvent?.w_count} words. Please reduce your content to submit.
+                                </p>
+                            )}
+                            {!disableSubmit && (
+                                <p className="text-sm text-primary font-medium rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+                                    Your content is ready to be submitted. Please check once before submitting.
+                                </p>
+                            )}
                         </div>
                     )}
 
@@ -531,11 +616,18 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                         totalSteps={total}
                         onBack={goBack}
                         onNext={goNext}
-                        onSubmit={actions.submit}
+                        onSubmit={handleSubmit}
                         isPending={state.isPending}
                         isOriginal={state.isOriginal}
                         submitLabel="Submit to Event"
-                        disableNext={step === 0 && !state.selectedEventId}
+                        disableSubmit={disableSubmit}
+                        disableNext={
+                            step === 0 && (
+                                !state.selectedEventId ||
+                                (!!selectedEvent?.categories?.length && !state.category)
+                            ) ||
+                            (step === 1 && !state.title.trim())
+                        }
                     />
                 </CardContent>
             </Card>
@@ -549,30 +641,29 @@ export default function Submit() {
     const { state, actions, refs } = useSubmissionForm();
     const [activeTab, setActiveTab] = useState('event');
 
+    useEffect(() => {
+        actions.setIsEvent(activeTab === 'event');
+    }, [activeTab]);
+
     const contentTypeLabel = CONTENT_TYPES.find(ct => ct.value === state.type)?.label || 'Content';
 
     // Get the selected event to check episode_wise property
-    const selectedEvent = state.events?.find(event => event.eid === state.selectedEventId);
+    const selectedEvent = state.selectedEvent ?? state.events?.find(event => event.eid === state.selectedEventId);
     const isEpisodeWise = selectedEvent?.episode_wise === undefined ? false : selectedEvent?.episode_wise ? true : false;
 
     // Build dropdown options for event submissions based on episode_wise property
     let eventSubmissionOptions = [
-        { value: '', label: 'Choose an option...' },
-        { value: 'new', label: 'New Submission' },
-        { value: 'Add next episode', label: 'Add next episode' }
+        { value: 'true', label: 'New Submission' },
     ];
 
-    // Only add "Add next episode" if episode_wise is true
-    if (!isEpisodeWise) {
-        const [a, b, ..._] = eventSubmissionOptions;
-        eventSubmissionOptions = [a, b];
+    if (isEpisodeWise) {
+        eventSubmissionOptions.push({ value: 'false', label: 'Add next episode' });
     }
 
-    // Content submission options (always just new)
+    // Content submission options
     const contentSubmissionOptions = [
-        { value: '', label: 'Choose an option...' },
-        { value: 'new', label: 'New Submission' },
-        { value: 'Add next episode', label: 'Add next episode of contents' }
+        { value: 'true', label: 'New Submission' },
+        { value: 'false', label: 'Add next episode of contents' },
     ];
 
     return (
@@ -622,6 +713,18 @@ export default function Submit() {
                         eventSubmissionOptions={eventSubmissionOptions}
                         selectedEvent={selectedEvent}
                     />
+                    {selectedEvent?.paid && (
+                        <ConfirmModal
+                            open={state.showPaidEventModal}
+                            onClose={actions.dismissPaidEventModal}
+                            onConfirm={actions.confirmPaidEventSubmit}
+                            title="Word Count Below Requirement"
+                            description={`This is a paid event requiring a minimum of ${selectedEvent.w_count} words. Your submission currently contains ${state.modalWordCount} words. Do you still want to continue?`}
+                            confirmLabel="Continue Submission"
+                            variant="warning"
+                            isLoading={state.isPending}
+                        />
+                    )}
                 </TabsContent>
             </Tabs>
 

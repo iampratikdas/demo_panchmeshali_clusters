@@ -19,7 +19,9 @@ export type EventType =
     | 'Short-stories';
 
 export interface Event {
+    _id?: string;
     eid: string;                    // Event ID
+    pid?: string;                   // Publisher ID
     logo_url: string;               // Event logo
     name: string;                   // Event name
     paid: boolean;                  // Paid event
@@ -44,6 +46,12 @@ export interface Event {
     createdAt: string;              // ISO timestamp
     updatedAt: string;              // ISO timestamp
     __v?: number;                    // Version key (MongoDB)
+    writer_uid?: string;
+    status?: string;
+    // Mapped form-friendly fields (populated after fetchEventsUsers)
+    type?: string;
+    folders?: string;
+    selectedPublisher?: string;
 }
 
 export interface CreateEventData {

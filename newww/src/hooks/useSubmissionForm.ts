@@ -1,14 +1,16 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { submitContent, fetchEventsUsers } from '../lib/api';
 import { useAtom } from 'jotai';
 import { workspaceFoldersAtom } from '../store/atoms';
 import { useToast } from '../hooks/useToast';
 import { z } from 'zod';
-
+import { CONTENT_TYPES } from '../constants/submission';
+import type { Event } from '../types/event';
+import { countWordsFromHtml } from '../lib/wordCount';
 export const submissionSchema = z.object({
     type: z.string().min(1, "Type is required"),
-    newSubmission: z.string().min(1, "Submission type is required"),
+    newSubmission: z.boolean(),
     selectedPublisher: z.string().optional(),
     title: z.string().min(1, "Title is required"),
     content: z.string().min(1, "Content is required"),
@@ -19,7 +21,7 @@ export const submissionSchema = z.object({
     episodeNumber: z.string().optional(),
     backgroundImage: z.string().optional(),
     coverImage: z.string().optional(),
-    destination: z.enum(['app', 'social', 'both', '']).optional(),
+    destination: z.string().min(1, "Destination is required"),
     isEvent: z.boolean().optional(),
 }).superRefine((data, ctx) => {
     if (!data.isEvent) {
@@ -32,15 +34,15 @@ export const submissionSchema = z.object({
         }
     }
 
-    if (data.newSubmission === "new") {
+    if (!data.isEvent && data.newSubmission) {
         if (!data.category) {
             ctx.addIssue({
                 path: ["category"],
                 code: z.ZodIssueCode.custom,
-                message: "Category is required when submission type is 'new'",
+                message: "Category is required for a new submission",
             });
         }
-    } else if (data.newSubmission === "Add next episode") {
+    } else if (!data.isEvent && !data.newSubmission) {
         if (!data.episodeNumber) {
             ctx.addIssue({
                 path: ["episodeNumber"],
@@ -51,23 +53,52 @@ export const submissionSchema = z.object({
     }
 });
 
+function mapEventTypeToFormType(eventType: string): string {
+    const match = CONTENT_TYPES.find(
+        ct => ct.label.toLowerCase() === eventType.toLowerCase()
+    );
+    return match ? match.label.toLowerCase() : eventType.toLowerCase();
+}
+
+function mapFetchedEvents(events: Event[]): Event[] {
+    return events.map(event => ({
+        ...event,
+        type: event.event_type,
+        folders: event.default_folder,
+        selectedPublisher: event.pid,
+    }));
+}
+
+function getStoryName(
+    selectedEventId: string,
+    title: string,
+    storyTitle: string,
+    newSubmission: boolean
+): string {
+    if (selectedEventId) return title.split(" ").join("_").trim()+"_"+Math.random().toString(4).substring(2, 5).toUpperCase();
+    return newSubmission ? storyTitle.split(" ").join("_").trim()+"_"+Math.random().toString(4).substring(2, 5).toUpperCase() : title.split(" ").join("_").trim()+"_"+Math.random().toString(4).substring(2, 5).toUpperCase();
+}
+
 export function useSubmissionForm() {
     const [type, setType] = useState<string>('story');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [isEvent, setIsEvent] = useState(false);
+    const [isEvent, setIsEvent] = useState(true);
     const [selectedEventId, setSelectedEventId] = useState<string>('');
     const [selectedPublisher, setSelectedPublisher] = useState<string>('');
     const [selectedFolder, setSelectedFolder] = useState<string>('root');
     const [isOriginal, setIsOriginal] = useState(false);
-    const [newSubmission, setNewSubmission] = useState<string>('new');
+    const [newSubmission, setNewSubmission] = useState<boolean>(true);
     const [newContent, setNewContent] = useState<string>('');
     const [category, setCategory] = useState<string>('');
     const [episodeNumber, setEpisodeNumber] = useState<string>('');
     const [backgroundImage, setBackgroundImage] = useState<string>('');
     const [coverImage, setCoverImage] = useState<string>('');
-    const [destination, setDestination] = useState<'app' | 'social' | 'both' | ''>('app');
+    const [destination, setDestination] = useState<string>('');
+    const [publicationDestination, setPublicationDestination] = useState<'app' | 'social' | 'both' | ''>('app');
     const [story_title, setStoryTitle] = useState<string>('');
+    const [showPaidEventModal, setShowPaidEventModal] = useState(false);
+    const [modalWordCount, setModalWordCount] = useState(0);
     const [folders] = useAtom(workspaceFoldersAtom);
     const { toast } = useToast();
     const queryClient = useQueryClient();
@@ -114,9 +145,44 @@ export function useSubmissionForm() {
 
     const { data: events } = useQuery({
         queryKey: ['events'],
-        queryFn: fetchEventsUsers,
+        queryFn: async () => mapFetchedEvents(await fetchEventsUsers()),
     });
 
+    useEffect(() => {
+        if (!selectedEventId || !events?.length) return;
+
+        const event = events.find(e => e.eid === selectedEventId);
+        if (!event) return;
+
+        setCategory('');
+
+        if (event.event_type) {
+            setType(mapEventTypeToFormType(event.event_type));
+        }
+        if (event.pid) {
+            setSelectedPublisher(event.pid);
+        }
+        setSelectedFolder(event.default_folder || 'root');
+        if (!event.episode_wise) {
+            setNewSubmission(true);
+        }
+    }, [selectedEventId, events]);
+
+    useEffect(() => {
+        setDestination(getStoryName(selectedEventId, title, story_title, newSubmission));
+    }, [selectedEventId, title, story_title, newSubmission]);
+
+    const resolvedDestination = useMemo(
+        () => getStoryName(selectedEventId, title, story_title, newSubmission),
+        [selectedEventId, title, story_title, newSubmission]
+    );
+
+    const wordCount = useMemo(() => countWordsFromHtml(content), [content]);
+
+    useEffect(() => {
+        setModalWordCount(wordCount);
+    }, [wordCount]);
+    console.log("destination:================>", destination , resolvedDestination);
     const submitMutation = useMutation({
         mutationFn: async () => {
             const formData = {
@@ -131,16 +197,19 @@ export function useSubmissionForm() {
                 isOriginal,
                 backgroundImage,
                 coverImage,
-                destination,
-                isEvent,
+                destination: resolvedDestination,
+                isEvent: !!selectedEventId || isEvent,
                 story_title,
                 publisher: selectedPublisher,
+                selectedEventId,
+                wordCount,
+                folders
             };
 
             const result = submissionSchema.safeParse(formData);
             if (!result.success) {
                 console.error("Validation failed", result.error.issues);
-                // We could show toast errors here if we wanted
+                throw new Error(result.error.issues[0]?.message ?? 'Validation failed');
             }
 
             return submitContent(formData);
@@ -153,9 +222,54 @@ export function useSubmissionForm() {
                 description: 'Your submission has been received.',
             });
         },
+        onError: (error: Error) => {
+            toast({
+                title: 'Submission failed',
+                description: error.message || 'Please check all required fields.',
+                variant: 'destructive',
+            });
+        },
     });
 
-    // Reset function to clear all form fields to default state
+    const attemptSubmit = (overrideWordCount?: number) => {
+        const count = overrideWordCount ?? wordCount;
+
+        if (isEvent && selectedEvent?.categories?.length && !category) {
+            toast({
+                title: 'Category required',
+                description: 'Please select a category before submitting.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        if (!resolvedDestination) {
+            toast({
+                title: 'Destination required',
+                description: 'Please enter a story title to generate the destination.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        if (selectedEvent?.paid === true && count < (selectedEvent.w_count || 0)) {
+            setModalWordCount(count);
+            setShowPaidEventModal(true);
+            return;
+        }
+
+        submitMutation.mutate();
+    };
+
+    const confirmPaidEventSubmit = () => {
+        setShowPaidEventModal(false);
+        submitMutation.mutate();
+    };
+
+    const dismissPaidEventModal = () => {
+        setShowPaidEventModal(false);
+    };
+
     const resetForm = () => {
         setType('story');
         setTitle('');
@@ -164,15 +278,17 @@ export function useSubmissionForm() {
         setSelectedPublisher('');
         setSelectedFolder('root');
         setIsOriginal(false);
-        setNewSubmission('new');
+        setNewSubmission(true);
         setNewContent('');
         setCategory('');
         setEpisodeNumber('');
         setBackgroundImage('');
         setCoverImage('');
-        setDestination('app');
+        setDestination('');
+        setPublicationDestination('app');
         setStoryTitle('');
-        // Clear file input refs
+        setShowPaidEventModal(false);
+        setModalWordCount(0);
         if (backgroundInputRef.current) {
             backgroundInputRef.current.value = '';
         }
@@ -180,6 +296,17 @@ export function useSubmissionForm() {
             coverInputRef.current.value = '';
         }
     };
+
+    const selectedEvent = events?.find(e => e.eid === selectedEventId);
+    const eventFolders = selectedEvent?.default_folder
+        ? [{
+            id: selectedEvent.default_folder,
+            name: selectedEvent.default_folder,
+            parentId: 'root' as const,
+            createdAt: '',
+            modifiedAt: '',
+        }]
+        : folders;
 
     return {
         state: {
@@ -197,10 +324,15 @@ export function useSubmissionForm() {
             episodeNumber,
             backgroundImage,
             coverImage,
-            destination,
+            destination: resolvedDestination,
+            publicationDestination,
             events,
-            folders,
+            folders: isEvent ? eventFolders : folders,
             story_title,
+            wordCount,
+            selectedEvent,
+            showPaidEventModal,
+            modalWordCount,
             isPending: submitMutation.isPending
         },
         actions: {
@@ -219,10 +351,14 @@ export function useSubmissionForm() {
             setBackgroundImage,
             setCoverImage,
             setDestination,
+            setPublicationDestination,
             setStoryTitle,
             handleRemoveImage,
             handleImageUpload,
-            submit: () => submitMutation.mutate(),
+            submit: () => attemptSubmit(),
+            attemptSubmit,
+            confirmPaidEventSubmit,
+            dismissPaidEventModal,
             resetForm
         },
         refs: {

@@ -118,7 +118,14 @@ class ContentController {
         page_id,
         event_content,
         isOriginalWork,
-        parent_eid
+        parent_eid,
+        backgroundImage,
+        category,
+        coverImage,
+        destination,
+        episodeNumber,
+        publisher,
+        wordCount
       } = req.body;
 
       const todaysdate = moment().local().unix();
