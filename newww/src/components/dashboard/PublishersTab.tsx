@@ -284,12 +284,12 @@ export function PublishersTab() {
                     ))}
                 </div>
 
-                <button
+                {/* <button
                     className="w-full p-3 text-sm font-bold text-muted-foreground hover:bg-accent/50 transition-colors border-t border-border/50"
                     onClick={loadPublishers}
                 >
                     Show more
-                </button>
+                </button> */}
             </div>
         </>
     );

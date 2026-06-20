@@ -538,13 +538,17 @@ export function ActiveEventsTab() {
                         />
                     ))}
                 </div>
+                {/* {
+                    events.length > 2 && (
 
-                <button
-                    className="w-full p-3 text-sm font-bold text-muted-foreground hover:bg-accent/50 transition-colors border-t border-border/50"
-                    onClick={loadEvents}
-                >
-                    Show more
-                </button>
+                        <button
+                            className="w-full p-3 text-sm font-bold text-muted-foreground hover:bg-accent/50 transition-colors border-t border-border/50"
+                            onClick={loadEvents}
+                        >
+                            Show more
+                        </button>
+                    )
+                } */}
             </div>
         </>
     );
