@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { submitContent, fetchEventsUsers } from '../lib/api';
+import { submitContent, fetchEventsUsers, fetchEventEpisodes } from '../lib/api';
+import type { EventEpisode } from '../lib/api';
 import { useAtom } from 'jotai';
 import { workspaceFoldersAtom } from '../store/atoms';
 import { useToast } from '../hooks/useToast';
@@ -92,6 +93,7 @@ export function useSubmissionForm() {
     const [newContent, setNewContent] = useState<string>('');
     const [category, setCategory] = useState<string>('');
     const [episodeNumber, setEpisodeNumber] = useState<string>('');
+    const [parent_eid, setParentEid] = useState<string>('');
     const [backgroundImage, setBackgroundImage] = useState<string>('');
     const [coverImage, setCoverImage] = useState<string>('');
     const [destination, setDestination] = useState<string>('');
@@ -155,6 +157,7 @@ export function useSubmissionForm() {
         if (!event) return;
 
         setCategory('');
+        setParentEid('');
 
         if (event.event_type) {
             setType(mapEventTypeToFormType(event.event_type));
@@ -167,6 +170,20 @@ export function useSubmissionForm() {
             setNewSubmission(true);
         }
     }, [selectedEventId, events]);
+
+    const selectedEvent = events?.find(e => e.eid === selectedEventId);
+
+    const { data: eventEpisodes = [] } = useQuery<EventEpisode[]>({
+        queryKey: ['eventEpisodes', selectedEventId],
+        queryFn: () => fetchEventEpisodes(selectedEventId),
+        enabled: !!selectedEventId && !!selectedEvent?.episode_wise,
+    });
+
+    useEffect(() => {
+        if (newSubmission) {
+            setParentEid('');
+        }
+    }, [newSubmission]);
 
     useEffect(() => {
         setDestination(getStoryName(selectedEventId, title, story_title, newSubmission));
@@ -182,7 +199,6 @@ export function useSubmissionForm() {
     useEffect(() => {
         setModalWordCount(wordCount);
     }, [wordCount]);
-    console.log("destination:================>", destination , resolvedDestination);
     const submitMutation = useMutation({
         mutationFn: async () => {
             const formData = {
@@ -203,6 +219,7 @@ export function useSubmissionForm() {
                 publisher: selectedPublisher,
                 selectedEventId,
                 wordCount,
+                parent_eid,
                 folders
             };
 
@@ -252,6 +269,15 @@ export function useSubmissionForm() {
             return;
         }
 
+        if (selectedEvent?.episode_wise && !newSubmission && !parent_eid) {
+            toast({
+                title: 'Parent episode required',
+                description: 'Please select the previous episode before submitting.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
         if (selectedEvent?.paid === true && count < (selectedEvent.w_count || 0)) {
             setModalWordCount(count);
             setShowPaidEventModal(true);
@@ -282,6 +308,7 @@ export function useSubmissionForm() {
         setNewContent('');
         setCategory('');
         setEpisodeNumber('');
+        setParentEid('');
         setBackgroundImage('');
         setCoverImage('');
         setDestination('');
@@ -297,7 +324,6 @@ export function useSubmissionForm() {
         }
     };
 
-    const selectedEvent = events?.find(e => e.eid === selectedEventId);
     const eventFolders = selectedEvent?.default_folder
         ? [{
             id: selectedEvent.default_folder,
@@ -322,6 +348,7 @@ export function useSubmissionForm() {
             newContent,
             category,
             episodeNumber,
+            parent_eid,
             backgroundImage,
             coverImage,
             destination: resolvedDestination,
@@ -331,6 +358,7 @@ export function useSubmissionForm() {
             story_title,
             wordCount,
             selectedEvent,
+            eventEpisodes,
             showPaidEventModal,
             modalWordCount,
             isPending: submitMutation.isPending
@@ -348,6 +376,7 @@ export function useSubmissionForm() {
             setNewContent,
             setCategory,
             setEpisodeNumber,
+            setParentEid,
             setBackgroundImage,
             setCoverImage,
             setDestination,

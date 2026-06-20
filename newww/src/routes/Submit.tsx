@@ -401,6 +401,21 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
         ...(selectedEvent?.categories?.map(cat => ({ value: cat, label: cat })) ?? []),
     ];
 
+    const isEpisodeWise = !!selectedEvent?.episode_wise;
+    const hasNoEpisodes = !state.eventEpisodes?.length;
+    const isNextEpisodeBlocked =
+        isEpisodeWise && !state.newSubmission && (hasNoEpisodes || !state.parent_eid);
+
+    const parentEpisodeOptions = [
+        { value: '', label: 'Choose parent episode...' },
+        ...(state.eventEpisodes?.map(ep => ({
+            value: ep.cont_id,
+            label: ep.episodeNumber
+                ? `Episode ${ep.episodeNumber}: ${ep.name}`
+                : ep.name,
+        })) ?? []),
+    ];
+
     const handleSubmit = () => {
         if (isEpisodeMode) {
             actions.attemptSubmit(episodeWordCount);
@@ -455,19 +470,44 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                     </CardContent>
                                 </Card>
                             )}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Submission Type</CardTitle>
-                                    <CardDescription>Is this a new submission or an update to an existing submission?</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <AnimatedSelect
-                                        options={eventSubmissionOptions}
-                                        value={String(state.newSubmission)}
-                                        onChange={(value) => actions.setNewSubmission(value === 'true')}
-                                    />
-                                </CardContent>
-                            </Card>
+                            {isEpisodeWise && (
+                                <>
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Submission Type</CardTitle>
+                                            <CardDescription>Is this a new submission or the next episode?</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <AnimatedSelect
+                                                options={eventSubmissionOptions}
+                                                value={String(state.newSubmission)}
+                                                onChange={(value) => actions.setNewSubmission(value === 'true')}
+                                            />
+                                        </CardContent>
+                                    </Card>
+                                    {!state.newSubmission && (
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle>Parent Episode</CardTitle>
+                                                <CardDescription>Select the previous episode this continues from</CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                {state.eventEpisodes && state.eventEpisodes.length > 0 ? (
+                                                    <AnimatedSelect
+                                                        options={parentEpisodeOptions}
+                                                        value={state.parent_eid}
+                                                        onChange={actions.setParentEid}
+                                                    />
+                                                ) : (
+                                                    <p className="text-sm text-muted-foreground">
+                                                        No existing episodes found for this event. Submit a new episode first.
+                                                    </p>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    )}
+                                </>
+                            )}
                         </div>
                     )}
 
@@ -624,7 +664,8 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                         disableNext={
                             step === 0 && (
                                 !state.selectedEventId ||
-                                (!!selectedEvent?.categories?.length && !state.category)
+                                (!!selectedEvent?.categories?.length && !state.category) ||
+                                isNextEpisodeBlocked
                             ) ||
                             (step === 1 && !state.title.trim())
                         }
@@ -657,7 +698,7 @@ export default function Submit() {
     ];
 
     if (isEpisodeWise) {
-        eventSubmissionOptions.push({ value: 'false', label: 'Add next episode' });
+        eventSubmissionOptions.push({ value: 'false', label: 'Next Episode' });
     }
 
     // Content submission options

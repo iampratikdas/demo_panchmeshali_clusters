@@ -306,6 +306,7 @@ export const submitContent = async (
         publisher: formData.publisher ?? "",
         destination: formData.destination ?? "",
         wordCount: formData.wordCount ?? 0,
+        parent_eid: formData.parent_eid ?? "",
     }
     console.log("formData:================>", form_data);
     const response = await axios.post(`${API_BASE_URL}${apiJson.submitContents.url}`, { ...form_data }, { headers: apiJson.submitContents.headers });
@@ -625,6 +626,27 @@ const getAuthHeaders = () => ({
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${localStorage.getItem('token')}`,
 });
+
+export interface EventEpisode {
+    cont_id: string;
+    name: string;
+    episodeNumber?: string;
+    createdAt?: string;
+}
+
+export const fetchEventEpisodes = async (eid: string): Promise<EventEpisode[]> => {
+    const uid = localStorage.getItem('uid') ?? '';
+    const response = await axios.post(
+        `${API_BASE_URL}/list_contents?page=1&limit=100`,
+        {
+            filter: { eid, uid },
+            sortBy: { createdAt: -1 },
+            uid,
+        },
+        { headers: getAuthHeaders() }
+    );
+    return response.data?.lists ?? [];
+};
 
 export const createPublisherCompany = async (data: any): Promise<any> => {
     const response = await axios.post(
