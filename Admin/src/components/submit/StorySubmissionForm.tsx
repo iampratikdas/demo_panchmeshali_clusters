@@ -53,7 +53,7 @@ const formSchema = z.object({
   storyName: z.string().min(2, {
     message: "Story name must be at least 2 words.",
   }),
-  parent_eid: z.string().optional(),
+  parent_id: z.string().optional(),
   event_content: z.boolean(),
   storyContent: z.string().refine((value) => {
     const words = countWords(value);
@@ -81,7 +81,7 @@ export function StorySubmissionForm() {
       isOriginalWork: false,
       eid: "",
       type:"",
-      parent_eid:"",
+      parent_id:"",
       event_content: true
     },
   })
@@ -173,8 +173,8 @@ useEffect(()=>{
                     // find the selected item from your list
 
                     const selectedItem = eventlists.find(item => item.eid === val );
-                    // if it has parent_eid, set it in the form
-                    form.setValue("parent_eid", selectedItem?.parent || "");
+                    // if it has parent_id, set it in the form
+                    form.setValue("parent_id", selectedItem?.parent || "");
                   }} value={field.value}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Select Event" />

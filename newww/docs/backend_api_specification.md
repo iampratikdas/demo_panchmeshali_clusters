@@ -34,7 +34,7 @@ Submit new content or an update to existing content.
     "page_id": "string (publisher id)",
     "event_content": boolean,
     "isOriginalWork": boolean,
-    "parent_eid": "string",
+    "parent_id": "string",
     "episodeNumber": number | string,
     "destination": "string"
   }

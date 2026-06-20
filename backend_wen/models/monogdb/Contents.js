@@ -52,15 +52,12 @@ const contentSchema = new mongoose.Schema({
     type: String,
   },
 
-  parent_eid: {
+  parent_id: {
     type: String,
     default: "",
   },
 
-  page_id: {
-    type: String,
-    default: "",
-  },
+
 
   event_content: {
     type: Boolean,

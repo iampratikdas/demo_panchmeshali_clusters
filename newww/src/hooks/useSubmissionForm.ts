@@ -93,7 +93,7 @@ export function useSubmissionForm() {
     const [newContent, setNewContent] = useState<string>('');
     const [category, setCategory] = useState<string>('');
     const [episodeNumber, setEpisodeNumber] = useState<string>('');
-    const [parent_eid, setParentEid] = useState<string>('');
+    const [parent_id, setParentEid] = useState<string>('');
     const [backgroundImage, setBackgroundImage] = useState<string>('');
     const [coverImage, setCoverImage] = useState<string>('');
     const [destination, setDestination] = useState<string>('');
@@ -219,7 +219,7 @@ export function useSubmissionForm() {
                 publisher: selectedPublisher,
                 selectedEventId,
                 wordCount,
-                parent_eid,
+                parent_id,
                 folders
             };
 
@@ -269,7 +269,7 @@ export function useSubmissionForm() {
             return;
         }
 
-        if (selectedEvent?.episode_wise && !newSubmission && !parent_eid) {
+        if (selectedEvent?.episode_wise && !newSubmission && !parent_id) {
             toast({
                 title: 'Parent episode required',
                 description: 'Please select the previous episode before submitting.',
@@ -348,7 +348,7 @@ export function useSubmissionForm() {
             newContent,
             category,
             episodeNumber,
-            parent_eid,
+            parent_id,
             backgroundImage,
             coverImage,
             destination: resolvedDestination,

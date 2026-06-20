@@ -32,15 +32,66 @@ class ContentController {
     this.voteFunc = modelfunctions.voteFunctions;
     this.eventFunc = modelfunctions.eventFunctions;
     this.noticeFunc = modelfunctions.noticeFunctions;
+    this.workspaceFileFunc = modelfunctions.workspaceFileFunctions;
+    this.folderFunc = modelfunctions.folderFunctions;
     // this.paginationFunc = modelfunctions.pagination;
   }
 
-  async checkEvent(eid, parent_eid, uid) {
+  sanitizeFileName(name) {
+    return (name || 'content')
+      .replace(/[<>:"/\\|?*\x00-\x1f]/g, '_')
+      .replace(/\s+/g, '_')
+      .substring(0, 80);
+  }
+
+  async ensureWorkspaceFolder(uid, folderName, parentId = 'root') {
+    const trimmedName = (folderName || '').trim();
+    if (!trimmedName || trimmedName === 'root') {
+      return 'root';
+    }
+
+    const siblings = await this.folderFunc.findChildren(uid, parentId);
+    const existing = siblings.find((f) => f.name === trimmedName);
+    if (existing) {
+      return existing.folder_id;
+    }
+
+    const newFolder = {
+      folder_id: gen(12),
+      name: trimmedName,
+      uid,
+      parentId,
+      color: '#374151',
+      createdAt: String(moment().unix()),
+      updatedAt: String(moment().unix()),
+    };
+    await this.folderFunc.insertFolder(newFolder);
+    return newFolder.folder_id;
+  }
+
+  async resolveWorkspaceFolderId(uid, url, event) {
+    if (url && url !== 'root') {
+      const existingById = await this.folderFunc.findById(url);
+      if (existingById && existingById.uid === uid) {
+        return url;
+      }
+      return this.ensureWorkspaceFolder(uid, url, 'root');
+    }
+
+    const folderName =
+      (event?.default_folder && event.default_folder.trim()) ||
+      (event?.name && event.name.trim()) ||
+      'Event Submissions';
+
+    return this.ensureWorkspaceFolder(uid, folderName, 'root');
+  }
+
+  async checkEvent(eid, parent_id, uid) {
     let response_result = {
       result: false,
       message: ""
     }
-    const eventDetail = await this.eventFunc.findOneEvent({ eid: eid, parent: parent_eid });
+    const eventDetail = await this.eventFunc.findOneEvent({ eid: eid, parent: parent_id });
 
     if (!eventDetail) {
       response_result.message = "This Event has improper event id along with parent id provided"
@@ -48,7 +99,7 @@ class ContentController {
     }
     const contents_list = await this.voteFunc.findContentListAggregates([
       {
-        $match: { status: "Approved", eid: parent_eid },
+        $match: { status: "Approved", eid: parent_id },
       },
       {
         $lookup: {
@@ -116,9 +167,9 @@ class ContentController {
         storyContent,
         url,
         page_id,
-        event_content,
         isOriginalWork,
-        parent_eid,
+        parent_id,
+        event_content,
         backgroundImage,
         category,
         coverImage,
@@ -130,14 +181,14 @@ class ContentController {
 
       const todaysdate = moment().local().unix();
       let result;
+      const event = await this.eventFunc.findOneEvent({ eid });
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
       if (eid != "") {
-        const event = await this.eventFunc.findOneEvent({ eid });
 
-        if (!event) {
-          return res.status(404).json({ message: "Event not found" });
-        }
-
-        if ((!parent_eid || parent_eid === "") && event.parent != "") {
+        // console.log("parent_id:================>", (!parent_id || parent_id === "") , event.parent_id , event)
+        if ( event.parent_id != "") {
           return res.status(404).json({ message: "Please provide the parent event eid" });
         }
 
@@ -153,21 +204,21 @@ class ContentController {
           return res.status(400).json({ message: "Event has not yet started", todaysdate: now, st_dt: start });
         }
 
-        if (parent_eid != "") {
-          // const parentEventDetail = await this.eventFunc.findOneEvent({eid : parent_eid})
+        if (parent_id != "") {
+          // const parentEventDetail = await this.eventFunc.findOneEvent({eid : parent_id})
           // if(!parentEventDetail){
           //    return res.status(400).json({ message: "Please provide the correct Parent eid" });
           // }
 
-          let parentContent = await this.contentFunc.findOneEvenTContentAll({ eid: parent_eid, uid: token_data.uid, event_content: event_content });
-          console.log("parentContent======>", { eid: parent_eid, uid: token_data.uid, event_content: event_content }, parentContent)
+          let parentContent = await this.contentFunc.findOneEvenTContentAll({ eid: parent_id, uid: token_data.uid, event_content: event_content });
+          console.log("parentContent======>", { eid: parent_id, uid: token_data.uid, event_content: event_content }, parentContent)
           if (parentContent.length === 0) {
             return res.status(400).json({
               status: 400,
               message: 'You have not participated the previous competition or wrong eid provided for present event or parent event'
             })
           }
-          result = await this.checkEvent(eid, parent_eid, token_data.uid)
+          result = await this.checkEvent(eid, parent_id, token_data.uid)
           if (!result.result) {
             return res.status(400).json({
               status: 400,
@@ -182,43 +233,50 @@ class ContentController {
 
 
 
-      page_id = page_id ? page_id : "";
-      
-      const folder_id = url || "root";
-      
+      // page_id = page_id ? page_id : "";
+
+      const workspaceFolderId = await this.resolveWorkspaceFolderId(
+        token_data.uid,
+        url,
+        event
+      );
+
       let contents = {
         uid: token_data.uid,
         eid: eid,
-        cont_id: gen(10),
+        cont_id: storyName.split(" ").join("_").trim()+"_"+gen(10),
         type,
-        page_id: page_id,
+        pid: event.pid,
         name: storyName,
         author_name: token_data.full_name,
         content: storyContent,
-        url: folder_id, // Save the destination folder in the `url` field
+        url: workspaceFolderId,
         event_content,
         orgin_content: isOriginalWork,
+        backgroundImage,
+        category,
+        coverImage,
+        destination,
+        episodeNumber,
+        publisher,
+        wordCount
       }
       let existingContent = await this.contentFunc.findOneEvenTContentAll({ eid: eid, uid: token_data.uid, event_content: event_content });
 
-      console.log("existingUser=========>", page_id)
-      if (eid != "") {
-
-        if (existingContent.length > 0) {
-          return res.status(200).json({
-            status: 200,
-            message: 'This User has already submitted the content for this event'
-          })
-        }
+      console.log("existingUser=========>", existingContent)
+      if (existingContent.length > 0 && event.episode_wise === false) {
+        return res.status(200).json({
+          status: 200,
+          message: 'This User has already submitted the content for this event'
+        })
       }
 
       // ── Workspace Integration: Save as JSON file ──
-      // Calculate filesize
       const jsonData = Buffer.from(JSON.stringify({ title: storyName, content: storyContent }));
       const fileSize = jsonData.length;
       const STORAGE_LIMIT_BYTES = 10 * 1024 * 1024;
-      
-      const storageInfo = await this.userFunc.workspaceFileFunctions.getStorageInfo(token_data.uid);
+
+      const storageInfo = await this.workspaceFileFunc.getStorageInfo(token_data.uid);
       if (storageInfo.used_bytes + fileSize > STORAGE_LIMIT_BYTES) {
           return res.status(402).json({
               status: 402,
@@ -227,32 +285,33 @@ class ContentController {
           });
       }
 
-      // Create physical JSON file
       const uploadDir = path.join(__dirname, '../../public/workspace');
       if (!fs.existsSync(uploadDir)) {
           fs.mkdirSync(uploadDir, { recursive: true });
       }
-      const uniqueName = `${Date.now()}_${Math.round(Math.random() * 1e6)}.json`;
-      const physicalPath = path.join(uploadDir, uniqueName);
+
+      const storedName = `${this.sanitizeFileName(destination || storyName)}_${Date.now()}.json`;
+      const physicalPath = path.join(uploadDir, storedName);
       fs.writeFileSync(physicalPath, jsonData);
 
-      // Extract a short excerpt (strip basic HTML tags for preview)
       const rawText = storyContent ? storyContent.replace(/<[^>]+>/g, '').substring(0, 150) : '';
 
-      // Insert WorkspaceFile record
       const wsFileRecord = {
+          file_id: gen(14),
           uid: token_data.uid,
-          folder_id: folder_id,
+          folder_id: workspaceFolderId,
           original_name: storyName,
-          stored_name: uniqueName,
-          file_path: `/public/workspace/${uniqueName}`,
+          stored_name: storedName,
+          file_path: `/public/workspace/${storedName}`,
           mime_type: 'application/json',
           ext: 'json',
           size_bytes: fileSize,
           is_content: true,
-          excerpt: rawText
+          excerpt: rawText,
+          createdAt: String(moment().unix()),
+          updatedAt: String(moment().unix()),
       };
-      await this.userFunc.workspaceFileFunctions.insertFile(wsFileRecord);
+      await this.workspaceFileFunc.insertFile(wsFileRecord);
 
 
       // console.log("contents:================>", contents);
@@ -261,10 +320,11 @@ class ContentController {
         message: 'Content Submitted wait for Editor to respond'
       })
     } catch (err) {
-
+      console.log("error=====>", err);
       return res.status(500).json({ message: 'Error submitting content', err });
     }
   }
+
   async update(req, res) {
     try {
 

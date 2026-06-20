@@ -404,7 +404,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
     const isEpisodeWise = !!selectedEvent?.episode_wise;
     const hasNoEpisodes = !state.eventEpisodes?.length;
     const isNextEpisodeBlocked =
-        isEpisodeWise && !state.newSubmission && (hasNoEpisodes || !state.parent_eid);
+        isEpisodeWise && !state.newSubmission && (hasNoEpisodes || !state.parent_id);
 
     const parentEpisodeOptions = [
         { value: '', label: 'Choose parent episode...' },
@@ -495,7 +495,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                                 {state.eventEpisodes && state.eventEpisodes.length > 0 ? (
                                                     <AnimatedSelect
                                                         options={parentEpisodeOptions}
-                                                        value={state.parent_eid}
+                                                        value={state.parent_id}
                                                         onChange={actions.setParentEid}
                                                     />
                                                 ) : (

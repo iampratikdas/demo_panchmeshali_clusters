@@ -362,7 +362,7 @@ export const submitContent = async (
         // page_id: formData.selectedPublisher ?? "",
         event_content: formData.newContent ?? false,
         isOriginalWork: formData.isOriginal ?? false,
-        // parent_eid: formData.parentEid ?? "",
+        // parent_id: formData.parentEid ?? "",
         category: formData.category ?? "",
         coverImage: formData.coverImage ?? "",
         backgroundImage: formData.backgroundImage ?? "",

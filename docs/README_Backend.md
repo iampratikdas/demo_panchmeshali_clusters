@@ -530,7 +530,7 @@ Handles the full content lifecycle from submission to review and certificate iss
 
 | Method | Description |
 |---|---|
-| `checkEvent(eid, parent_eid, uid)` | **Internal helper.** Validates if a user qualifies for a child event by checking their participation in the parent event and whether they are in the shortlist. Uses MongoDB aggregation with `$lookup` on votes, ranked by vote count. |
+| `checkEvent(eid, parent_id, uid)` | **Internal helper.** Validates if a user qualifies for a child event by checking their participation in the parent event and whether they are in the shortlist. Uses MongoDB aggregation with `$lookup` on votes, ranked by vote count. |
 | `submit(req, res, token_data)` | Submits new content. Validates event dates, parent-event participation, duplicate submission prevention, and shortlist eligibility. Inserts final content document. |
 | `update(req, res)` | Updates existing content (simple field update). |
 | `listContents(req, res, token_data)` | Returns paginated content list. Users see only their own; admin/manager see all. Computes `totalMarks` via `$addFields` aggregation pipeline. |
