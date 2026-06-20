@@ -297,7 +297,7 @@ export const submitContent = async (
         // page_id: formData.selectedPublisher ?? "",
         event_content: formData.newContent ?? false,
         isOriginalWork: formData.isOriginal ?? false,
-        // parent_eid: formData.parentEid ?? "",
+        // parent_id: formData.parentId ?? "",
         category: formData.category ?? "",
         coverImage: formData.coverImage ?? "",
         backgroundImage: formData.backgroundImage ?? "",
@@ -833,10 +833,10 @@ export const fetchActiveEvents = async (): Promise<any[]> => {
  * POST /join_event
  * Body: { eid, pid }
  */
-export const joinActiveEvent = async (eid: string, pid: string): Promise<any> => {
+export const joinActiveEvent = async (eid: string, pid: string, parent_id = ''): Promise<any> => {
     const response = await axios.post(
         `${API_BASE_URL}/join_event`,
-        { eid, pid },
+        { eid, pid, parent_id },
         { headers: getAuthHeaders() }
     );
     return response.data;

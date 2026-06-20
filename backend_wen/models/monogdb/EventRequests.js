@@ -17,7 +17,7 @@ const eventRequestSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  parent_eid: {
+  parent_id: {
     type: String,
     default: '',
     trim: true

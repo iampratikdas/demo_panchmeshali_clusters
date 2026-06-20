@@ -337,6 +337,7 @@ class EventController {
         eid,
         writer_uid,
         pid,
+        parent_id: eventExist.parent || '',
         status: "Pending" // Initial phase
       };
 
@@ -424,6 +425,7 @@ class EventController {
           // }
           return {
             ...ev,
+            parent_id: ev.parent || '',
             publisher_name: publisher_name?.name,
             team_member: team_member?.status === "Accepted" ? true : false,
             already_joined
@@ -451,7 +453,7 @@ class EventController {
    */
   async joinEvent(req, res, token_data) {
     try {
-      const { eid, pid } = req.body;
+      const { eid, pid, parent_id } = req.body;
       const writer_uid = token_data.uid;
 
       if (!eid || !pid) {
@@ -493,7 +495,13 @@ class EventController {
       }
 
       // Add writer to event team
-      let resp = await this.eventFunc.addTeamMember({ eid, writer_uid, pid });
+      let resp = await this.eventFunc.addTeamMember({
+        eid,
+        writer_uid,
+        pid,
+        parent_id: parent_id || event.parent || '',
+        status: "Accepted",
+      });
       console.log("res=======================>", resp)
       return res.status(200).json({
         status: 200,

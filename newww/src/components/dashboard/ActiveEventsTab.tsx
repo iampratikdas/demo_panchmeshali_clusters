@@ -24,6 +24,7 @@ interface ActiveEvent {
     created_by: string;        // publisher uid — used as pid for publisher join request
     paid: boolean;
     pid: string;
+    parent_id?: string;
     paid_amt?: number;
     event_type?: string;
     st_dt?: string;
@@ -330,7 +331,7 @@ export function ActiveEventsTab() {
         // Writer IS a publisher member → join the event directly
         setLoadingEid(event.eid);
         try {
-            await joinActiveEvent(event.eid, event.pid);
+            await joinActiveEvent(event.eid, event.pid, event.parent_id ?? '');
             // Optimistically update UI
             setEvents(prev =>
                 prev.map(ev => ev.eid === event.eid ? { ...ev, already_joined: true } : ev)
@@ -368,7 +369,7 @@ export function ActiveEventsTab() {
             // Now attempt to join the non-paid event immediately (since join is auto-Accepted)
             setLoadingEid(modalEvent.eid);
             try {
-                await joinActiveEvent(modalEvent.eid, modalEvent.pid);
+                await joinActiveEvent(modalEvent.eid, modalEvent.pid, modalEvent.parent_id ?? '');
                 // Update both team_member and already_joined in local state
                 setEvents(prev =>
                     prev.map(ev =>
@@ -406,7 +407,7 @@ export function ActiveEventsTab() {
                 showToast('You are already a member of this publisher. Joining the event…', 'success');
                 setLoadingEid(modalEvent.eid);
                 try {
-                    await joinActiveEvent(modalEvent.eid, modalEvent.pid);
+                    await joinActiveEvent(modalEvent.eid, modalEvent.pid, modalEvent.parent_id ?? '');
                     setEvents(prev =>
                         prev.map(ev =>
                             ev.eid === modalEvent.eid
