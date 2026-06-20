@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate } from '@tanstack/react-router';
 import { fetchContentById, fetchCommentsByContentId } from '../lib/api';
+import { canUserComment } from '../lib/contentMapper';
+import { useAtomValue } from 'jotai';
+import { currentUserAtom } from '../store/atoms';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { Card, CardHeader, CardTitle, CardFooter, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
@@ -158,6 +161,8 @@ export default function ContentDetail() {
     const { id } = useParams({ from: '/content/$id' });
     const navigate = useNavigate();
     const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
+    const user = useAtomValue(currentUserAtom);
+    const canComment = canUserComment(user.role);
 
     const { data: content, isLoading: contentLoading } = useQuery({
         queryKey: ['content', id],
@@ -190,6 +195,7 @@ export default function ContentDetail() {
 
     const Icon = content.type === 'story' ? FileText : BookOpen;
     const episodes = content.episodes ?? [];
+    const isEpisodeWise = !!content.episodeWise && episodes.length > 0;
 
     return (
         <>
@@ -246,14 +252,22 @@ export default function ContentDetail() {
                     </CardHeader>
 
                     <CardContent>
-                        <div
-                            className="prose prose-sm max-w-none"
-                            dangerouslySetInnerHTML={{ __html: content.content }}
-                        />
+                        {!isEpisodeWise && (
+                            <div
+                                className="prose prose-sm max-w-none"
+                                dangerouslySetInnerHTML={{ __html: content.content }}
+                            />
+                        )}
 
-                        {/* Episodes / Chapters Section */}
-                        {episodes.length > 0 && (
-                            <div className="space-y-4 mt-6">
+                        {isEpisodeWise && content.content && (
+                            <div
+                                className="prose prose-sm max-w-none mb-6"
+                                dangerouslySetInnerHTML={{ __html: content.content }}
+                            />
+                        )}
+
+                        {isEpisodeWise && episodes.length > 0 && (
+                            <div className="space-y-4 mt-2">
                                 <h2 className="text-lg font-bold">Chapters</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {episodes.map((episode) => (
@@ -273,7 +287,7 @@ export default function ContentDetail() {
                             {commentsLoading ? (
                                 <LoadingSkeleton />
                             ) : (
-                                <CommentBox contentId={id} comments={comments} />
+                                <CommentBox contentId={id} comments={comments} canComment={canComment} />
                             )}
                         </div>
                     </CardFooter>

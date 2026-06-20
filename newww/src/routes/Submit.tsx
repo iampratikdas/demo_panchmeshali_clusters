@@ -404,18 +404,25 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
     const isEpisodeWise = !!selectedEvent?.episode_wise;
     const hasNoEpisodes = !state.eventEpisodes?.length;
     const isNextEpisodeBlocked =
-        isEpisodeWise && !state.newSubmission && (hasNoEpisodes || !state.h_title);
+        isEpisodeWise && !state.newSubmission && (hasNoEpisodes || !state.previousEpisode);
+    const isHeadTitleBlocked = isEpisodeWise && !state.h_title.trim();
     const isEpisodeNumberBlocked = isEpisodeWise && !!state.episodeNumberError;
 
-    const headTitleOptions = [
-        { value: '', label: 'Choose head title...' },
+    const previousEpisodeOptions = [
+        { value: '', label: 'Choose previous episode...' },
         ...(state.eventEpisodes?.map(ep => ({
             value: ep.cont_id,
-            label: ep.episodeNumber
-                ? `Episode ${ep.episodeNumber}: ${ep.name}`
-                : ep.name,
+            label: ep.name,
         })) ?? []),
     ];
+
+    const handlePreviousEpisodeChange = (contId: string) => {
+        actions.setPreviousEpisode(contId);
+        const ep = state.eventEpisodes?.find(e => e.cont_id === contId);
+        if (ep?.h_title) {
+            actions.setHeadTitle(ep.h_title);
+        }
+    };
 
     const handleSubmit = () => {
         if (isEpisodeMode) {
@@ -489,24 +496,42 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                     {!state.newSubmission && (
                                         <Card>
                                             <CardHeader>
-                                                <CardTitle>Head Title</CardTitle>
-                                                <CardDescription>Select the story series this episode belongs to</CardDescription>
+                                                <CardTitle>Previous Episode</CardTitle>
+                                                <CardDescription>Select the previous episode this continues from</CardDescription>
                                             </CardHeader>
                                             <CardContent>
                                                 {state.eventEpisodes && state.eventEpisodes.length > 0 ? (
                                                     <AnimatedSelect
-                                                        options={headTitleOptions}
-                                                        value={state.h_title}
-                                                        onChange={actions.setHeadTitle}
+                                                        options={previousEpisodeOptions}
+                                                        value={state.previousEpisode}
+                                                        onChange={handlePreviousEpisodeChange}
                                                     />
                                                 ) : (
                                                     <p className="text-sm text-muted-foreground">
-                                                        No existing stories found for this event. Submit a new story first.
+                                                        No existing episodes found for this event. Submit a new episode first.
                                                     </p>
                                                 )}
                                             </CardContent>
                                         </Card>
                                     )}
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Head Title</CardTitle>
+                                            <CardDescription>
+                                                Main series title — required for all episode-wise submissions
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <Input
+                                                placeholder="Enter head title..."
+                                                value={state.h_title}
+                                                onChange={(e) => actions.setHeadTitle(e.target.value)}
+                                            />
+                                            {!state.h_title.trim() && (
+                                                <p className="text-sm text-destructive mt-2">Head title is required</p>
+                                            )}
+                                        </CardContent>
+                                    </Card>
                                     <Card>
                                         <CardHeader>
                                             <CardTitle>Episode Number</CardTitle>
@@ -692,6 +717,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                 !state.selectedEventId ||
                                 (!!selectedEvent?.categories?.length && !state.category) ||
                                 isNextEpisodeBlocked ||
+                                isHeadTitleBlocked ||
                                 isEpisodeNumberBlocked
                             ) ||
                             (step === 1 && !state.title.trim())

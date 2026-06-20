@@ -48,6 +48,18 @@ class ContentRoutes {
         router.post("/add_marks_by_admins", (req, res, next) => MethodValidate(req, res, next, "POST"), async (req, res) => await initializes(req, res, userFunc, ["admin", "manager"]).then((token_data) => token_data && ContentController.addMarks(req, res, token_data)));
         router.post("/create_notice_by_admin_and_mail", (req, res, next) => MethodValidate(req, res, next, "POST"), async (req, res) => await initializes(req, res, userFunc, ["admin", "manager"]).then((token_data) => token_data && ContentController.createNotice(req, res, token_data)));
         router.get("/fetch_the_content", (req, res, next) => MethodValidate(req, res, next, "GET"), async (req, res) => await initializes(req, res, userFunc, ["admin", "manager"]).then((token_data) => token_data && ContentController.fetchEventOneContent(req, res, token_data)));
+
+        router.post("/content_comments", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) =>
+            await initializes(req, res, userFunc)
+                .then((token_data) => token_data && ContentController.getContentComments(req, res, token_data))
+                .catch((data) => res.status(404).json({ status: 404, message: data.message, data: [] }))
+        );
+
+        router.post("/content_add_comment", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) =>
+            await initializes(req, res, userFunc)
+                .then((token_data) => token_data && ContentController.addContentComment(req, res, token_data))
+                .catch((data) => res.status(404).json({ status: 404, message: data.message, data: {} }))
+        );
     }
 }
 module.exports = ContentRoutes;

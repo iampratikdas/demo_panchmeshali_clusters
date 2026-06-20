@@ -12,31 +12,23 @@ import { useAtom } from 'jotai';
 import { contentFilterAtom, currentPageAtom } from '../store/atoms';
 import { Filter, Search } from 'lucide-react';
 
+const PAGE_SIZE = 6;
+
 export default function ContentList() {
     const navigate = useNavigate();
     const [filter, setFilter] = useAtom(contentFilterAtom);
     const [currentPage, setCurrentPage] = useAtom(currentPageAtom);
     const [searchQuery, setSearchQuery] = useState('');
-    const pageSize = 2;
 
-    const { data, isLoading } = useQuery({
-        queryKey: ['contents', currentPage, filter],
+    const { data, isLoading, isError } = useQuery({
+        queryKey: ['contents', currentPage, filter, searchQuery],
         queryFn: () => fetchContents(
             currentPage,
-            pageSize,
-            filter === 'all' ? undefined : filter as ContentStatus
+            PAGE_SIZE,
+            filter === 'all' ? undefined : filter as ContentStatus,
+            searchQuery
         ),
     });
-
-    // Client-side search filtering
-    const filteredData = data && searchQuery
-        ? {
-            ...data,
-            data: data.data.filter(content =>
-                content.title.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-        }
-        : data;
 
     const filters: Array<ContentStatus | 'all'> = [
         'all',
@@ -55,7 +47,6 @@ export default function ContentList() {
                 </p>
             </div>
 
-            {/* Search Bar */}
             <div className="glass-card rounded-xl p-4">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -63,7 +54,10 @@ export default function ContentList() {
                         type="text"
                         placeholder="Search by name..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setCurrentPage(1);
+                        }}
                         className="pl-10"
                     />
                 </div>
@@ -94,10 +88,14 @@ export default function ContentList() {
                         <CardSkeleton key={i} />
                     ))}
                 </div>
+            ) : isError ? (
+                <div className="text-center py-12">
+                    <p className="text-destructive">Failed to load content. Please try again.</p>
+                </div>
             ) : (
                 <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                        {filteredData?.data.map((content) => (
+                        {data?.data.map((content) => (
                             <ContentCard
                                 key={content.id}
                                 content={content}
@@ -106,7 +104,7 @@ export default function ContentList() {
                         ))}
                     </div>
 
-                    {filteredData && filteredData.data.length === 0 && (
+                    {data && data.data.length === 0 && (
                         <div className="text-center py-12">
                             <p className="text-muted-foreground">
                                 {searchQuery ? 'No content found matching your search.' : 'No content found for this filter.'}
@@ -114,7 +112,7 @@ export default function ContentList() {
                         </div>
                     )}
 
-                    {data && (
+                    {data && data.totalPages > 1 && (
                         <Pagination
                             currentPage={currentPage}
                             totalPages={data.totalPages}

@@ -187,7 +187,7 @@ class ContentController {
         return res.status(404).json({ message: "Event not found" });
       }
       if(event.episode_wise === true){
-        if(!h_title){
+        if(!h_title || !String(h_title).trim()){
           return res.status(400).json({ message: "Please provide the h_title" });
         }
       }
@@ -269,7 +269,7 @@ class ContentController {
         publisher,
         wordCount,
         parent_id: parent_id || "",
-        h_title: event.episode_wise ? (h_title || "") : "",
+        h_title: event.episode_wise ? String(h_title || "").trim() : "",
       }
       let existingContent = await this.contentFunc.findOneEvenTContentAll({ eid: eid, uid: token_data.uid, event_content: event_content });
 
@@ -301,9 +301,6 @@ class ContentController {
             });
           }
           contents.episodeNumber = episodeNumber;
-          if (!contents.h_title) {
-            contents.h_title = contents.cont_id;
-          }
         }
       }
 
@@ -391,7 +388,7 @@ class ContentController {
 
 
       console.log("filter===============>", { $match: { ...data.filter } })
-      if (token_data.role === "user") {
+      if (token_data.role === "writer") {
         totalContents = await this.contentFunc.contentCount({ uid: token_data.uid, ...data.filter });
         totalPages = Math.ceil(totalContents / limit);
         lists = await this.contentFunc.findUserEventAggregates([
@@ -425,6 +422,11 @@ class ContentController {
               cont_id: 1,
               eid: 1,
               name: 1,
+              type: 1,
+              h_title: 1,
+              episodeNumber: 1,
+              wordCount: 1,
+              category: 1,
               content: 1,
               totalMarks: 1,
               uid: 1,
@@ -478,6 +480,11 @@ class ContentController {
               cont_id: 1,
               eid: 1,
               name: 1,
+              type: 1,
+              h_title: 1,
+              episodeNumber: 1,
+              wordCount: 1,
+              category: 1,
               content: 1,
               totalMarks: 1,
               uid: 1,
@@ -962,6 +969,11 @@ class ContentController {
               cont_id: 1,
               eid: 1,
               name: 1,
+              type: 1,
+              h_title: 1,
+              episodeNumber: 1,
+              wordCount: 1,
+              category: 1,
               content: 1,
               totalMarks: 1,
               uid: 1,
@@ -1110,8 +1122,73 @@ class ContentController {
       return res.status(201).json({ status: 201, message: "Global category auto-generated successfully", data: { name: lowerName } });
 
     } catch (err) {
-        console.error(err);
-        return res.status(500).json({ status: 500, message: "Internal Server Error", data: {} });
+      console.error(err);
+      return res.status(500).json({ status: 500, message: "Internal Server Error", data: {} });
+    }
+  }
+
+  async getContentComments(req, res, token_data) {
+    try {
+      const { cont_id } = req.body;
+      if (!cont_id) {
+        return res.status(400).json({ status: 400, message: 'cont_id is required', data: [] });
+      }
+
+      const content = await this.contentFunc.findOneEvenTContentOne({ cont_id });
+      if (!content) {
+        return res.status(404).json({ status: 404, message: 'Content not found', data: [] });
+      }
+
+      return res.status(200).json({
+        status: 200,
+        message: 'Comments fetched',
+        data: content.comments || [],
+      });
+    } catch (err) {
+      console.error('getContentComments error:', err);
+      return res.status(500).json({ status: 500, message: 'Error fetching comments', data: [] });
+    }
+  }
+
+  async addContentComment(req, res, token_data) {
+    try {
+      const allowedRoles = ['publisher', 'admin', 'writer', 'both', 'manager', 'user'];
+      const role = (token_data.role || '').toLowerCase();
+      if (!allowedRoles.includes(role)) {
+        return res.status(403).json({ status: 403, message: 'You are not allowed to comment on content', data: {} });
+      }
+
+      const { cont_id, text } = req.body;
+      if (!cont_id || !text?.trim()) {
+        return res.status(400).json({ status: 400, message: 'cont_id and text are required', data: {} });
+      }
+
+      const content = await this.contentFunc.findOneEvenTContentOne({ cont_id });
+      if (!content) {
+        return res.status(404).json({ status: 404, message: 'Content not found', data: {} });
+      }
+
+      const comment = {
+        id: gen(12),
+        cont_id,
+        uid: token_data.uid,
+        author_name: token_data.full_name || token_data.name || 'User',
+        role,
+        text: text.trim(),
+        createdAt: String(moment().unix()),
+        isReviewer: ['publisher', 'admin', 'manager'].includes(role),
+      };
+
+      await this.contentFunc.pushComment(cont_id, comment);
+
+      return res.status(200).json({
+        status: 200,
+        message: 'Comment added',
+        data: comment,
+      });
+    } catch (err) {
+      console.error('addContentComment error:', err);
+      return res.status(500).json({ status: 500, message: 'Error adding comment', data: {} });
     }
   }
 }

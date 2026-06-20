@@ -6,8 +6,23 @@ import type { Chat, ChatMessage, SendMessageData } from '../types/chat';
 import type { Notification } from '../types/notification';
 import apiJson from '../lib/apiJson';
 import axios from 'axios';
+import {
+    type ApiContentItem,
+    mapBackendContent,
+    mapBackendEpisode,
+    mapStatusToBackend,
+    groupContentForList,
+    parseContentDate,
+} from './contentMapper';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+function authHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+    };
+}
 
 
 export const apiCaller = async (data: any, url: string) => {
@@ -248,40 +263,121 @@ const mockComments: Comment[] = [
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // API Functions
+async function fetchEpisodeWiseEids(): Promise<Set<string>> {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/event_lists_users`, { headers: authHeaders() });
+        const events: Event[] = response.data?.data || [];
+        return new Set(events.filter(e => e.episode_wise).map(e => e.eid));
+    } catch {
+        return new Set();
+    }
+}
+
+async function listUserContents(
+    filter: Record<string, unknown>,
+    page = 1,
+    limit = 500
+): Promise<{ lists: ApiContentItem[]; pagination?: { totalPages?: number; totalContents?: number } }> {
+    const uid = localStorage.getItem('uid') ?? '';
+    const response = await axios.post(
+        `${API_BASE_URL}/list_contents?page=${page}&limit=${limit}`,
+        { filter: { uid, ...filter }, sortBy: { createdAt: -1 }, uid },
+        { headers: authHeaders() }
+    );
+    return response.data;
+}
+
 export const fetchContents = async (
     page: number = 1,
-    pageSize: number = 10,
-    status?: ContentStatus
+    pageSize: number = 6,
+    status?: ContentStatus,
+    search?: string
 ): Promise<PaginatedResponse<Content>> => {
-    await delay(800);
+    const filter: Record<string, unknown> = {};
+    if (status) filter.status = mapStatusToBackend(status);
 
-    let filtered = [...mockContents];
-    if (status) {
-        filtered = filtered.filter(c => c.status === status);
+    const [{ lists }, episodeWiseEids] = await Promise.all([
+        listUserContents(filter, 1, 500),
+        fetchEpisodeWiseEids(),
+    ]);
+
+    let items = lists ?? [];
+    if (search?.trim()) {
+        const q = search.trim().toLowerCase();
+        items = items.filter(item => item.name?.toLowerCase().includes(q));
     }
 
-    const total = filtered.length;
+    const grouped = groupContentForList(items, episodeWiseEids);
+    const total = grouped.length;
     const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const data = filtered.slice(start, end);
+    const pageItems = grouped.slice(start, start + pageSize);
 
     return {
-        data,
+        data: pageItems.map(item =>
+            mapBackendContent(item, !!(item.eid && episodeWiseEids.has(item.eid)))
+        ),
         total,
         page,
         pageSize,
-        totalPages: Math.ceil(total / pageSize),
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
     };
 };
 
 export const fetchContentById = async (id: string): Promise<Content | null> => {
-    await delay(500);
-    return mockContents.find(c => c.id === id) || null;
+    const { lists } = await listUserContents({ cont_id: id }, 1, 1);
+    const item = lists?.[0];
+    if (!item) return null;
+
+    let episodeWise = false;
+
+    if (item.eid) {
+        try {
+            const eventsRes = await axios.get(`${API_BASE_URL}/event_lists_users`, { headers: authHeaders() });
+            const events: Event[] = eventsRes.data?.data || [];
+            const event = events.find(e => e.eid === item.eid);
+            episodeWise = !!event?.episode_wise;
+
+            if (episodeWise) {
+                const seriesKey = item.h_title || item.cont_id;
+                const { lists: episodeItems } = await listUserContents({ eid: item.eid }, 1, 200);
+                const seriesItems = (episodeItems ?? []).filter(
+                    ep => (ep.h_title || ep.cont_id) === seriesKey
+                );
+                let episodes = seriesItems
+                    .sort((a, b) => parseInt(a.episodeNumber || '0', 10) - parseInt(b.episodeNumber || '0', 10))
+                    .map(mapBackendEpisode);
+
+                const headItem = seriesItems.find(ep => ep.cont_id === seriesKey) ?? seriesItems[0] ?? item;
+                const content = mapBackendContent(headItem, true);
+                content.episodes = episodes;
+                content.title = headItem.name || item.name || 'Untitled';
+                content.content = episodes[0]?.htmlContent || headItem.content || '';
+                return content;
+            }
+        } catch {
+            episodeWise = false;
+        }
+    }
+
+    return mapBackendContent(item, episodeWise);
 };
 
 export const fetchCommentsByContentId = async (contentId: string): Promise<Comment[]> => {
-    await delay(400);
-    return mockComments.filter(c => c.contentId === contentId);
+    const response = await axios.post(
+        `${API_BASE_URL}/content_comments`,
+        { cont_id: contentId },
+        { headers: authHeaders() }
+    );
+    const raw = response.data?.data ?? [];
+    return raw.map((c: any) => ({
+        id: c.id,
+        contentId: c.cont_id || contentId,
+        authorId: c.uid,
+        authorName: c.author_name,
+        text: c.text,
+        createdAt: parseContentDate(c.createdAt),
+        isReviewer: !!c.isReviewer,
+    }));
 };
 
 export const submitContent = async (
@@ -318,20 +414,24 @@ export const addComment = async (
     contentId: string,
     text: string
 ): Promise<Comment> => {
-    await delay(600);
-
-    const newComment: Comment = {
-        id: `c${mockComments.length + 1}`,
-        contentId,
-        authorId: 'user1',
-        authorName: 'John Doe',
-        text,
-        createdAt: new Date().toISOString(),
-        isReviewer: false,
+    const response = await axios.post(
+        `${API_BASE_URL}/content_add_comment`,
+        { cont_id: contentId, text },
+        { headers: authHeaders() }
+    );
+    if (response.data?.status !== 200) {
+        throw new Error(response.data?.message || 'Failed to add comment');
+    }
+    const c = response.data.data;
+    return {
+        id: c.id,
+        contentId: c.cont_id || contentId,
+        authorId: c.uid,
+        authorName: c.author_name,
+        text: c.text,
+        createdAt: parseContentDate(c.createdAt),
+        isReviewer: !!c.isReviewer,
     };
-
-    mockComments.push(newComment);
-    return newComment;
 };
 
 export const checkQualityAI = async (content: string): Promise<AIQualityResponse> => {
@@ -632,6 +732,7 @@ export interface EventEpisode {
     cont_id: string;
     name: string;
     episodeNumber?: string;
+    h_title?: string;
     createdAt?: string;
 }
 

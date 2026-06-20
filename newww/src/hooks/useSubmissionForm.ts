@@ -99,6 +99,7 @@ export function useSubmissionForm() {
     const [category, setCategory] = useState<string>('');
     const [episodeNumber, setEpisodeNumber] = useState<string>('');
     const [h_title, setHeadTitle] = useState<string>('');
+    const [previousEpisode, setPreviousEpisode] = useState<string>('');
     const [backgroundImage, setBackgroundImage] = useState<string>('');
     const [coverImage, setCoverImage] = useState<string>('');
     const [destination, setDestination] = useState<string>('');
@@ -163,6 +164,7 @@ export function useSubmissionForm() {
 
         setCategory('');
         setHeadTitle('');
+        setPreviousEpisode('');
         setEpisodeNumber('');
 
         if (event.event_type) {
@@ -187,7 +189,7 @@ export function useSubmissionForm() {
 
     useEffect(() => {
         if (newSubmission) {
-            setHeadTitle('');
+            setPreviousEpisode('');
         }
     }, [newSubmission]);
 
@@ -301,10 +303,19 @@ export function useSubmissionForm() {
             return;
         }
 
-        if (selectedEvent?.episode_wise && !newSubmission && !h_title) {
+        if (selectedEvent?.episode_wise && !h_title.trim()) {
             toast({
                 title: 'Head title required',
-                description: 'Please select the head title before submitting.',
+                description: 'Please enter the head title for this story series.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        if (selectedEvent?.episode_wise && !newSubmission && !previousEpisode) {
+            toast({
+                title: 'Previous episode required',
+                description: 'Please select the previous episode before submitting.',
                 variant: 'destructive',
             });
             return;
@@ -353,6 +364,7 @@ export function useSubmissionForm() {
         setCategory('');
         setEpisodeNumber('');
         setHeadTitle('');
+        setPreviousEpisode('');
         setBackgroundImage('');
         setCoverImage('');
         setDestination('');
@@ -393,6 +405,7 @@ export function useSubmissionForm() {
             category,
             episodeNumber,
             h_title,
+            previousEpisode,
             resolvedParentId,
             backgroundImage,
             coverImage,
@@ -424,6 +437,7 @@ export function useSubmissionForm() {
             setCategory,
             setEpisodeNumber,
             setHeadTitle,
+            setPreviousEpisode,
             setBackgroundImage,
             setCoverImage,
             setDestination,

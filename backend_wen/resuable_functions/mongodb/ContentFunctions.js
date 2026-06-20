@@ -50,6 +50,13 @@ class ContentFunctions {
             throw new Error("Failed to update content");
         }
     }
+
+    async pushComment(cont_id, comment) {
+        return await this.contentmodel.updateOne(
+            { cont_id },
+            { $push: { comments: comment } }
+        );
+    }
     async ContentMarksUpdate(contentData, data, token_data, marks) {
         try {
             return await this.contentmodel.updateOne(contentData, data).then(async (rs) => {

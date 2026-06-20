@@ -118,6 +118,11 @@ const contentSchema = new mongoose.Schema({
     default: 0,
   },
 
+  comments: {
+    type: Array,
+    default: [],
+  },
+
   createdAt: {
     type: String,
     default: moment().unix(),

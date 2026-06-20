@@ -26,6 +26,10 @@ export interface BaseContent {
     authorId: string;
     authorName: string;
     episodes?: Episode[];
+    eid?: string;
+    h_title?: string;
+    episodeNumber?: string;
+    episodeWise?: boolean;
 }
 
 export interface Story extends BaseContent {

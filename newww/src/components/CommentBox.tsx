@@ -11,9 +11,10 @@ import { useToast } from '../hooks/useToast';
 interface CommentBoxProps {
     contentId: string;
     comments: Comment[];
+    canComment?: boolean;
 }
 
-export function CommentBox({ contentId, comments }: CommentBoxProps) {
+export function CommentBox({ contentId, comments, canComment = false }: CommentBoxProps) {
     const [newComment, setNewComment] = useState('');
     const queryClient = useQueryClient();
     const { toast } = useToast();
@@ -28,11 +29,18 @@ export function CommentBox({ contentId, comments }: CommentBoxProps) {
                 description: 'Your comment has been posted successfully.',
             });
         },
+        onError: (error: Error) => {
+            toast({
+                title: 'Failed to add comment',
+                description: error.message || 'You may not have permission to comment.',
+                variant: 'destructive',
+            });
+        },
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (newComment.trim()) {
+        if (newComment.trim() && canComment) {
             addCommentMutation.mutate(newComment);
         }
     };
@@ -70,26 +78,32 @@ export function CommentBox({ contentId, comments }: CommentBoxProps) {
 
                 {comments.length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-8">
-                        No comments yet. Be the first to comment!
+                        No comments yet.
                     </p>
                 )}
             </div>
 
-            <form onSubmit={handleSubmit} className="flex gap-2">
-                <Input
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Add a comment..."
-                    className="flex-1"
-                />
-                <Button
-                    type="submit"
-                    size="icon"
-                    disabled={!newComment.trim() || addCommentMutation.isPending}
-                >
-                    <Send className="h-4 w-4" />
-                </Button>
-            </form>
+            {canComment ? (
+                <form onSubmit={handleSubmit} className="flex gap-2">
+                    <Input
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Add a comment..."
+                        className="flex-1"
+                    />
+                    <Button
+                        type="submit"
+                        size="icon"
+                        disabled={!newComment.trim() || addCommentMutation.isPending}
+                    >
+                        <Send className="h-4 w-4" />
+                    </Button>
+                </form>
+            ) : (
+                <p className="text-xs text-muted-foreground">
+                    Only publishers, admins, writers, and proofreaders can add comments.
+                </p>
+            )}
         </div>
     );
 }
