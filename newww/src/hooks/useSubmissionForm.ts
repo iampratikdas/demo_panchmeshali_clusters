@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { submitContent, fetchEvents } from '../lib/api';
+import { submitContent, fetchEventsUsers } from '../lib/api';
 import { useAtom } from 'jotai';
 import { workspaceFoldersAtom } from '../store/atoms';
 import { useToast } from '../hooks/useToast';
@@ -114,7 +114,7 @@ export function useSubmissionForm() {
 
     const { data: events } = useQuery({
         queryKey: ['events'],
-        queryFn: fetchEvents,
+        queryFn: fetchEventsUsers,
     });
 
     const submitMutation = useMutation({

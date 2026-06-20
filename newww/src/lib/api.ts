@@ -410,6 +410,11 @@ export const fetchEvents = async (): Promise<Event[]> => {
     const response = await axios.get(`${API_BASE_URL}/event_lists`, { headers: getAuthHeaders() });
     return response.data?.data || [];
 };
+// Events API Functions
+export const fetchEventsUsers = async (): Promise<Event[]> => {
+    const response = await axios.get(`${API_BASE_URL}/event_lists_users`, { headers: getAuthHeaders() });
+    return response.data?.data || [];
+};
 
 export const fetchEventById = async (id: string): Promise<Event | null> => {
     // Backend doesn't have an explicit find by ID route, but we can fetch all and filter,
