@@ -549,7 +549,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
 
 export default function Submit() {
     const { state, actions, refs } = useSubmissionForm();
-    const [activeTab, setActiveTab] = useState('content');
+    const [activeTab, setActiveTab] = useState('event');
 
     const contentTypeLabel = CONTENT_TYPES.find(ct => ct.value === state.type)?.label || 'Content';
 

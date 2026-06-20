@@ -807,3 +807,31 @@ export const fetchTeamRequestsByUid = async (): Promise<any> => {
     return response.data;
 };
 
+// ── Active Events (Writer) ────────────────────────────────────────────────────
+
+/**
+ * Fetch all active events enriched with publisher name + join status.
+ * GET /active_events
+ * Accessible by writers only.
+ */
+export const fetchActiveEvents = async (): Promise<any[]> => {
+    const response = await axios.get(
+        `${API_BASE_URL}/active_events`,
+        { headers: getAuthHeaders() }
+    );
+    return response.data?.data ?? [];
+};
+
+/**
+ * Writer joins a non-paid active event.
+ * POST /join_event
+ * Body: { eid, pid }
+ */
+export const joinActiveEvent = async (eid: string, pid: string): Promise<any> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/join_event`,
+        { eid, pid },
+        { headers: getAuthHeaders() }
+    );
+    return response.data;
+};

@@ -23,11 +23,12 @@ import { cn } from '../lib/utils';
 import { useSounds } from '../utils/Sounds';
 import { PublishersTab } from '../components/dashboard/PublishersTab';
 import { NewsFeedTab } from '../components/dashboard/NewsFeedTab';
+import { ActiveEventsTab } from '../components/dashboard/ActiveEventsTab';
 
 export default function Dashboard() {
     const { bootPlay } = useSounds();
     const [user] = useAtom(currentUserAtom);
-    const [activeTab, setActiveTab] = useState<'analytics' | 'news-feed' | 'publishers'>('analytics');
+    const [activeTab, setActiveTab] = useState<'analytics' | 'news-feed' | 'publishers' | 'active-events'>('analytics');
 
     useEffect(() => {
         if (user.role === 'writer') {
@@ -152,6 +153,18 @@ export default function Dashboard() {
                                 </button> : null
                         }
 
+                        {
+                            user.role == "writer" ?
+                                <button
+                                    id="active-events-tab"
+                                    className={cn("cursor-pointer flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'active-events' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
+                                    onClick={() => setActiveTab('active-events')}
+                                >
+                                    Active Events
+                                    {activeTab === 'active-events' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-1 bg-indigo-600 rounded-t-full"></div>}
+                                </button> : null
+                        }
+
                         <button
                             className={cn("cursor-pointer flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'analytics' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
                             onClick={() => setActiveTab('analytics')}
@@ -205,6 +218,7 @@ export default function Dashboard() {
                         {activeTab === 'analytics' && renderAnalytics()}
                         {activeTab === 'news-feed' && <NewsFeedTab />}
                         {activeTab === 'publishers' && <PublishersTab />}
+                        {activeTab === 'active-events' && <ActiveEventsTab />}
                     </div>
 
                 </div>
