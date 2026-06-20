@@ -269,6 +269,10 @@ class ContentController {
           status: 200,
           message: 'This User has already submitted the content for this event'
         })
+      }else{
+        if(event.episode_wise === true){
+          episodeNumber = episodeNumber === "" ? "1" : episodeNumber;
+        }
       }
 
       // ── Workspace Integration: Save as JSON file ──
@@ -285,7 +289,7 @@ class ContentController {
           });
       }
 
-      const uploadDir = path.join(__dirname, '../../public/workspace');
+      const uploadDir = path.join(__dirname, '../public/workspace');
       if (!fs.existsSync(uploadDir)) {
           fs.mkdirSync(uploadDir, { recursive: true });
       }

@@ -115,6 +115,18 @@ export async function apiUpdateWorkspaceContent(file_id: string, title?: string,
     return json.data as ApiWorkspaceFile;
 }
 
+/** Fetch JSON story content by file_id */
+export async function apiFetchWorkspaceContent(file_id: string): Promise<{ title: string; content: string }> {
+    const res = await fetch(`${BASE}/workspace_get_content`, {
+        method: 'POST',
+        headers: authJsonHeaders(),
+        body: JSON.stringify({ file_id }),
+    });
+    const json = await res.json();
+    if (json.status !== 200) throw new Error(json.message);
+    return json.data as { title: string; content: string };
+}
+
 /** Get current storage usage (calculated from MongoDB document sizes) */
 export async function apiFetchStorageInfo(): Promise<StorageInfo> {
     const res = await fetch(`${BASE}/workspace_storage`, {

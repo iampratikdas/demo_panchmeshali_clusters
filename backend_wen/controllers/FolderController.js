@@ -13,6 +13,14 @@ const ALLOWED_MIMES = [
 // 10 MB storage threshold per user
 const STORAGE_LIMIT_BYTES = 10 * 1024 * 1024;
 
+function resolveWorkspaceFilePath(stored_name) {
+    const primary = path.join(__dirname, '../public/workspace', stored_name);
+    if (fs.existsSync(primary)) return primary;
+    const legacy = path.join(__dirname, '../../public/workspace', stored_name);
+    if (fs.existsSync(legacy)) return legacy;
+    return primary;
+}
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // FolderController
 // Handles: create, rename, list (navigate) folders
@@ -321,7 +329,7 @@ class FolderController {
             }
 
             // Write to physical file
-            const physicalPath = path.join(__dirname, '..', 'public', 'workspace', fileRecord.stored_name);
+            const physicalPath = resolveWorkspaceFilePath(fileRecord.stored_name);
             fs.writeFileSync(physicalPath, jsonData);
 
             // Update db record
@@ -340,6 +348,42 @@ class FolderController {
             });
         } catch (error) {
             console.error('updateContent error:', error);
+            return res.status(500).json({ status: 500, message: error.message || 'Internal server error.', data: {} });
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // POST /api/workspace_get_content   — Body: { file_id }
+    // Returns { title, content } from the JSON workspace file
+    // ────────────────────────────────────────────────────────────────────────
+    async getContent(req, res, token_data) {
+        try {
+            const { file_id } = req.body;
+            if (!file_id) return res.status(400).json({ status: 400, message: 'file_id is required.', data: {} });
+
+            const fileRecord = await this.userFunc.workspaceFileFunctions.findById(file_id);
+            if (!fileRecord) return res.status(404).json({ status: 404, message: 'File not found.', data: {} });
+            if (fileRecord.uid !== token_data.uid) return res.status(403).json({ status: 403, message: 'Forbidden.', data: {} });
+            if (fileRecord.ext !== 'json') return res.status(400).json({ status: 400, message: 'Not a JSON content file.', data: {} });
+
+            const physicalPath = resolveWorkspaceFilePath(fileRecord.stored_name);
+            if (!fs.existsSync(physicalPath)) {
+                return res.status(404).json({ status: 404, message: 'Content file not found on disk.', data: {} });
+            }
+
+            const raw = fs.readFileSync(physicalPath, 'utf8');
+            const parsed = JSON.parse(raw);
+
+            return res.status(200).json({
+                status: 200,
+                message: 'Content fetched.',
+                data: {
+                    title: parsed.title ?? fileRecord.original_name,
+                    content: parsed.content ?? '',
+                },
+            });
+        } catch (error) {
+            console.error('getContent error:', error);
             return res.status(500).json({ status: 500, message: error.message || 'Internal server error.', data: {} });
         }
     }

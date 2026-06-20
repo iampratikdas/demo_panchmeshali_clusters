@@ -10,6 +10,7 @@ import { RichTextEditor } from './RichTextEditor';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useUpdateWorkspaceContent } from '../hooks/useWorkspaceFiles';
+import { apiFetchWorkspaceContent } from '../lib/workspaceFileApi';
 import { Loader2 } from 'lucide-react';
 
 interface ContentPreviewModalProps {
@@ -34,7 +35,16 @@ const STATUS_OPTIONS = ['Pending', 'Reviewing', 'Approved', 'Rejected'];
 const TYPE_OPTIONS = ['story', 'poem', 'doc', 'txt', 'pdf'];
 
 function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
+    if (!dateStr) return null;
+    const num = Number(dateStr);
+    let date: Date;
+    if (!Number.isNaN(num) && num > 1_000_000_000) {
+        date = new Date(num * 1000);
+    } else {
+        date = new Date(dateStr);
+    }
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toLocaleDateString('en-IN', {
         day: 'numeric', month: 'long', year: 'numeric',
     });
 }
@@ -72,27 +82,27 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
     // Fetch JSON content from server when opened
     const [loadingContent, setLoadingContent] = useState(false);
     useEffect(() => {
-        if (!isOpen || !file?.fullContentUrl) return;
+        if (!isOpen || !file?.id) return;
+        if (file.type !== 'story' && file.type !== 'poem') return;
 
         let active = true;
         setLoadingContent(true);
-        const url = import.meta.env.VITE_API_URL?.replace('/api', '') + file.fullContentUrl;
 
-        fetch(url)
-            .then(r => r.json())
+        apiFetchWorkspaceContent(file.id)
             .then(data => {
                 if (active) {
                     setDraft(prev => ({ ...prev, fullContent: data.content, name: data.title || prev.name }));
-                    setLoadingContent(false);
                 }
             })
             .catch(err => {
-                console.error("Failed to load json file", err);
+                console.error('Failed to load content', err);
+            })
+            .finally(() => {
                 if (active) setLoadingContent(false);
             });
 
         return () => { active = false; };
-    }, [file?.fullContentUrl, isOpen]);
+    }, [file?.id, file?.type, isOpen]);
 
     const updateMutation = useUpdateWorkspaceContent(file?.folderId || 'root');
 
@@ -203,7 +213,8 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
                                     {editMode ? (
                                         <Input
                                             value={draft.name ?? ''}
-                                            onChange={e => setField('name', e.target.value)}
+                                            // onChange={e => setField('name', e.target.value)}
+                                            disabled={true}
                                             className="text-base font-bold h-8 px-2 mb-1 w-full"
                                             placeholder="Title"
                                         />
@@ -341,51 +352,51 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
                                         {editMode ? (
                                             /* ─── Edit form ─── */
                                             <div className="space-y-4">
-                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Edit Details</p>
+                                                {/* <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Edit Details</p> */}
 
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-4"> */}
                                                     {/* Author */}
-                                                    <div>
+                                                    {/* <div>
                                                         <FieldLabel>Author</FieldLabel>
                                                         <Input
                                                             value={draft.author ?? ''}
                                                             onChange={e => setField('author', e.target.value)}
                                                             placeholder="Author name"
                                                         />
-                                                    </div>
+                                                    </div> */}
 
                                                     {/* Category */}
-                                                    <div>
+                                                    {/* <div>
                                                         <FieldLabel>Category</FieldLabel>
                                                         <Input
                                                             value={draft.category ?? ''}
                                                             onChange={e => setField('category', e.target.value)}
                                                             placeholder="e.g. Fantasy, Romance…"
                                                         />
-                                                    </div>
+                                                    </div> */}
 
                                                     {/* Publisher */}
-                                                    <div>
+                                                    {/* <div>
                                                         <FieldLabel>Publisher</FieldLabel>
                                                         <Input
                                                             value={draft.publisher ?? ''}
                                                             onChange={e => setField('publisher', e.target.value)}
                                                             placeholder="Publisher name"
                                                         />
-                                                    </div>
+                                                    </div> */}
 
                                                     {/* Event name */}
-                                                    <div>
+                                                    {/* <div>
                                                         <FieldLabel>Event</FieldLabel>
                                                         <Input
                                                             value={draft.eventName ?? ''}
                                                             onChange={e => setField('eventName', e.target.value)}
                                                             placeholder="Event name (if applicable)"
                                                         />
-                                                    </div>
+                                                    </div> */}
 
                                                     {/* Type */}
-                                                    <div>
+                                                    {/* <div>
                                                         <FieldLabel>Type</FieldLabel>
                                                         <select
                                                             value={draft.type ?? 'story'}
@@ -398,10 +409,10 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
                                                                 </option>
                                                             ))}
                                                         </select>
-                                                    </div>
+                                                    </div> */}
 
                                                     {/* Status */}
-                                                    <div>
+                                                    {/* <div>
                                                         <FieldLabel>Status</FieldLabel>
                                                         <select
                                                             value={draft.status ?? 'Pending'}
@@ -412,8 +423,8 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
                                                                 <option key={s} value={s}>{s}</option>
                                                             ))}
                                                         </select>
-                                                    </div>
-                                                </div>
+                                                    </div> */}
+                                                {/* </div> */}
 
                                                 {/* Mobile save/cancel bar */}
                                                 <div className="sm:hidden flex gap-2 pt-2">
@@ -435,8 +446,8 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
                                                     { label: 'Publisher', value: file.publisher },
                                                     { label: 'Author', value: file.author },
                                                     { label: 'Event', value: file.eventName },
-                                                    { label: 'Submitted', value: formatDate(file.createdAt) },
-                                                    { label: 'Updated', value: formatDate(file.modifiedAt) },
+                                                    { label: 'Submitted', value: formatDate(file.createdAt) ?? undefined },
+                                                    { label: 'Updated', value: formatDate(file.modifiedAt) ?? undefined },
                                                     { label: 'Size', value: formatBytes(file.size) },
                                                 ].filter(i => i.value).map(({ label, value }) => (
                                                     <div key={label} className="min-w-0">

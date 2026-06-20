@@ -161,6 +161,19 @@ class FolderRoutes {
         );
 
         /**
+         * POST /api/workspace_get_content
+         * Body: { file_id }
+         */
+        router.post(
+            '/workspace_get_content',
+            (req, res, next) => MethodValidate(req, res, next, 'post'),
+            async (req, res) =>
+                await initializes(req, res, userFunc, ['writer', 'both'])
+                    .then((token_data) => token_data && FolderController.getContent(req, res, token_data))
+                    .catch((data) => res.status(404).json({ status: 404, message: data.message, data: {} }))
+        );
+
+        /**
          * GET /api/workspace_storage
          * Returns current storage usage calculated from MongoDB documents
          */

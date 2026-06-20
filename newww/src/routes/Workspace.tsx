@@ -75,6 +75,7 @@ export default function Workspace() {
     const [fileMenuOpen, setFileMenuOpen] = useState<string | null>(null);
     const [previewFile, setPreviewFile] = useState<any | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const fileMenuRef = useRef<HTMLDivElement>(null);
 
     // ── Modals ────────────────────────────────────────────────────────────────
     const [createFolderModal, setCreateFolderModal] = useState<{ isOpen: boolean; parentId: string }>({ isOpen: false, parentId: 'root' });
@@ -99,6 +100,32 @@ export default function Workspace() {
 
     // Refetch files whenever current folder changes
     useEffect(() => { refetchFiles(); }, [currentFolder]);
+
+    // Close file menu on outside click or Escape
+    useEffect(() => {
+        if (!fileMenuOpen) return;
+
+        const handleOutside = (event: MouseEvent) => {
+            if (fileMenuRef.current?.contains(event.target as Node)) return;
+            setFileMenuOpen(null);
+        };
+
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setFileMenuOpen(null);
+        };
+
+        const timer = window.setTimeout(() => {
+            document.addEventListener('mousedown', handleOutside);
+        }, 0);
+
+        document.addEventListener('keydown', handleEscape);
+
+        return () => {
+            window.clearTimeout(timer);
+            document.removeEventListener('mousedown', handleOutside);
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [fileMenuOpen]);
 
     // ── Filtered files ────────────────────────────────────────────────────────
     const filteredFiles = searchQuery.trim()
@@ -272,18 +299,7 @@ export default function Workspace() {
                 </div>
 
                 {/* Filter chips */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                    {['Type', 'People', 'Modified', 'Source'].map((chip) => (
-                        <div key={chip} className="flex items-center gap-2 bg-white rounded-full border px-3 py-1.5 shadow-sm hover:bg-gray-50 cursor-pointer transition-colors whitespace-nowrap">
-                            <span className="text-sm font-medium text-gray-700">{chip}</span>
-                            <ChevronDown className="h-4 w-4 text-gray-500" />
-                        </div>
-                    ))}
-                    {/* Upload hint */}
-                    <div className="ml-auto text-xs text-gray-400 whitespace-nowrap pr-1">
-                        PDF &amp; DOCX only · 10 MB limit
-                    </div>
-                </div>
+               
 
                 {/* API error banner */}
                 <AnimatePresence>
@@ -450,7 +466,7 @@ export default function Workspace() {
                                         initial={{ opacity: 0, y: 16 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.04 }}
-                                        className="glass-card rounded-xl p-4 hover:shadow-lg transition-all group relative"
+                                        className={`glass-card rounded-xl p-4 hover:shadow-lg transition-all group relative${fileMenuOpen === file.file_id ? ' z-30' : ''}`}
                                     >
                                         <div 
                                             className={`flex items-start justify-between mb-3 ${file.ext === 'json' ? 'cursor-pointer' : ''}`}
@@ -475,61 +491,71 @@ export default function Workspace() {
                                                 {file.ext === 'json' ? <BookOpen className="h-6 w-6" /> : <FileText className="h-6 w-6" />}
                                             </div>
 
-                                            <div className="relative">
+                                            <div
+                                                className="relative"
+                                                ref={fileMenuOpen === file.file_id ? fileMenuRef : undefined}
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
                                                 <button
-                                                    onClick={() => setFileMenuOpen(fileMenuOpen === file.file_id ? null : file.file_id)}
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setFileMenuOpen(fileMenuOpen === file.file_id ? null : file.file_id);
+                                                    }}
                                                     className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    aria-expanded={fileMenuOpen === file.file_id}
+                                                    aria-haspopup="menu"
                                                 >
                                                     <MoreVertical className="h-4 w-4 text-gray-500" />
                                                 </button>
 
                                                 {fileMenuOpen === file.file_id && (
-                                                    <>
-                                                        <div className="fixed inset-0 z-10" onClick={() => setFileMenuOpen(null)} />
-                                                        <motion.div
-                                                            initial={{ opacity: 0, scale: 0.95 }}
-                                                            animate={{ opacity: 1, scale: 1 }}
-                                                            className="absolute right-0 top-8 z-20 bg-white rounded-lg shadow-xl border border-gray-100 py-1 min-w-[140px]"
-                                                        >
-                                                            {file.ext === 'json' ? (
-                                                                <button
-                                                                    className="w-full px-3 py-2 text-sm text-left hover:bg-purple-50 text-purple-600 flex items-center gap-2 transition-colors inline-block text-left"
-                                                                    onClick={() => {
-                                                                        setFileMenuOpen(null);
-                                                                        setPreviewFile({
-                                                                            id: file.file_id,
-                                                                            name: file.original_name,
-                                                                            folderId: file.folder_id,
-                                                                            type: 'story',
-                                                                            size: file.size_bytes,
-                                                                            createdAt: file.createdAt,
-                                                                            modifiedAt: file.updatedAt,
-                                                                            excerpt: file.excerpt,
-                                                                            fullContentUrl: file.file_path,
-                                                                        });
-                                                                    }}
-                                                                >
-                                                                    <BookOpen className="h-4 w-4" /> View & Edit
-                                                                </button>
-                                                            ) : (
-                                                                <a
-                                                                    href={`${import.meta.env.VITE_API_URL?.replace('/api', '')}${file.file_path}`}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="w-full px-3 py-2 text-sm text-left hover:bg-primary/10 flex items-center gap-2 transition-colors text-gray-900"
-                                                                    onClick={() => setFileMenuOpen(null)}
-                                                                >
-                                                                    <Download className="h-4 w-4" /> Download
-                                                                </a>
-                                                            )}
+                                                    <motion.div
+                                                        initial={{ opacity: 0, scale: 0.95 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        className="absolute right-0 top-8 z-50 bg-white rounded-lg shadow-xl border border-gray-100 py-1 min-w-[140px]"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        {file.ext === 'json' ? (
                                                             <button
-                                                                onClick={() => { handleDeleteFile(file.file_id, file.original_name); setFileMenuOpen(null); }}
-                                                                className="w-full px-3 py-2 text-sm text-left hover:bg-red-50 text-red-600 flex items-center gap-2 transition-colors"
+                                                                type="button"
+                                                                className="w-full px-3 py-2 text-sm text-left hover:bg-purple-50 text-purple-600 flex items-center gap-2 transition-colors"
+                                                                onClick={() => {
+                                                                    setFileMenuOpen(null);
+                                                                    setPreviewFile({
+                                                                        id: file.file_id,
+                                                                        name: file.original_name,
+                                                                        folderId: file.folder_id,
+                                                                        type: 'story',
+                                                                        size: file.size_bytes,
+                                                                        createdAt: file.createdAt,
+                                                                        modifiedAt: file.updatedAt,
+                                                                        excerpt: file.excerpt,
+                                                                        fullContentUrl: file.file_path,
+                                                                    });
+                                                                }}
                                                             >
-                                                                <Trash2 className="h-4 w-4" /> Delete
+                                                                <BookOpen className="h-4 w-4" /> View & Edit
                                                             </button>
-                                                        </motion.div>
-                                                    </>
+                                                        ) : (
+                                                            <a
+                                                                href={`${import.meta.env.VITE_API_URL?.replace('/api', '')}${file.file_path}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="w-full px-3 py-2 text-sm text-left hover:bg-primary/10 flex items-center gap-2 transition-colors text-gray-900"
+                                                                onClick={() => setFileMenuOpen(null)}
+                                                            >
+                                                                <Download className="h-4 w-4" /> Download
+                                                            </a>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { handleDeleteFile(file.file_id, file.original_name); setFileMenuOpen(null); }}
+                                                            className="w-full px-3 py-2 text-sm text-left hover:bg-red-50 text-red-600 flex items-center gap-2 transition-colors"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" /> Delete
+                                                        </button>
+                                                    </motion.div>
                                                 )}
                                             </div>
                                         </div>
