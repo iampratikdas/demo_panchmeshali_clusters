@@ -405,6 +405,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
     const hasNoEpisodes = !state.eventEpisodes?.length;
     const isNextEpisodeBlocked =
         isEpisodeWise && !state.newSubmission && (hasNoEpisodes || !state.parent_id);
+    const isEpisodeNumberBlocked = isEpisodeWise && !!state.episodeNumberError;
 
     const parentEpisodeOptions = [
         { value: '', label: 'Choose parent episode...' },
@@ -506,6 +507,31 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                             </CardContent>
                                         </Card>
                                     )}
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Episode Number</CardTitle>
+                                            <CardDescription>
+                                                Must be unique — cannot match an existing episode for this event
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <Input
+                                                type="number"
+                                                min={1}
+                                                placeholder="Enter episode number..."
+                                                value={state.episodeNumber}
+                                                onChange={(e) => actions.setEpisodeNumber(e.target.value)}
+                                            />
+                                            {state.episodeNumberError && (
+                                                <p className="text-sm text-destructive mt-2">{state.episodeNumberError}</p>
+                                            )}
+                                            {state.usedEpisodeNumbers.length > 0 && (
+                                                <p className="text-xs text-muted-foreground mt-2">
+                                                    Already used: {state.usedEpisodeNumbers.join(', ')}
+                                                </p>
+                                            )}
+                                        </CardContent>
+                                    </Card>
                                 </>
                             )}
                         </div>
@@ -665,7 +691,8 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                             step === 0 && (
                                 !state.selectedEventId ||
                                 (!!selectedEvent?.categories?.length && !state.category) ||
-                                isNextEpisodeBlocked
+                                isNextEpisodeBlocked ||
+                                isEpisodeNumberBlocked
                             ) ||
                             (step === 1 && !state.title.trim())
                         }

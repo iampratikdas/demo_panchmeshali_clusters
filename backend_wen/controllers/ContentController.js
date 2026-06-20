@@ -271,7 +271,26 @@ class ContentController {
         })
       }else{
         if(event.episode_wise === true){
-          episodeNumber = episodeNumber === "" ? "1" : episodeNumber;
+          episodeNumber = episodeNumber === "" ? "1" : String(episodeNumber).trim();
+          const normalizedNum = parseInt(episodeNumber, 10);
+          if (Number.isNaN(normalizedNum) || normalizedNum < 1) {
+            return res.status(400).json({
+              status: 400,
+              message: 'Episode number must be a positive integer',
+            });
+          }
+          episodeNumber = String(normalizedNum);
+          const duplicateEpisode = existingContent.some(c => {
+            const existing = parseInt(String(c.episodeNumber || '').trim(), 10);
+            return !Number.isNaN(existing) && existing === normalizedNum;
+          });
+          if (duplicateEpisode) {
+            return res.status(400).json({
+              status: 400,
+              message: `Episode number ${episodeNumber} already exists for this event`,
+            });
+          }
+          contents.episodeNumber = episodeNumber;
         }
       }
 

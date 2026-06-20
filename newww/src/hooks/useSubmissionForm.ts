@@ -9,6 +9,11 @@ import { z } from 'zod';
 import { CONTENT_TYPES } from '../constants/submission';
 import type { Event } from '../types/event';
 import { countWordsFromHtml } from '../lib/wordCount';
+import {
+    getSuggestedEpisodeNumber,
+    getUsedEpisodeNumbers,
+    validateEpisodeNumber,
+} from '../lib/episodeNumber';
 export const submissionSchema = z.object({
     type: z.string().min(1, "Type is required"),
     newSubmission: z.boolean(),
@@ -158,6 +163,7 @@ export function useSubmissionForm() {
 
         setCategory('');
         setParentEid('');
+        setEpisodeNumber('');
 
         if (event.event_type) {
             setType(mapEventTypeToFormType(event.event_type));
@@ -186,6 +192,16 @@ export function useSubmissionForm() {
     }, [newSubmission]);
 
     useEffect(() => {
+        if (!selectedEvent?.episode_wise) return;
+        setEpisodeNumber(getSuggestedEpisodeNumber(eventEpisodes));
+    }, [selectedEventId, newSubmission, selectedEvent?.episode_wise]);
+
+    useEffect(() => {
+        if (!selectedEvent?.episode_wise) return;
+        setEpisodeNumber(prev => prev.trim() ? prev : getSuggestedEpisodeNumber(eventEpisodes));
+    }, [eventEpisodes, selectedEvent?.episode_wise]);
+
+    useEffect(() => {
         setDestination(getStoryName(selectedEventId, title, story_title, newSubmission));
     }, [selectedEventId, title, story_title, newSubmission]);
 
@@ -195,6 +211,16 @@ export function useSubmissionForm() {
     );
 
     const wordCount = useMemo(() => countWordsFromHtml(content), [content]);
+
+    const episodeNumberError = useMemo(() => {
+        if (!selectedEvent?.episode_wise) return null;
+        return validateEpisodeNumber(episodeNumber, eventEpisodes);
+    }, [selectedEvent?.episode_wise, episodeNumber, eventEpisodes]);
+
+    const usedEpisodeNumbers = useMemo(
+        () => getUsedEpisodeNumbers(eventEpisodes),
+        [eventEpisodes]
+    );
 
     useEffect(() => {
         setModalWordCount(wordCount);
@@ -276,6 +302,18 @@ export function useSubmissionForm() {
                 variant: 'destructive',
             });
             return;
+        }
+
+        if (selectedEvent?.episode_wise) {
+            const epError = validateEpisodeNumber(episodeNumber, eventEpisodes);
+            if (epError) {
+                toast({
+                    title: 'Invalid episode number',
+                    description: epError,
+                    variant: 'destructive',
+                });
+                return;
+            }
         }
 
         if (selectedEvent?.paid === true && count < (selectedEvent.w_count || 0)) {
@@ -361,6 +399,8 @@ export function useSubmissionForm() {
             eventEpisodes,
             showPaidEventModal,
             modalWordCount,
+            episodeNumberError,
+            usedEpisodeNumbers,
             isPending: submitMutation.isPending
         },
         actions: {
