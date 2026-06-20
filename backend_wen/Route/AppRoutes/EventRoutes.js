@@ -23,7 +23,9 @@ class EventRoutes {
         router.get("/event_lists", (req, res, next) => MethodValidate(req, res, next, "get"), async (req, res) => await initializes(req, res, userFunc, ["admin", "manager", "publisher"]).then((token_data) => token_data && EventController.eventLists(req, res, token_data)).catch((data) => {
             return res.status(404).json({ status: 404, message: data.message, data: {} });
         }));
-        router.get("/event_lists_users", (req, res, next) => MethodValidate(req, res, next, "get"), (req, res) => EventController.eventListsUsers(req, res));
+        router.get("/event_lists_users", (req, res, next) => MethodValidate(req, res, next, "get"), async (req, res) => await initializes(req, res, userFunc, ["writer"]).then((token_data) => token_data && EventController.eventListsUsers(req, res, token_data)).catch((data) => {
+            return res.status(404).json({ status: 404, message: data.message, data: {} });
+        }));
         router.post("/create_events", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) => await initializes(req, res, userFunc, ["admin", "manager", "publisher"]).then((token_data) => token_data && EventController.createEvents(req, res, token_data)).catch((data) => {
             return res.status(404).json({ status: 404, message: data.message, data: {} });
         }));
@@ -31,6 +33,16 @@ class EventRoutes {
             return res.status(404).json({ status: 404, message: data.message, data: {} });
         }));
         router.delete("/delete_events", (req, res, next) => MethodValidate(req, res, next, "delete"), async (req, res) => await initializes(req, res, userFunc, ["admin", "manager", "publisher"]).then((token_data) => token_data && EventController.deletEvents(req, res, token_data)).catch((data) => {
+            return res.status(404).json({ status: 404, message: data.message, data: {} });
+        }));
+
+        // Writer fetches all active events (enriched with publisher name + join status)
+        router.get("/active_events", (req, res, next) => MethodValidate(req, res, next, "get"), async (req, res) => await initializes(req, res, userFunc, ["writer", "both"]).then((token_data) => token_data && EventController.getActiveEvents(req, res, token_data)).catch((data) => {
+            return res.status(404).json({ status: 404, message: data.message, data: {} });
+        }));
+
+        // Writer joins a non-paid active event directly
+        router.post("/join_event", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) => await initializes(req, res, userFunc, ["writer", "both"]).then((token_data) => token_data && EventController.joinEvent(req, res, token_data)).catch((data) => {
             return res.status(404).json({ status: 404, message: data.message, data: {} });
         }));
 

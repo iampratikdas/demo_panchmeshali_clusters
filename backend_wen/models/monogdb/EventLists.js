@@ -36,6 +36,11 @@ const eventSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  pid: {
+    type: String,
+    required: true,
+    trim: true
+  },
   default_folder: {
     type: String,
     trim: true

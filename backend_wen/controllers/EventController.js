@@ -30,6 +30,7 @@ class EventController {
     this.contentFunc = module.contentFunctions;
     this.voteFunc = module.voteFunctions;
     this.eventFunc = module.eventFunctions;
+    this.publisherFunc = module.publisherFunctions;
   }
 
   async eventLists(req, res, token_data) {
@@ -74,12 +75,13 @@ class EventController {
     }
   }
 
-  async eventListsUsers(req, res) {
+  async eventListsUsers(req, res, token_data) {
     try {
-      const events = await this.eventFunc.findAllEvents();
+      const events = await this.eventFunc.findAllEventRequest({ writer_uid: token_data?.uid, status: "Accepted" });
+      const detail_events = await this.eventFunc.findDetailEvents(events)
       return res.status(200).json({
         message: "Event list fetched successfully",
-        data: events
+        data: detail_events
       });
     } catch (err) {
       console.error(err);
@@ -129,12 +131,23 @@ class EventController {
           });
         }
       }
+
+      // Find the publisher this user belongs to, to set the event's pid
+      let publisher_pid = "";
+      if (this.publisherFunc) {
+        const publishers = await this.publisherFunc.findOnePublisher({ uids: { $in: [token_data.uid] } });
+        if (publishers && publishers.length > 0) {
+          publisher_pid = publishers[0].pid;
+        }
+      }
+
       const data = {
         eid,
         name,
         description,
         active,
         created_by: token_data?.uid, // if you want to use token_data
+        pid: publisher_pid, // adding pid to the event
         team,
         paid,
         competition,
@@ -211,6 +224,15 @@ class EventController {
         // parent,
       } = req.body;
 
+      // Find the publisher this user belongs to, to update the event's pid if needed
+      let publisher_pid = "";
+      if (this.publisherFunc) {
+        const publishers = await this.publisherFunc.findOnePublisher({ uids: token_data.uid });
+        if (publishers && publishers.length > 0) {
+          publisher_pid = publishers[0].pid;
+        }
+      }
+
       const updatedData = {
         ...(name !== undefined && { name }),
         ...(description !== undefined && { description }),
@@ -232,6 +254,7 @@ class EventController {
         ...(parent !== undefined && { parent }),
         ...(paid !== undefined && { paid }),
         ...(paid_amt !== undefined && { paid_amt }),
+        ...(publisher_pid !== "" && { pid: publisher_pid }),
         // ...(parent !== undefined && { parent }),
         updatedAt: moment().unix(),
       };
@@ -367,6 +390,116 @@ class EventController {
         status: 200, message: `Event participation request ${status} successfully`, data: {}
       });
 
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ status: 500, message: "Internal Server Error", data: {} });
+    }
+  }
+
+  // ── Active Events for Writers ───────────────────────────────────────────────
+
+  /**
+   * GET /active_events
+   * Returns all active events enriched with publisher (creator) name.
+   * Accessible by: writer, both
+   */
+  async getActiveEvents(req, res, token_data) {
+    try {
+      const writer_uid = token_data.uid;
+
+      // Fetch all active events (no parent — root level only, or include all)
+      const events = await this.eventFunc.findAllEvents({ active: true });
+
+      // Enrich each event with publisher name and whether writer already joined
+      const enriched = await Promise.all(
+        events.map(async (ev) => {
+          // Publisher name lookup
+          // let publisher_name = "Unknown Publisher";
+          const team_member = await this.publisherFunc.findAssignedPublisher({ writer_uid: writer_uid, status: "Accepted" });
+          const publisher_name = await this.publisherFunc.findOnePublisher({ pid: ev.pid });
+          // Check if writer is already a team member of this event
+          const already_joined = await this.eventFunc.isTeamMember(ev.eid, writer_uid);
+          // console.log("already publisshet=============>", already_joined)
+          // if (!already_joined) {
+          // }
+          return {
+            ...ev,
+            publisher_name: publisher_name?.name,
+            team_member: team_member?.status === "Accepted" ? true : false,
+            already_joined
+          };
+
+        })
+      );
+
+      return res.status(200).json({
+        status: 200,
+        message: "Active events fetched successfully",
+        data: enriched,
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ status: 500, message: "Internal Server Error", data: {} });
+    }
+  }
+
+  /**
+   * POST /join_event
+   * Writer joins a non-paid active event.
+   * Validates: publisher membership, event is non-paid, no duplicate join.
+   * Body: { eid, pid }
+   */
+  async joinEvent(req, res, token_data) {
+    try {
+      const { eid, pid } = req.body;
+      const writer_uid = token_data.uid;
+
+      if (!eid || !pid) {
+        return res.status(400).json({ status: 400, message: "eid and pid are required", data: {} });
+      }
+
+      // Verify event exists and is active
+      const event = await this.eventFunc.findOneEvent({ eid, active: true });
+      if (!event) {
+        return res.status(404).json({ status: 404, message: "Active event not found", data: {} });
+      }
+
+      // Block paid events — preserve existing paid flow
+      if (event.paid) {
+        return res.status(400).json({
+          status: 400,
+          message: "This is a paid event. Please contact the publisher for payment details.",
+          data: {},
+        });
+      }
+
+      // Check writer is a member of the publisher (Accepted status)
+      const membership = this.publisherFunc
+        ? await this.publisherFunc.findAssignedPublisher({ pid, writer_uid, status: "Accepted" })
+        : null;
+      console.log("membership===============>", membership, { pid, writer_uid, status: "Accepted" })
+      if (!membership) {
+        return res.status(403).json({
+          status: 403,
+          message: "You must be an accepted member of this publisher before joining their event.",
+          data: {},
+        });
+      }
+
+      // Check duplicate — already in team
+      const alreadyJoined = await this.eventFunc.isTeamMember(eid, writer_uid);
+      if (alreadyJoined) {
+        return res.status(409).json({ status: 409, message: "You have already joined this event", data: {} });
+      }
+
+      // Add writer to event team
+      let resp = await this.eventFunc.addTeamMember({ eid, writer_uid, pid });
+      console.log("res=======================>", resp)
+      return res.status(200).json({
+        status: 200,
+        message: "Successfully joined the event",
+        data: { eid, writer_uid },
+      });
     } catch (err) {
       console.error(err);
       return res.status(500).json({ status: 500, message: "Internal Server Error", data: {} });

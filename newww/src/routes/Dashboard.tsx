@@ -238,7 +238,7 @@ export default function Dashboard() {
                     </div> */}
 
                     {/* Today's News */}
-                    <div className="bg-white dark:bg-white dark:bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+                    {/* <div className="bg-white dark:bg-white dark:bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                         <h2 className="text-base font-bold p-4 pb-2 text-foreground">LinkedIn News</h2>
 
                         <div className="hover:bg-accent/50 p-4 py-2 cursor-pointer transition-colors">
@@ -259,10 +259,10 @@ export default function Dashboard() {
                         <button className="w-full text-left p-4 py-3 text-muted-foreground font-bold hover:bg-accent/50 cursor-pointer transition-colors text-sm rounded-b-xl">
                             Show more news
                         </button>
-                    </div>
+                    </div> */}
 
                     {/* Premium Box */}
-                    <div className="bg-white dark:bg-card border border-border rounded-xl p-4 shadow-sm">
+                    {/* <div className="bg-white dark:bg-card border border-border rounded-xl p-4 shadow-sm">
                         <h2 className="text-base font-bold mb-2 text-foreground">Subscribe to Premium</h2>
                         <p className="text-sm text-muted-foreground mb-4 leading-snug">
                             Get rid of ads, see your analytics, boost your replies and unlock 20+ features.
@@ -270,7 +270,7 @@ export default function Dashboard() {
                         <button className="bg-blue-600 text-white font-bold py-1.5 px-4 rounded-full hover:bg-blue-700 transition-colors text-sm w-full">
                             Retry Premium
                         </button>
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>

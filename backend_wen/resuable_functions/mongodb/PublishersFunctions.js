@@ -19,7 +19,7 @@ class PublishersFunctions {
     }
 
     async findOnePublisher(data) {
-        return await this.publishermodel.find(data).lean()
+        return await this.publishermodel.findOne(data).lean()
     }
     async findAllPublishers(data = {}) {
         return await this.publishermodel.find(data).sort({ createdAt: -1 }).lean()

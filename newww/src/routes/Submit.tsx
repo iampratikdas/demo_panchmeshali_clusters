@@ -392,11 +392,10 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
 
     const goNext = () => setStep(s => Math.min(s + 1, total - 1));
     const goBack = () => setStep(s => Math.max(s - 1, 0));
-
+    console.log("state of the publication======>", state);
     return (
         <div>
             <StepIndicator steps={EVENT_STEPS} currentStep={step} />
-
             <Card className="shadow-sm">
                 <CardContent className="pt-6">
                     {/* Step 1 – Event selection */}
@@ -407,7 +406,6 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                 setSelectedEventId={actions.setSelectedEventId}
                                 events={state.events}
                             />
-
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Submission Type</CardTitle>
@@ -594,7 +592,7 @@ export default function Submit() {
                 actions.setIsEvent(val === 'event');
                 actions.resetForm();
             }}>
-                <div className="mb-8 flex justify-center">
+                {/* <div className="mb-8 flex justify-center">
                     <TabsList>
                         <TabsTrigger value="content">
                             <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -605,7 +603,7 @@ export default function Submit() {
                             <span>Event Submission</span>
                         </TabsTrigger>
                     </TabsList>
-                </div>
+                </div> */}
 
                 <TabsContent value="content">
                     <ContentWizard
