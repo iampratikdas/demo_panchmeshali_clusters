@@ -1,27 +1,37 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { fetchContents } from '../lib/api';
+import { useAtom, useAtomValue } from 'jotai';
+import { fetchContents, addContentMarks } from '../lib/api';
+import { canUserGiveMarks, canUserViewMarks } from '../lib/contentMapper';
 import { ContentCard } from '../components/ContentCard';
+import { ContentMarkModal } from '../components/ContentMarkModal';
 import { CardSkeleton } from '../components/LoadingSkeleton';
 import { Pagination } from '../components/Pagination';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import type { ContentStatus } from '../types/content';
-import { useAtom } from 'jotai';
-import { contentFilterAtom, currentPageAtom } from '../store/atoms';
+import type { Content, ContentStatus } from '../types/content';
+import { contentFilterAtom, currentPageAtom, currentUserAtom } from '../store/atoms';
 import { Filter, Search } from 'lucide-react';
 
 const PAGE_SIZE = 6;
 
 export default function ContentList() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
+    const user = useAtomValue(currentUserAtom);
     const [filter, setFilter] = useAtom(contentFilterAtom);
     const [currentPage, setCurrentPage] = useAtom(currentPageAtom);
     const [searchQuery, setSearchQuery] = useState('');
+    const [markTarget, setMarkTarget] = useState<Content | null>(null);
+
+    const role = user.role ?? '';
+    const canGiveMarks = canUserGiveMarks(role);
+    const canViewMarks = canUserViewMarks(role);
+    const isReviewer = canGiveMarks;
 
     const { data, isLoading, isError } = useQuery({
-        queryKey: ['contents', currentPage, filter, searchQuery],
+        queryKey: ['contents', currentPage, filter, searchQuery, role],
         queryFn: () => fetchContents(
             currentPage,
             PAGE_SIZE,
@@ -29,6 +39,25 @@ export default function ContentList() {
             searchQuery
         ),
     });
+
+    const markMutation = useMutation({
+        mutationFn: (payload: { marks: number; status: string }) =>
+            addContentMarks({
+                cont_id: markTarget!.id,
+                marks: payload.marks,
+                status: payload.status,
+                eid: markTarget!.eid,
+                event: !!markTarget!.eid,
+            }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['contents'] });
+            setMarkTarget(null);
+        },
+    });
+
+    const initialMarks = markTarget
+        ? markTarget.marks?.find((m) => m.uid === user.uid)?.score ?? 0
+        : 0;
 
     const filters: Array<ContentStatus | 'all'> = [
         'all',
@@ -41,9 +70,13 @@ export default function ContentList() {
     return (
         <div className="space-y-4 sm:space-y-6">
             <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">My Content</h1>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
+                    {isReviewer ? 'Content Submissions' : 'My Content'}
+                </h1>
                 <p className="text-sm sm:text-base text-muted-foreground">
-                    View and manage your submissions
+                    {isReviewer
+                        ? 'Review submissions and assign marks'
+                        : 'View and manage your submissions'}
                 </p>
             </div>
 
@@ -99,6 +132,10 @@ export default function ContentList() {
                             <ContentCard
                                 key={content.id}
                                 content={content}
+                                canGiveMarks={canGiveMarks}
+                                canViewMarks={canViewMarks}
+                                currentUserUid={user.uid ?? undefined}
+                                onGiveMarks={setMarkTarget}
                                 onClick={() => navigate({ to: `/content/${content.id}` })}
                             />
                         ))}
@@ -121,6 +158,15 @@ export default function ContentList() {
                     )}
                 </>
             )}
+
+            <ContentMarkModal
+                open={!!markTarget}
+                content={markTarget}
+                initialMarks={initialMarks}
+                onClose={() => setMarkTarget(null)}
+                onSubmit={(payload) => markMutation.mutate(payload)}
+                isLoading={markMutation.isPending}
+            />
         </div>
     );
 }

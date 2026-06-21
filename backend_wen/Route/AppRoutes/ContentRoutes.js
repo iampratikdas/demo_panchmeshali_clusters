@@ -45,7 +45,7 @@ class ContentRoutes {
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         //Admin route
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        router.post("/add_marks_by_admins", (req, res, next) => MethodValidate(req, res, next, "POST"), async (req, res) => await initializes(req, res, userFunc, ["admin", "manager"]).then((token_data) => token_data && ContentController.addMarks(req, res, token_data)));
+        router.post("/add_marks_by_admins", (req, res, next) => MethodValidate(req, res, next, "POST"), async (req, res) => await initializes(req, res, userFunc, ["admin", "manager", "publisher"]).then((token_data) => token_data && ContentController.addMarks(req, res, token_data)));
         router.post("/create_notice_by_admin_and_mail", (req, res, next) => MethodValidate(req, res, next, "POST"), async (req, res) => await initializes(req, res, userFunc, ["admin", "manager"]).then((token_data) => token_data && ContentController.createNotice(req, res, token_data)));
         router.get("/fetch_the_content", (req, res, next) => MethodValidate(req, res, next, "GET"), async (req, res) => await initializes(req, res, userFunc, ["admin", "manager"]).then((token_data) => token_data && ContentController.fetchEventOneContent(req, res, token_data)));
 

@@ -16,6 +16,22 @@ export interface ApiContentItem {
     category?: string;
     h_title?: string;
     episodeNumber?: string;
+    episode_wise?: boolean;
+    episode_count?: number;
+    series_key?: string;
+    episodes?: ApiEpisodeItem[];
+    totalMarks?: number;
+    marks?: Array<{ uid?: string; score?: number }>;
+}
+
+export interface ApiEpisodeItem {
+    cont_id: string;
+    name?: string;
+    episodeNumber?: string;
+    content?: string;
+    createdAt?: string;
+    status?: string;
+    wordCount?: number;
 }
 
 const STATUS_TO_UI: Record<string, ContentStatus> = {
@@ -77,6 +93,8 @@ export function mapBackendContent(item: ApiContentItem, episodeWise = false): Co
         h_title: item.h_title,
         episodeNumber: item.episodeNumber,
         episodeWise,
+        totalMarks: item.totalMarks ?? 0,
+        marks: normalizeMarks(item.marks),
     };
 
     if (type === 'poem') {
@@ -96,7 +114,7 @@ export function mapBackendContent(item: ApiContentItem, episodeWise = false): Co
     };
 }
 
-export function mapBackendEpisode(item: ApiContentItem): Episode {
+export function mapBackendEpisode(item: ApiContentItem | ApiEpisodeItem): Episode {
     return {
         id: item.cont_id,
         title: item.name || 'Untitled',
@@ -105,6 +123,16 @@ export function mapBackendEpisode(item: ApiContentItem): Episode {
         htmlContent: item.content,
         isPremium: false,
     };
+}
+
+export function mapBackendContentDetail(item: ApiContentItem): Content {
+    const content = mapBackendContent(item, !!item.episode_wise);
+    if (item.episode_wise && item.episodes?.length) {
+        content.episodes = item.episodes.map(mapBackendEpisode);
+        const firstEp = content.episodes[0];
+        content.content = firstEp?.htmlContent || content.content;
+    }
+    return content;
 }
 
 export function groupContentForList(
@@ -137,6 +165,37 @@ export function groupContentForList(
     return [...nonEpisode, ...Array.from(groups.values())].sort(
         (a, b) => Number(b.createdAt) - Number(a.createdAt)
     );
+}
+
+function normalizeMarks(raw?: Array<{ uid?: string; score?: number | string }>) {
+    if (!Array.isArray(raw)) return [];
+    return raw
+        .map((m) => ({
+            uid: m?.uid || '',
+            score: Number(m?.score),
+        }))
+        .filter((m) => !Number.isNaN(m.score));
+}
+
+export const MARKS_GIVE_ROLES = new Set(['admin', 'publisher']);
+
+export const MARKS_VIEW_ROLES = new Set([
+    'admin',
+    'publisher',
+    'manager',
+    'writer',
+    'both',
+    'user',
+]);
+
+export function canUserGiveMarks(role?: string | null): boolean {
+    if (!role) return false;
+    return MARKS_GIVE_ROLES.has(role.toLowerCase());
+}
+
+export function canUserViewMarks(role?: string | null): boolean {
+    if (!role) return false;
+    return MARKS_VIEW_ROLES.has(role.toLowerCase());
 }
 
 export const COMMENT_ALLOWED_ROLES = new Set([

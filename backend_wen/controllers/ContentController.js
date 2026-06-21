@@ -44,6 +44,174 @@ class ContentController {
       .substring(0, 80);
   }
 
+  _contentListProject() {
+    return {
+      _id: 1,
+      cont_id: 1,
+      eid: 1,
+      name: 1,
+      type: 1,
+      h_title: 1,
+      episodeNumber: 1,
+      wordCount: 1,
+      category: 1,
+      content: 1,
+      totalMarks: 1,
+      uid: 1,
+      status: 1,
+      author_name: 1,
+      createdAt: 1,
+      updatedAt: 1,
+      marks: 1,
+    };
+  }
+
+  _contentListPipeline(matchFilter, sortBy) {
+    return [
+      { $match: matchFilter },
+      {
+        $addFields: {
+          totalMarks: {
+            $sum: {
+              $map: {
+                input: { $ifNull: ["$marks", []] },
+                as: "m",
+                in: {
+                  $sum: {
+                    $map: {
+                      input: { $objectToArray: "$$m" },
+                      as: "kv",
+                      in: "$$kv.v",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      { $project: this._contentListProject() },
+      { $sort: sortBy || { createdAt: -1 } },
+    ];
+  }
+
+  async _getEpisodeWiseMap(eids) {
+    const map = {};
+    const unique = [...new Set((eids || []).filter(Boolean))];
+    await Promise.all(
+      unique.map(async (eid) => {
+        const event = await this.eventFunc.findOneEvent({ eid });
+        map[eid] = !!event?.episode_wise;
+      })
+    );
+    return map;
+  }
+
+  _groupContentsByEpisodeWise(items, episodeWiseMap) {
+    const nonEpisode = [];
+    const groups = new Map();
+
+    for (const item of items) {
+      if (!item.eid || !episodeWiseMap[item.eid]) {
+        nonEpisode.push({ ...item, episode_wise: false });
+        continue;
+      }
+
+      const seriesKey = item.h_title || item.cont_id;
+      const groupKey = `${item.eid}:${seriesKey}`;
+      const existing = groups.get(groupKey);
+
+      if (!existing) {
+        groups.set(groupKey, { representative: item, episodes: [item] });
+        continue;
+      }
+
+      existing.episodes.push(item);
+      const existingEp = parseInt(existing.representative.episodeNumber || "9999", 10);
+      const currentEp = parseInt(item.episodeNumber || "9999", 10);
+      if (currentEp < existingEp) {
+        existing.representative = item;
+      }
+    }
+
+    const grouped = [
+      ...nonEpisode,
+      ...Array.from(groups.values()).map(({ representative, episodes }) => {
+        const seriesKey = representative.h_title || representative.cont_id;
+        const head =
+          episodes.find((ep) => ep.cont_id === seriesKey) ||
+          episodes.sort(
+            (a, b) =>
+              parseInt(a.episodeNumber || "0", 10) -
+              parseInt(b.episodeNumber || "0", 10)
+          )[0] ||
+          representative;
+
+        return {
+          ...head,
+          cont_id: head.cont_id,
+          episode_wise: true,
+          episode_count: episodes.length,
+          series_key: seriesKey,
+          episodes: episodes
+            .sort(
+              (a, b) =>
+                parseInt(a.episodeNumber || "0", 10) -
+                parseInt(b.episodeNumber || "0", 10)
+            )
+            .map((ep) => ({
+              cont_id: ep.cont_id,
+              name: ep.name,
+              episodeNumber: ep.episodeNumber,
+              content: ep.content,
+              createdAt: ep.createdAt,
+              status: ep.status,
+              wordCount: ep.wordCount,
+            })),
+        };
+      }),
+    ];
+
+    return grouped.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
+  }
+
+  _enrichSingleContent(item, allItems, episodeWiseMap) {
+    if (!item?.eid || !episodeWiseMap[item.eid]) {
+      return { ...item, episode_wise: false };
+    }
+
+    const seriesKey = item.h_title || item.cont_id;
+    const episodes = allItems
+      .filter(
+        (i) =>
+          i.eid === item.eid && (i.h_title || i.cont_id) === seriesKey
+      )
+      .sort(
+        (a, b) =>
+          parseInt(a.episodeNumber || "0", 10) -
+          parseInt(b.episodeNumber || "0", 10)
+      );
+
+    const head =
+      episodes.find((ep) => ep.cont_id === seriesKey) || episodes[0] || item;
+
+    return {
+      ...head,
+      episode_wise: true,
+      episode_count: episodes.length,
+      series_key: seriesKey,
+      episodes: episodes.map((ep) => ({
+        cont_id: ep.cont_id,
+        name: ep.name,
+        episodeNumber: ep.episodeNumber,
+        content: ep.content,
+        createdAt: ep.createdAt,
+        status: ep.status,
+        wordCount: ep.wordCount,
+      })),
+    };
+  }
+
   async ensureWorkspaceFolder(uid, folderName, parentId = 'root') {
     const trimmedName = (folderName || '').trim();
     if (!trimmedName || trimmedName === 'root') {
@@ -373,155 +541,88 @@ class ContentController {
 
   async listContents(req, res, token_data) {
     try {
-      let totalContents;
-      let totalPages;
-      let lists;
       const data = req.body;
       const { skip, limit, page } = gobalPagination.pagination(req);
-      console.log("token_data=============>", token_data.uid)
+      const sortBy = data.sortBy || { createdAt: -1 };
+      const isWriterScope = ["writer", "both", "user"].includes(token_data.role);
+
       if (
         (data.uid === undefined || token_data.uid !== data.uid) &&
         token_data.role !== "admin" &&
-        token_data.role !== "manager") {
-        return res.status(404).json({ message: 'User trying to access other users content' });
+        token_data.role !== "manager" &&
+        token_data.role !== "publisher"
+      ) {
+        return res.status(404).json({ message: "User trying to access other users content" });
       }
 
+      const matchFilter = isWriterScope
+        ? { uid: token_data.uid, ...(data.filter || {}) }
+        : { ...(data.filter || {}) };
 
-      console.log("filter===============>", { $match: { ...data.filter } })
-      if (token_data.role === "writer") {
-        totalContents = await this.contentFunc.contentCount({ uid: token_data.uid, ...data.filter });
-        totalPages = Math.ceil(totalContents / limit);
-        lists = await this.contentFunc.findUserEventAggregates([
-          {
-            $match: { uid: token_data.uid, ...data.filter }
-          },
-          {
-            $addFields: {
-              totalMarks: {
-                $sum: {
-                  $map: {
-                    input: { $ifNull: ["$marks", []] },  // ensure marks is always an array
-                    as: "m",
-                    in: {
-                      $sum: {
-                        $map: {
-                          input: { $objectToArray: "$$m" }, // { "uid": score } -> [{k, v}]
-                          as: "kv",
-                          in: "$$kv.v" // get the score
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          {
-            $project: {
-              _id: 1,
-              cont_id: 1,
-              eid: 1,
-              name: 1,
-              type: 1,
-              h_title: 1,
-              episodeNumber: 1,
-              wordCount: 1,
-              category: 1,
-              content: 1,
-              totalMarks: 1,
-              uid: 1,
-              status: 1,
-              author_name: 1,
-              createdAt: 1,
-              updatedAt: 1,
-              marks: 1
-            }
-          },
-          {
-            $sort: data.sortBy
-          },
+      console.log("filter===============>", { $match: matchFilter });
 
-          { $skip: skip },
-          { $limit: limit }
-        ]);
-        console.log("lists====================> user", lists, { uid: token_data.uid, ...data.filter })
-      } else {
+      const rawLists = await this.contentFunc.findUserEventAggregates(
+        this._contentListPipeline(matchFilter, sortBy)
+      );
 
-        totalContents = await this.contentFunc.contentCount(data.filter);
-        totalPages = Math.ceil(totalContents / limit);
-        lists = await this.contentFunc.findUserEventAggregates([
-          {
-            $match: { ...data.filter }
-          },
-          {
-            $addFields: {
-              totalMarks: {
-                $sum: {
-                  $map: {
-                    input: { $ifNull: ["$marks", []] },  // ensure marks is always an array
-                    as: "m",
-                    in: {
-                      $sum: {
-                        $map: {
-                          input: { $objectToArray: "$$m" }, // { "uid": score } -> [{k, v}]
-                          as: "kv",
-                          in: "$$kv.v" // get the score
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          {
-            $project: {
-              _id: 1,
-              cont_id: 1,
-              eid: 1,
-              name: 1,
-              type: 1,
-              h_title: 1,
-              episodeNumber: 1,
-              wordCount: 1,
-              category: 1,
-              content: 1,
-              totalMarks: 1,
-              uid: 1,
-              status: 1,
-              author_name: 1,
-              createdAt: 1,
-              updatedAt: 1,
-              marks: 1
-            }
-          },
-          {
-            $sort: data.sortBy
-          },
+      const episodeWiseMap = await this._getEpisodeWiseMap(
+        rawLists.map((item) => item.eid)
+      );
 
-          { $skip: skip },
-          { $limit: limit }
-        ]
-        );
-        console.log("lists====================> admin", lists, {
-          $match: { ...data.filter }
-        })
+      // Single content detail (by cont_id) — return with episodes when episode_wise
+      if (data.filter?.cont_id) {
+        const item = rawLists[0];
+        if (!item) {
+          return res.status(200).json({
+            message: "Content not found",
+            lists: [],
+            pagination: { totalContents: 0, totalPages: 0, currentPage: page, pageSize: limit, next: false },
+          });
+        }
+
+        let seriesItems = rawLists;
+        if (episodeWiseMap[item.eid]) {
+          const seriesKey = item.h_title || item.cont_id;
+          const eidFilter = isWriterScope
+            ? { uid: token_data.uid, eid: item.eid }
+            : { eid: item.eid };
+          const eidContents = await this.contentFunc.findUserEventAggregates(
+            this._contentListPipeline(eidFilter, sortBy)
+          );
+          seriesItems = eidContents.filter(
+            (i) => (i.h_title || i.cont_id) === seriesKey
+          );
+        }
+
+        const enriched = this._enrichSingleContent(item, seriesItems, episodeWiseMap);
+        return res.status(200).json({
+          message: "Content detail fetched",
+          lists: [enriched],
+          pagination: { totalContents: 1, totalPages: 1, currentPage: 1, pageSize: limit, next: false },
+        });
       }
+
+      const groupedLists = this._groupContentsByEpisodeWise(rawLists, episodeWiseMap);
+      const totalContents = groupedLists.length;
+      const totalPages = Math.ceil(totalContents / limit) || 0;
+      const lists = groupedLists.slice(skip, skip + limit);
+
+      console.log("lists====================>", lists.length, "of", totalContents);
 
       return res.status(200).json({
-        message: 'Content lists fetched',
-        lists: lists,
+        message: "Content lists fetched",
+        lists,
         pagination: {
           totalContents,
           totalPages,
           currentPage: page,
           pageSize: limit,
-          next: lists.length === 0 ? false : page === totalPages ? false : true
-        }
-      })
+          next: lists.length === 0 ? false : page !== totalPages,
+        },
+      });
     } catch (err) {
       console.log("error=====>", err);
-      return res.status(500).json({ message: 'Error Fetching content', err });
+      return res.status(500).json({ message: "Error Fetching content", err });
     }
   }
 

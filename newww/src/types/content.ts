@@ -15,6 +15,11 @@ export interface Episode {
     htmlContent?: string;
 }
 
+export interface ContentMark {
+    uid: string;
+    score: number;
+}
+
 export interface BaseContent {
     id: string;
     type: ContentType;
@@ -30,6 +35,8 @@ export interface BaseContent {
     h_title?: string;
     episodeNumber?: string;
     episodeWise?: boolean;
+    totalMarks?: number;
+    marks?: ContentMark[];
 }
 
 export interface Story extends BaseContent {
