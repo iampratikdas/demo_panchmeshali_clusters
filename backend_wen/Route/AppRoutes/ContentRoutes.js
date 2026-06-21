@@ -60,6 +60,24 @@ class ContentRoutes {
                 .then((token_data) => token_data && ContentController.addContentComment(req, res, token_data))
                 .catch((data) => res.status(404).json({ status: 404, message: data.message, data: {} }))
         );
+
+        router.post("/list_proofread_contents", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) =>
+            await initializes(req, res, userFunc, ["admin", "manager", "publisher"])
+                .then((token_data) => token_data && ContentController.listProofreadContents(req, res, token_data))
+                .catch((data) => res.status(404).json({ status: 404, message: data.message, data: {} }))
+        );
+
+        router.post("/ai/proofread", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) =>
+            await initializes(req, res, userFunc, ["admin", "manager", "publisher"])
+                .then((token_data) => token_data && ContentController.proofreadAI(req, res, token_data))
+                .catch((data) => res.status(404).json({ status: 404, message: data.message, data: {} }))
+        );
+
+        router.post("/save_proofread_content", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) =>
+            await initializes(req, res, userFunc, ["admin", "manager", "publisher"])
+                .then((token_data) => token_data && ContentController.saveProofreadContent(req, res, token_data))
+                .catch((data) => res.status(404).json({ status: 404, message: data.message, data: {} }))
+        );
     }
 }
 module.exports = ContentRoutes;

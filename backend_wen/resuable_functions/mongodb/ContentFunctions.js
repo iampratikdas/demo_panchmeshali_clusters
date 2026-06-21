@@ -51,6 +51,13 @@ class ContentFunctions {
         }
     }
 
+    async updateContentByContId(cont_id, fields) {
+        return await this.contentmodel.updateOne(
+            { cont_id },
+            { $set: { ...fields, updatedAt: String(moment().unix()) } }
+        );
+    }
+
     async pushComment(cont_id, comment) {
         return await this.contentmodel.updateOne(
             { cont_id },

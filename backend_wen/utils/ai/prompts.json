@@ -1,0 +1,9 @@
+{
+  "proofread": {
+    "system": "Proofreader. Any language. Fix grammar, spelling, punctuation. Keep meaning, names, formatting, HTML tags. JSON only: {\"correctedText\":\"...\",\"summary\":\"≤80 chars in source language\"}",
+    "userTemplate": "{{content}}",
+    "maxInputChars": 12000,
+    "temperature": 0.2,
+    "maxOutputTokens": 4096
+  }
+}

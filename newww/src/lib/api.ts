@@ -439,25 +439,62 @@ export const checkQualityAI = async (content: string): Promise<AIQualityResponse
     };
 };
 
-export const proofreadAI = async (content: string): Promise<AIProofreadResponse> => {
-    await delay(1200);
+export const proofreadAI = async (
+    cont_id: string,
+    content: string
+): Promise<AIProofreadResponse> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/ai/proofread`,
+        { cont_id, content },
+        { headers: authHeaders() }
+    );
+    if (response.data?.status !== 200) {
+        throw new Error(response.data?.message || 'AI proofread failed');
+    }
+    const data = response.data.data;
+    return {
+        correctedText: data.correctedText,
+        corrections: data.corrections ?? [],
+        summary: data.summary ?? 'Proofread complete.',
+    };
+};
+
+export const fetchProofreadContents = async (
+    page = 1,
+    pageSize = 10,
+    search?: string,
+    dateFilter?: string
+): Promise<PaginatedResponse<Content>> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/list_proofread_contents?page=${page}&limit=${pageSize}`,
+        { search: search?.trim() || '', dateFilter: dateFilter || 'all' },
+        { headers: authHeaders() }
+    );
+    const lists = response.data?.lists ?? [];
+    const pagination = response.data?.pagination ?? {};
 
     return {
-        correctedText: content.replace(/\s{2,}/g, ' ').trim(),
-        corrections: [
-            {
-                original: 'recieve',
-                corrected: 'receive',
-                reason: 'Spelling error - i before e except after c',
-            },
-            {
-                original: 'thier',
-                corrected: 'their',
-                reason: 'Common spelling mistake',
-            },
-        ],
-        summary: 'Found 2 corrections. Overall grammar and structure look good!',
+        data: lists.map((item: ApiContentItem) => mapBackendContent(item, false)),
+        total: pagination.totalContents ?? lists.length,
+        page,
+        pageSize,
+        totalPages: pagination.totalPages ?? 1,
     };
+};
+
+export const saveProofreadContent = async (
+    cont_id: string,
+    content: string,
+    mode: 'manual' | 'ai'
+): Promise<void> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/save_proofread_content`,
+        { cont_id, content, mode },
+        { headers: authHeaders() }
+    );
+    if (response.data?.status !== 200) {
+        throw new Error(response.data?.message || 'Failed to save content');
+    }
 };
 // const mockUsers: User[] = [
 //     {

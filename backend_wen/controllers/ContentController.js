@@ -15,6 +15,7 @@ const {
 const nodemailer = require('nodemailer');
 const gobalPagination = require('../resuable_functions/mongodb/GlobalModelFunctions')
 const { json } = require("body-parser");
+const { proofreadWithAI, stripHtml } = require("../utils/ai/proofreadService");
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -34,7 +35,28 @@ class ContentController {
     this.noticeFunc = modelfunctions.noticeFunctions;
     this.workspaceFileFunc = modelfunctions.workspaceFileFunctions;
     this.folderFunc = modelfunctions.folderFunctions;
+    this.publisherFunc = modelfunctions.publisherFunctions;
     // this.paginationFunc = modelfunctions.pagination;
+  }
+
+  _countWords(text = "") {
+    const plain = stripHtml(text);
+    return plain.split(/\s+/).filter(Boolean).length;
+  }
+
+  async _canProofreadContent(token_data, contentItem) {
+    const role = (token_data.role || "").toLowerCase();
+    if (["admin", "manager"].includes(role)) return true;
+    if (role !== "publisher" || !contentItem?.eid) return false;
+
+    const event = await this.eventFunc.findOneEvent({ eid: contentItem.eid });
+    if (!event?.pid) return false;
+
+    const publisher = await this.publisherFunc.findOnePublisher({
+      pid: event.pid,
+      uids: { $in: [token_data.uid] },
+    });
+    return !!publisher;
   }
 
   sanitizeFileName(name) {
@@ -1290,6 +1312,161 @@ class ContentController {
     } catch (err) {
       console.error('addContentComment error:', err);
       return res.status(500).json({ status: 500, message: 'Error adding comment', data: {} });
+    }
+  }
+
+  async listProofreadContents(req, res, token_data) {
+    try {
+      const role = (token_data.role || "").toLowerCase();
+      if (!["admin", "manager", "publisher"].includes(role)) {
+        return res.status(403).json({ status: 403, message: "Access denied", lists: [], pagination: {} });
+      }
+
+      const { skip, limit, page } = gobalPagination.pagination(req);
+      const search = (req.body.search || "").trim().toLowerCase();
+      const dateFilter = req.body.dateFilter || "all";
+
+      let matchFilter = { status: "Approved" };
+
+      if (role === "publisher") {
+        const publisher = await this.publisherFunc.findOnePublisher({
+          uids: { $in: [token_data.uid] },
+        });
+        if (!publisher?.pid) {
+          return res.status(403).json({ status: 403, message: "No publisher company found", lists: [], pagination: {} });
+        }
+        const events = await this.eventFunc.findAllEvents({ pid: publisher.pid });
+        const eids = events.map((e) => e.eid).filter(Boolean);
+        if (!eids.length) {
+          return res.status(200).json({
+            message: "No approved content",
+            lists: [],
+            pagination: { totalContents: 0, totalPages: 0, currentPage: page, pageSize: limit, next: false },
+          });
+        }
+        matchFilter.eid = { $in: eids };
+      }
+
+      let lists = await this.contentFunc.findUserEventAggregates(
+        this._contentListPipeline(matchFilter, { updatedAt: -1, createdAt: -1 })
+      );
+
+      if (search) {
+        lists = lists.filter(
+          (item) =>
+            item.name?.toLowerCase().includes(search) ||
+            item.author_name?.toLowerCase().includes(search)
+        );
+      }
+
+      if (dateFilter !== "all") {
+        const now = moment();
+        lists = lists.filter((item) => {
+          const ts = Number(item.createdAt);
+          if (!ts) return false;
+          const d = moment.unix(ts);
+          if (dateFilter === "today") return d.isSame(now, "day");
+          if (dateFilter === "week") return d.isAfter(now.clone().subtract(7, "days"));
+          if (dateFilter === "month") return d.isSame(now, "month");
+          return true;
+        });
+      }
+
+      const totalContents = lists.length;
+      const totalPages = Math.ceil(totalContents / limit) || 0;
+      const paged = lists.slice(skip, skip + limit);
+
+      return res.status(200).json({
+        message: "Approved contents fetched",
+        lists: paged,
+        pagination: {
+          totalContents,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          next: paged.length === 0 ? false : page !== totalPages,
+        },
+      });
+    } catch (err) {
+      console.error("listProofreadContents error:", err);
+      return res.status(500).json({ message: "Error fetching proofread contents", err });
+    }
+  }
+
+  async proofreadAI(req, res, token_data) {
+    try {
+      const role = (token_data.role || "").toLowerCase();
+      if (!["admin", "manager", "publisher"].includes(role)) {
+        return res.status(403).json({ status: 403, message: "Access denied", data: {} });
+      }
+
+      const { cont_id, content } = req.body;
+      if (!cont_id || !content?.trim()) {
+        return res.status(400).json({ status: 400, message: "cont_id and content are required", data: {} });
+      }
+
+      const contentItem = await this.contentFunc.findOneEvenTContentOne({ cont_id });
+      if (!contentItem || contentItem.status !== "Approved") {
+        return res.status(404).json({ status: 404, message: "Approved content not found", data: {} });
+      }
+
+      if (!(await this._canProofreadContent(token_data, contentItem))) {
+        return res.status(403).json({ status: 403, message: "Not authorized for this content", data: {} });
+      }
+
+      const result = await proofreadWithAI(content);
+
+      return res.status(200).json({
+        status: 200,
+        message: "Proofread complete",
+        data: result,
+      });
+    } catch (err) {
+      console.error("proofreadAI error:", err);
+      const msg = err.message?.includes("AI_API_KEY")
+        ? "AI service not configured. Set AI_API_KEY in .env"
+        : err.message || "AI proofread failed";
+      return res.status(500).json({ status: 500, message: msg, data: {} });
+    }
+  }
+
+  async saveProofreadContent(req, res, token_data) {
+    try {
+      const role = (token_data.role || "").toLowerCase();
+      if (!["admin", "manager", "publisher"].includes(role)) {
+        return res.status(403).json({ status: 403, message: "Access denied", data: {} });
+      }
+
+      const { cont_id, content, mode } = req.body;
+      if (!cont_id || content === undefined || content === null) {
+        return res.status(400).json({ status: 400, message: "cont_id and content are required", data: {} });
+      }
+
+      const contentItem = await this.contentFunc.findOneEvenTContentOne({ cont_id });
+      if (!contentItem || contentItem.status !== "Approved") {
+        return res.status(404).json({ status: 404, message: "Approved content not found", data: {} });
+      }
+
+      if (!(await this._canProofreadContent(token_data, contentItem))) {
+        return res.status(403).json({ status: 403, message: "Not authorized for this content", data: {} });
+      }
+
+      const trimmed = String(content).trim();
+      const wordCount = this._countWords(trimmed);
+
+      await this.contentFunc.updateContentByContId(cont_id, {
+        content: trimmed,
+        wordCount,
+      });
+
+      return res.status(200).json({
+        status: 200,
+        message: `Content saved (${mode || "manual"})`,
+        data: { cont_id, wordCount },
+      });
+    } catch (err) {
+      console.error("saveProofreadContent error:", err);
+      return res.status(500).json({ status: 500, message: "Error saving content", data: {} });
     }
   }
 }
