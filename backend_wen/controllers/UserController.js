@@ -30,6 +30,21 @@ class UserController {
     this.eventFunc = module.eventFunctions;
   }
 
+  /** On login: activate account and promote legacy `user` role to `writer`. */
+  async _applyLoginUserUpdates(user) {
+    if (!user?.uid) return user;
+
+    const updates = {};
+    if (!user.isActive) updates.isActive = true;
+    if (user.role === 'user') updates.role = 'writer';
+
+    if (Object.keys(updates).length === 0) return user;
+
+    updates.updated_at = moment().unix();
+    await this.userFunc.UserUpdate(updates, user.uid);
+    return { ...user, ...updates };
+  }
+
   async signupbygoogle(req, res) {
     try {
       const user = req.user;
@@ -57,8 +72,10 @@ class UserController {
 
         await this.userFunc.UserInsert(existingUser)
       }
-      const token = await GenUserToken(existingUser, moment().unix());
-      const { password, _id, created_at, is_deleted, updated_at, ...users } = existingUser;
+
+      const sessionUser = await this._applyLoginUserUpdates(existingUser);
+      const token = await GenUserToken(sessionUser, moment().unix());
+      const { password, _id, created_at, is_deleted, updated_at, ...users } = sessionUser;
       console.log("user===================>", req.query.state)
       res
         .cookie("token", token, {
@@ -128,15 +145,10 @@ class UserController {
         });
       }
 
-      const token = await GenUserToken(existingUser, moment().unix());
-      const { password: _password, token: _token, ...userData } = existingUser;
-      if (!existingUser.isActive) {
+      const sessionUser = await this._applyLoginUserUpdates(existingUser);
+      const token = await GenUserToken(sessionUser, moment().unix());
+      const { password: _password, token: _token, ...userData } = sessionUser;
 
-        await this.userFunc.UserUpdate({
-          isActive: true,
-          updated_at: moment().unix(),
-        }, existingUser.uid);
-      }
       return res.status(200).json({
         status: 200,
         message: "Login successful!",
