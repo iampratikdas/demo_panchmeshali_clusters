@@ -47,59 +47,85 @@ export interface BookPreviewData {
     stats: { writers: number; episodes: number };
 }
 
-export type BookLayoutId = 'classic' | 'modern' | 'magazine' | 'elegant';
+export type BookLayoutId =
+    | 'textbook'
+    | 'spread'
+    | 'outline'
+    | 'literary'
+    | 'memoir'
+    | 'magazine';
 
 export interface BookLayoutOption {
     id: BookLayoutId;
     name: string;
     description: string;
-    preview: string;
-    coverBg: string;
     pageBg: string;
     accent: string;
+    secondary: string;
     fontFamily: string;
+    titleFont: string;
 }
 
 export const BOOK_LAYOUTS: BookLayoutOption[] = [
     {
-        id: 'classic',
-        name: 'Classic',
-        description: 'Traditional serif typography with warm cream pages',
-        preview: 'Aa',
-        coverBg: 'linear-gradient(145deg, #2c1810 0%, #5c3d2e 100%)',
-        pageBg: '#fdf8f0',
-        accent: '#8b6914',
-        fontFamily: 'Georgia, serif',
+        id: 'textbook',
+        name: 'Textbook',
+        description: 'Professional layout with gold accents and cover imagery',
+        pageBg: '#ffffff',
+        accent: '#c9a227',
+        secondary: '#4a4a4a',
+        fontFamily: '"Segoe UI", system-ui, sans-serif',
+        titleFont: 'Georgia, "Times New Roman", serif',
     },
     {
-        id: 'modern',
-        name: 'Modern',
-        description: 'Clean sans-serif layout with generous whitespace',
-        preview: 'Aa',
-        coverBg: 'linear-gradient(145deg, #0f172a 0%, #1e3a5f 100%)',
+        id: 'spread',
+        name: 'Professional Spread',
+        description: 'Chapter bars, mirrored footers, justified body text',
         pageBg: '#ffffff',
-        accent: '#2563eb',
-        fontFamily: 'system-ui, sans-serif',
+        accent: '#c9a227',
+        secondary: '#e8e8e8',
+        fontFamily: 'Georgia, "Times New Roman", serif',
+        titleFont: 'Georgia, "Times New Roman", serif',
+    },
+    {
+        id: 'outline',
+        name: 'Outline Classic',
+        description: 'Centered title page with clean chapter openings',
+        pageBg: '#fafafa',
+        accent: '#1a1a1a',
+        secondary: '#666666',
+        fontFamily: 'Georgia, "Times New Roman", serif',
+        titleFont: 'Georgia, "Times New Roman", serif',
+    },
+    {
+        id: 'literary',
+        name: 'Literary',
+        description: 'Drop caps, centered titles, elegant separators',
+        pageBg: '#ffffff',
+        accent: '#1a1a1a',
+        secondary: '#888888',
+        fontFamily: 'Georgia, "Times New Roman", serif',
+        titleFont: 'Georgia, "Times New Roman", serif',
+    },
+    {
+        id: 'memoir',
+        name: 'Memoir',
+        description: 'Chapter label, bold title, epigraph-style intro',
+        pageBg: '#ffffff',
+        accent: '#1a1a1a',
+        secondary: '#555555',
+        fontFamily: 'Georgia, "Times New Roman", serif',
+        titleFont: '"Arial Narrow", "Helvetica Neue", Arial, sans-serif',
     },
     {
         id: 'magazine',
         name: 'Magazine',
-        description: 'Bold headers and editorial-style chapter breaks',
-        preview: 'Aa',
-        coverBg: 'linear-gradient(145deg, #7c2d12 0%, #c2410c 100%)',
-        pageBg: '#fffbf5',
-        accent: '#ea580c',
-        fontFamily: '"Palatino Linotype", Palatino, serif',
-    },
-    {
-        id: 'elegant',
-        name: 'Elegant',
-        description: 'Dark cover with gold accents and refined spacing',
-        preview: 'Aa',
-        coverBg: 'linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-        pageBg: '#faf9f7',
-        accent: '#d4af37',
-        fontFamily: '"Times New Roman", Times, serif',
+        description: 'Bold editorial typography with image blocks',
+        pageBg: '#ffffff',
+        accent: '#000000',
+        secondary: '#333333',
+        fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+        titleFont: '"Arial Black", "Helvetica Neue", sans-serif',
     },
 ];
 
@@ -112,5 +138,8 @@ export interface BookPage {
     author?: string;
     html?: string;
     episodeNumber?: string;
+    chapterIndex?: number;
+    coverImage?: string;
+    bookTitle?: string;
     tocEntries?: Array<{ title: string; author: string; pageIndex: number }>;
 }

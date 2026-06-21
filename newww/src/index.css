@@ -320,3 +320,68 @@ body {
   text-indent: 0;
   line-height: 2;
 }
+
+/* Drop caps for literary & memoir layouts */
+.literary-drop-cap p:first-child::first-letter,
+.memoir-drop-cap p:first-child::first-letter {
+  float: left;
+  font-size: 3.5rem;
+  line-height: 0.82;
+  padding-right: 0.12em;
+  margin-top: 0.05em;
+  font-weight: 700;
+  font-family: Georgia, "Times New Roman", serif;
+  color: #1a1a1a;
+}
+
+.literary-drop-cap p:first-child,
+.memoir-drop-cap p:first-child {
+  text-indent: 0;
+}
+
+/* Magazine two-column body on wider pages */
+.magazine-columns {
+  column-count: 1;
+  column-gap: 1.5rem;
+}
+
+@media (min-width: 400px) {
+  .magazine-columns {
+    column-count: 2;
+  }
+}
+
+.magazine-columns p {
+  break-inside: avoid;
+}
+
+/* Book viewer page shell */
+.book-page-shell {
+  transform-style: preserve-3d;
+}
+
+.book-page-inner {
+  backface-visibility: hidden;
+}
+
+/* PDF export: hex-only overrides (html2canvas cannot parse oklch) */
+.book-pdf-export-root,
+.book-pdf-export-root * {
+  --tw-ring-color: #10b981;
+}
+
+.book-pdf-export-root .text-gray-900 { color: #111827 !important; }
+.book-pdf-export-root .text-gray-700 { color: #374151 !important; }
+.book-pdf-export-root .text-gray-600 { color: #4b5563 !important; }
+.book-pdf-export-root .text-gray-500 { color: #6b7280 !important; }
+.book-pdf-export-root .text-gray-400 { color: #9ca3af !important; }
+.book-pdf-export-root .text-muted-foreground { color: #6b7280 !important; }
+.book-pdf-export-root .bg-white { background-color: #ffffff !important; }
+.book-pdf-export-root .bg-gray-50 { background-color: #f9fafb !important; }
+.book-pdf-export-root .bg-gray-100 { background-color: #f3f4f6 !important; }
+.book-pdf-export-root .bg-gray-200 { background-color: #e5e7eb !important; }
+.book-pdf-export-root .bg-gray-300 { background-color: #d1d5db !important; }
+.book-pdf-export-root .border-gray-100 { border-color: #f3f4f6 !important; }
+.book-pdf-export-root .border-gray-200 { border-color: #e5e7eb !important; }
+.book-pdf-export-root .from-gray-200 { --tw-gradient-from: #e5e7eb; }
+.book-pdf-export-root .to-gray-300 { --tw-gradient-to: #d1d5db; }
