@@ -5,6 +5,7 @@ import {
     fetchProofreadContents,
     proofreadAI,
     saveProofreadContent,
+    markProofreadDone,
 } from '../lib/api';
 import { htmlToPlain } from '../lib/htmlUtils';
 import {
@@ -44,6 +45,7 @@ export default function ProofReadRoom() {
     const [aiSummary, setAiSummary] = useState('');
     const [isChecking, setIsChecking] = useState(false);
     const [hasAiResult, setHasAiResult] = useState(false);
+    const [isPrDone, setIsPrDone] = useState(false);
 
     const { data: contentsData, isLoading: listLoading } = useQuery({
         queryKey: ['proofread-contents', pickerPage, searchQuery, dateFilter],
@@ -75,6 +77,29 @@ export default function ProofReadRoom() {
         },
     });
 
+    const markDoneMutation = useMutation({
+        mutationFn: () => {
+            const text = mode === 'ai' && hasAiResult ? aiPreview : inputText;
+            return markProofreadDone(selectedId!, text, mode);
+        },
+        onSuccess: () => {
+            setIsPrDone(true);
+            queryClient.invalidateQueries({ queryKey: ['proofread-contents'] });
+            queryClient.invalidateQueries({ queryKey: ['publish-preview-events'] });
+            toast({
+                title: 'Proof read done',
+                description: 'Content is marked ready for book publish preview.',
+            });
+        },
+        onError: (err: Error) => {
+            toast({
+                title: 'Could not mark as done',
+                description: err.message,
+                variant: 'destructive',
+            });
+        },
+    });
+
     const handleSearch = (v: string) => {
         setSearchQuery(v);
         setPickerPage(1);
@@ -89,6 +114,7 @@ export default function ProofReadRoom() {
         setInputText(htmlToPlain(c.content || ''));
         setSelectedId(c.id);
         setSelectedContent(c);
+        setIsPrDone(!!c.pr);
         setAiPreview('');
         setAiSummary('');
         setHasAiResult(false);
@@ -266,6 +292,11 @@ export default function ProofReadRoom() {
                                     <div className="min-w-0 flex-1">
                                         <p className="text-sm font-medium leading-tight truncate">{c.title}</p>
                                         <p className="text-xs text-muted-foreground capitalize mt-0.5">{c.type}</p>
+                                        {c.pr && (
+                                            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded-full mt-0.5">
+                                                <CheckCircle2 className="h-2.5 w-2.5" /> PR Done
+                                            </span>
+                                        )}
                                         {c.authorName && (
                                             <p className="text-[10px] text-indigo-500 mt-0.5 truncate">by {c.authorName}</p>
                                         )}
@@ -313,9 +344,16 @@ export default function ProofReadRoom() {
                             {mode === 'manual' ? 'Edit Content' : 'Source Content'}
                         </h2>
                         {selectedContent && (
-                            <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                                Approved
-                            </span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                    Approved
+                                </span>
+                                {isPrDone && (
+                                    <span className="text-[10px] font-medium text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-200 flex items-center gap-1">
+                                        <CheckCircle2 className="h-3 w-3" /> Proof Read Done
+                                    </span>
+                                )}
+                            </div>
                         )}
                     </div>
 
@@ -352,17 +390,33 @@ export default function ProofReadRoom() {
                             )}
 
                             {mode === 'manual' && (
-                                <Button
-                                    onClick={() => saveMutation.mutate()}
-                                    disabled={!canSave || saveMutation.isPending}
-                                    className="w-full gap-2 bg-[#cb8959] hover:bg-[#b8734a] text-white"
-                                >
-                                    {saveMutation.isPending ? (
-                                        <><RefreshCw className="h-4 w-4 animate-spin" /> Saving…</>
-                                    ) : (
-                                        <><Save className="h-4 w-4" /> Save Changes</>
-                                    )}
-                                </Button>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <Button
+                                        onClick={() => saveMutation.mutate()}
+                                        disabled={!canSave || saveMutation.isPending}
+                                        variant="outline"
+                                        className="flex-1 gap-2"
+                                    >
+                                        {saveMutation.isPending ? (
+                                            <><RefreshCw className="h-4 w-4 animate-spin" /> Saving…</>
+                                        ) : (
+                                            <><Save className="h-4 w-4" /> Save Changes</>
+                                        )}
+                                    </Button>
+                                    <Button
+                                        onClick={() => markDoneMutation.mutate()}
+                                        disabled={!canSave || markDoneMutation.isPending || isPrDone}
+                                        className="flex-1 gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
+                                    >
+                                        {markDoneMutation.isPending ? (
+                                            <><RefreshCw className="h-4 w-4 animate-spin" /> Marking…</>
+                                        ) : isPrDone ? (
+                                            <><CheckCircle2 className="h-4 w-4" /> Proof Read Done</>
+                                        ) : (
+                                            <><ClipboardCheck className="h-4 w-4" /> Proof Read Done</>
+                                        )}
+                                    </Button>
+                                </div>
                             )}
                         </>
                     )}
@@ -418,17 +472,33 @@ export default function ProofReadRoom() {
                                     <div className="rounded-2xl border border-violet-200/60 bg-gradient-to-br from-white to-violet-50/40 p-4 sm:p-5 text-sm leading-relaxed text-gray-700 whitespace-pre-wrap min-h-[200px] max-h-80 overflow-y-auto">
                                         {aiPreview}
                                     </div>
-                                    <Button
-                                        onClick={() => saveMutation.mutate()}
-                                        disabled={!canSave || saveMutation.isPending}
-                                        className="w-full gap-2 bg-[#cb8959] hover:bg-[#b8734a] text-white"
-                                    >
-                                        {saveMutation.isPending ? (
-                                            <><RefreshCw className="h-4 w-4 animate-spin" /> Saving…</>
-                                        ) : (
-                                            <><Save className="h-4 w-4" /> Save AI Proofread</>
-                                        )}
-                                    </Button>
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <Button
+                                            onClick={() => saveMutation.mutate()}
+                                            disabled={!canSave || saveMutation.isPending}
+                                            variant="outline"
+                                            className="flex-1 gap-2"
+                                        >
+                                            {saveMutation.isPending ? (
+                                                <><RefreshCw className="h-4 w-4 animate-spin" /> Saving…</>
+                                            ) : (
+                                                <><Save className="h-4 w-4" /> Save Draft</>
+                                            )}
+                                        </Button>
+                                        <Button
+                                            onClick={() => markDoneMutation.mutate()}
+                                            disabled={!canSave || markDoneMutation.isPending || isPrDone}
+                                            className="flex-1 gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
+                                        >
+                                            {markDoneMutation.isPending ? (
+                                                <><RefreshCw className="h-4 w-4 animate-spin" /> Marking…</>
+                                            ) : isPrDone ? (
+                                                <><CheckCircle2 className="h-4 w-4" /> Proof Read Done</>
+                                            ) : (
+                                                <><ClipboardCheck className="h-4 w-4" /> Proof Read Done</>
+                                            )}
+                                        </Button>
+                                    </div>
                                 </motion.div>
                             )}
                         </motion.div>

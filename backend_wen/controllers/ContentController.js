@@ -36,7 +36,19 @@ class ContentController {
     this.workspaceFileFunc = modelfunctions.workspaceFileFunctions;
     this.folderFunc = modelfunctions.folderFunctions;
     this.publisherFunc = modelfunctions.publisherFunctions;
+    this.proofReadFunc = modelfunctions.proofReadFunctions;
     // this.paginationFunc = modelfunctions.pagination;
+  }
+
+  async _getApprovedContentsMarkedPr(eid, pid) {
+    const doneContIds = await this.proofReadFunc.findDoneContIds(eid, pid);
+    if (!doneContIds.length) return [];
+
+    return await this.contentFunc.findOneEvenTContentAll({
+      eid,
+      status: 'Approved',
+      cont_id: { $in: doneContIds },
+    });
   }
 
   _countWords(text = "") {
@@ -1376,9 +1388,15 @@ class ContentController {
       const totalPages = Math.ceil(totalContents / limit) || 0;
       const paged = lists.slice(skip, skip + limit);
 
+      const prMap = await this.proofReadFunc.getPrMapForContIds(paged.map((item) => item.cont_id));
+      const listsWithPr = paged.map((item) => ({
+        ...item,
+        pr: !!prMap[item.cont_id],
+      }));
+
       return res.status(200).json({
         message: "Approved contents fetched",
-        lists: paged,
+        lists: listsWithPr,
         pagination: {
           totalContents,
           totalPages,
@@ -1467,6 +1485,252 @@ class ContentController {
     } catch (err) {
       console.error("saveProofreadContent error:", err);
       return res.status(500).json({ status: 500, message: "Error saving content", data: {} });
+    }
+  }
+
+  async markProofreadDone(req, res, token_data) {
+    try {
+      const role = (token_data.role || "").toLowerCase();
+      if (!["admin", "manager", "publisher"].includes(role)) {
+        return res.status(403).json({ status: 403, message: "Access denied", data: {} });
+      }
+
+      const { cont_id, content, mode } = req.body;
+      if (!cont_id) {
+        return res.status(400).json({ status: 400, message: "cont_id is required", data: {} });
+      }
+
+      const contentItem = await this.contentFunc.findOneEvenTContentOne({ cont_id });
+      if (!contentItem || contentItem.status !== "Approved") {
+        return res.status(404).json({ status: 404, message: "Approved content not found", data: {} });
+      }
+
+      if (!(await this._canProofreadContent(token_data, contentItem))) {
+        return res.status(403).json({ status: 403, message: "Not authorized for this content", data: {} });
+      }
+
+      const event = await this.eventFunc.findOneEvent({ eid: contentItem.eid });
+      const pid = event?.pid || "";
+
+      if (content !== undefined && content !== null) {
+        const trimmed = String(content).trim();
+        await this.contentFunc.updateContentByContId(cont_id, {
+          content: trimmed,
+          wordCount: this._countWords(trimmed),
+        });
+      }
+
+      await this.proofReadFunc.upsertProofRead({
+        cont_id,
+        eid: contentItem.eid,
+        pid,
+        marked_by: token_data.uid,
+      });
+
+      return res.status(200).json({
+        status: 200,
+        message: "Proof read marked as done",
+        data: { cont_id, eid: contentItem.eid, pid, pr: true },
+      });
+    } catch (err) {
+      console.error("markProofreadDone error:", err);
+      return res.status(500).json({ status: 500, message: "Error marking proofread done", data: {} });
+    }
+  }
+
+  async _resolvePublisherPid(token_data) {
+    if (["admin", "manager"].includes((token_data.role || "").toLowerCase())) {
+      return null;
+    }
+    const publisher = await this.publisherFunc.findOnePublisher({
+      uids: { $in: [token_data.uid] },
+    });
+    return publisher?.pid || null;
+  }
+
+  _groupContentsForBookPreview(contents) {
+    const byWriter = new Map();
+
+    for (const item of contents) {
+      const uid = item.uid || "unknown";
+      if (!byWriter.has(uid)) {
+        byWriter.set(uid, {
+          uid,
+          author_name: item.author_name || "Unknown",
+          series: new Map(),
+        });
+      }
+      const writer = byWriter.get(uid);
+      const seriesKey = item.h_title || item.cont_id;
+      if (!writer.series.has(seriesKey)) {
+        writer.series.set(seriesKey, {
+          h_title: seriesKey,
+          title: item.name || "Untitled",
+          coverImage: item.coverImage || "",
+          episodes: [],
+        });
+      }
+      writer.series.get(seriesKey).episodes.push({
+        cont_id: item.cont_id,
+        name: item.name,
+        episodeNumber: item.episodeNumber,
+        content: item.content,
+        wordCount: item.wordCount,
+        createdAt: item.createdAt,
+      });
+    }
+
+    return Array.from(byWriter.values()).map((w) => ({
+      uid: w.uid,
+      author_name: w.author_name,
+      series: Array.from(w.series.values()).map((s) => ({
+        ...s,
+        episodes: s.episodes.sort(
+          (a, b) =>
+            parseInt(a.episodeNumber || "0", 10) -
+            parseInt(b.episodeNumber || "0", 10)
+        ),
+        title: s.episodes[0]?.name || s.title,
+      })),
+    }));
+  }
+
+  async listPublishPreviewEvents(req, res, token_data) {
+    try {
+      const role = (token_data.role || "").toLowerCase();
+      if (!["admin", "manager", "publisher"].includes(role)) {
+        return res.status(403).json({ status: 403, message: "Access denied", events: [], pagination: {} });
+      }
+
+      const { skip, limit, page } = gobalPagination.pagination(req);
+      const search = (req.body.search || "").trim().toLowerCase();
+
+      const eventFilter = {
+        is_app: false,
+        is_book: true,
+        episode_wise: true,
+      };
+
+      const publisherPid = await this._resolvePublisherPid(token_data);
+      if (role === "publisher") {
+        if (!publisherPid) {
+          return res.status(403).json({ status: 403, message: "No publisher company found", events: [], pagination: {} });
+        }
+        eventFilter.pid = publisherPid;
+      }
+
+      let events = await this.eventFunc.findAllEvents(eventFilter);
+
+      if (search) {
+        events = events.filter(
+          (e) =>
+            e.name?.toLowerCase().includes(search) ||
+            e.description?.toLowerCase().includes(search)
+        );
+      }
+
+      const enriched = [];
+      for (const ev of events) {
+        const contents = await this._getApprovedContentsMarkedPr(ev.eid, ev.pid);
+        const writers = new Set(contents.map((c) => c.uid).filter(Boolean));
+        if (contents.length === 0) continue;
+
+        enriched.push({
+          eid: ev.eid,
+          name: ev.name,
+          description: ev.description,
+          logo_url: ev.logo_url,
+          event_type: ev.event_type,
+          st_dt: ev.st_dt,
+          en_dt: ev.en_dt,
+          pid: ev.pid,
+          writerCount: writers.size,
+          episodeCount: contents.length,
+        });
+      }
+
+      const totalContents = enriched.length;
+      const totalPages = Math.ceil(totalContents / limit) || 0;
+      const paged = enriched.slice(skip, skip + limit);
+
+      return res.status(200).json({
+        message: "Publish preview events fetched",
+        events: paged,
+        pagination: {
+          totalContents,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          next: paged.length === 0 ? false : page !== totalPages,
+        },
+      });
+    } catch (err) {
+      console.error("listPublishPreviewEvents error:", err);
+      return res.status(500).json({ message: "Error fetching publish preview events", err });
+    }
+  }
+
+  async getPublishPreviewBook(req, res, token_data) {
+    try {
+      const role = (token_data.role || "").toLowerCase();
+      if (!["admin", "manager", "publisher"].includes(role)) {
+        return res.status(403).json({ status: 403, message: "Access denied", data: {} });
+      }
+
+      const { eid } = req.body;
+      if (!eid) {
+        return res.status(400).json({ status: 400, message: "eid is required", data: {} });
+      }
+
+      const event = await this.eventFunc.findOneEvent({ eid });
+      if (!event || event.is_app !== false || event.is_book !== true || event.episode_wise !== true) {
+        return res.status(404).json({
+          status: 404,
+          message: "Event not eligible for book publish preview",
+          data: {},
+        });
+      }
+
+      const publisherPid = await this._resolvePublisherPid(token_data);
+      if (role === "publisher" && event.pid !== publisherPid) {
+        return res.status(403).json({ status: 403, message: "Not authorized for this event", data: {} });
+      }
+
+      const contents = await this._getApprovedContentsMarkedPr(eid, event.pid);
+
+      if (!contents.length) {
+        return res.status(404).json({
+          status: 404,
+          message: "No approved proofread content for this event",
+          data: {},
+        });
+      }
+
+      const writers = this._groupContentsForBookPreview(contents);
+
+      return res.status(200).json({
+        status: 200,
+        message: "Book preview data fetched",
+        data: {
+          event: {
+            eid: event.eid,
+            name: event.name,
+            description: event.description,
+            logo_url: event.logo_url,
+            event_type: event.event_type,
+            st_dt: event.st_dt,
+            en_dt: event.en_dt,
+          },
+          writers,
+          stats: {
+            writers: writers.length,
+            episodes: contents.length,
+          },
+        },
+      });
+    } catch (err) {
+      console.error("getPublishPreviewBook error:", err);
+      return res.status(500).json({ status: 500, message: "Error fetching book preview", data: {} });
     }
   }
 }

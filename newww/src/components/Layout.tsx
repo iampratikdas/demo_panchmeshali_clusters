@@ -46,7 +46,7 @@ const navItems = [
     { to: '/workspace', label: 'Workspace', icon: FolderOpen },
     { to: '/proofread', label: 'Proof Read Room', icon: SpellCheck2, roles: ['admin', 'manager', 'publisher'] },
     { to: '/rankings', label: 'Rank the Contents', icon: Trophy },
-    { to: '/publish-preview', label: 'Book Publish Preview', icon: Newspaper },
+    { to: '/publish-preview', label: 'Book Publish Preview', icon: Newspaper, roles: ['admin', 'manager', 'publisher'] },
     { to: '/publishers', label: 'Publishers', icon: Building },
     { to: '/teams', label: 'Teams', icon: Users2, roles: ['publisher', 'writer', 'both'] },
 ];

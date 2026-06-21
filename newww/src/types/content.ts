@@ -37,6 +37,7 @@ export interface BaseContent {
     episodeWise?: boolean;
     totalMarks?: number;
     marks?: ContentMark[];
+    pr?: boolean;
 }
 
 export interface Story extends BaseContent {

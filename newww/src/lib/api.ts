@@ -13,6 +13,10 @@ import {
     mapStatusToBackend,
     parseContentDate,
 } from './contentMapper';
+import type {
+    PublishPreviewEvent,
+    BookPreviewData,
+} from '../types/publishPreview';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -495,6 +499,60 @@ export const saveProofreadContent = async (
     if (response.data?.status !== 200) {
         throw new Error(response.data?.message || 'Failed to save content');
     }
+};
+
+export const markProofreadDone = async (
+    cont_id: string,
+    content?: string,
+    mode?: 'manual' | 'ai'
+): Promise<{ cont_id: string; eid: string; pid: string; pr: boolean }> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/mark_proofread_done`,
+        { cont_id, content, mode },
+        { headers: authHeaders() }
+    );
+    if (response.data?.status !== 200) {
+        throw new Error(response.data?.message || 'Failed to mark proofread done');
+    }
+    return response.data.data;
+};
+
+export const fetchPublishPreviewEvents = async (
+    page = 1,
+    pageSize = 6,
+    search?: string
+): Promise<{
+    events: PublishPreviewEvent[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+}> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/list_publish_preview_events?page=${page}&limit=${pageSize}`,
+        { search: search?.trim() || '' },
+        { headers: authHeaders() }
+    );
+    const pagination = response.data?.pagination ?? {};
+    return {
+        events: response.data?.events ?? [],
+        total: pagination.totalContents ?? 0,
+        page,
+        pageSize,
+        totalPages: pagination.totalPages ?? 1,
+    };
+};
+
+export const fetchPublishPreviewBook = async (eid: string): Promise<BookPreviewData> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/publish_preview_book`,
+        { eid },
+        { headers: authHeaders() }
+    );
+    if (response.data?.status !== 200) {
+        throw new Error(response.data?.message || 'Failed to load book preview');
+    }
+    return response.data.data;
 };
 // const mockUsers: User[] = [
 //     {

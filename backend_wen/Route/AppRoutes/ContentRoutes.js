@@ -78,6 +78,24 @@ class ContentRoutes {
                 .then((token_data) => token_data && ContentController.saveProofreadContent(req, res, token_data))
                 .catch((data) => res.status(404).json({ status: 404, message: data.message, data: {} }))
         );
+
+        router.post("/mark_proofread_done", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) =>
+            await initializes(req, res, userFunc, ["admin", "manager", "publisher"])
+                .then((token_data) => token_data && ContentController.markProofreadDone(req, res, token_data))
+                .catch((data) => res.status(404).json({ status: 404, message: data.message, data: {} }))
+        );
+
+        router.post("/list_publish_preview_events", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) =>
+            await initializes(req, res, userFunc, ["admin", "manager", "publisher"])
+                .then((token_data) => token_data && ContentController.listPublishPreviewEvents(req, res, token_data))
+                .catch((data) => res.status(404).json({ status: 404, message: data.message, data: {} }))
+        );
+
+        router.post("/publish_preview_book", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) =>
+            await initializes(req, res, userFunc, ["admin", "manager", "publisher"])
+                .then((token_data) => token_data && ContentController.getPublishPreviewBook(req, res, token_data))
+                .catch((data) => res.status(404).json({ status: 404, message: data.message, data: {} }))
+        );
     }
 }
 module.exports = ContentRoutes;

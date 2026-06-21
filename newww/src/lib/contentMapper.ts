@@ -22,6 +22,7 @@ export interface ApiContentItem {
     episodes?: ApiEpisodeItem[];
     totalMarks?: number;
     marks?: Array<{ uid?: string; score?: number }>;
+    pr?: boolean;
 }
 
 export interface ApiEpisodeItem {
@@ -95,6 +96,7 @@ export function mapBackendContent(item: ApiContentItem, episodeWise = false): Co
         episodeWise,
         totalMarks: item.totalMarks ?? 0,
         marks: normalizeMarks(item.marks),
+        pr: !!item.pr,
     };
 
     if (type === 'poem') {

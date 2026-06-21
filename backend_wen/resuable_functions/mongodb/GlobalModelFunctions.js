@@ -7,6 +7,7 @@ const PublisherFunctions = require("./PublishersFunctions")
 const FolderFunctions = require("./FolderFunctions")
 const WorkspaceFileFunctions = require("./WorkspaceFileFunctions")
 const WriterStatsFunctions = require("./WriterStatsFunctions")
+const ProofReadFunctions = require("./ProofReadFunctions")
 class GlobalModelFunctions {
         modelsFunctions() {
 
@@ -20,6 +21,7 @@ class GlobalModelFunctions {
                         folderFunctions: new FolderFunctions(),
                         workspaceFileFunctions: new WorkspaceFileFunctions(),
                         writerStatsFunctions: new WriterStatsFunctions(),
+                        proofReadFunctions: new ProofReadFunctions(),
                         // pagination: pagination()
                 };
         }

@@ -123,6 +123,16 @@ const contentSchema = new mongoose.Schema({
     default: [],
   },
 
+  is_proofread: {
+    type: Boolean,
+    default: false,
+  },
+
+  proofread_at: {
+    type: String,
+    default: "",
+  },
+
   createdAt: {
     type: String,
     default: moment().unix(),
