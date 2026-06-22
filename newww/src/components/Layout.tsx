@@ -286,9 +286,9 @@ export function Layout({ children }: LayoutProps) {
                 )}
             </AnimatePresence>
 
-            <main className={cn('transition-all duration-300', !isMobile && sidebarOpen ? 'lg:pl-64' : 'pl-0')}>
+            <main className={cn('transition-all duration-300 bg-slate-50/80 min-h-screen', !isMobile && sidebarOpen ? 'lg:pl-64' : 'pl-0')}>
                 <Banner {...bannerProps} />
-                <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6 pt-8 lg:pt-6 min-w-full relative ">
+                <div className="container mx-auto px-3 sm:px-6 py-4 sm:py-6 max-w-6xl relative">
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
                         {children}
                     </motion.div>

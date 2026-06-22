@@ -1,13 +1,14 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import { useAtom } from 'jotai';
 import { useNavigate } from '@tanstack/react-router';
-import { publishersAtom, type Publisher, type AssignmentStatus } from '../../store/dashboardAtoms';
+import { publishersAtom, type Publisher } from '../../store/dashboardAtoms';
 import { fetchPublisherList, requestJoinPublisher, removePublisherAssignment } from '../../lib/api';
+import { resolveMediaUrl } from '../../lib/publishPreviewUtils';
 import { Button } from '../../ui/button';
 import { cn } from '../../lib/utils';
-import { Check, X, UserPlus, Loader2, RefreshCw, Building2, Eye } from 'lucide-react';
+import { UserPlus, Loader2, RefreshCw, Building2, Eye, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-// ── Tiny inline toast ─────────────────────────────────────────────────────────
 interface ToastItem {
     id: number;
     message: string;
@@ -18,109 +19,127 @@ let toastId = 0;
 
 function useToast() {
     const [toasts, setToasts] = useState<ToastItem[]>([]);
-
     const show = useCallback((message: string, type: ToastItem['type'] = 'success') => {
         const id = ++toastId;
-        setToasts(prev => [...prev, { id, message, type }]);
-        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
+        setToasts((prev) => [...prev, { id, message, type }]);
+        setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500);
     }, []);
-
     return { toasts, show };
 }
 
-// ── Status badge helper ───────────────────────────────────────────────────────
-function StatusBadge({ status }: { status: AssignmentStatus }) {
-    const styles: Record<AssignmentStatus, string> = {
-        Accepted: 'text-green-700 bg-green-100',
-        Pending: 'text-yellow-700 bg-yellow-100',
-        Rejected: 'text-red-700 bg-red-100',
-        Removed: 'text-slate-600 bg-slate-100',
-    };
-    return (
-        <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider', styles[status])}>
-            {status}
-        </span>
-    );
-}
+function PublisherAvatar({ pub }: { pub: Publisher }) {
+    const logo = resolveMediaUrl(pub.logo_url);
+    const [failed, setFailed] = useState(false);
 
-// ── Publisher row ─────────────────────────────────────────────────────────────
-interface PublisherRowProps {
-    pub: Publisher;
-    isLast: boolean;
-    loadingUid: string | null;
-    onJoin: (pub: Publisher) => void;
-    onRemove: (pub: Publisher) => void;
-    onNavigate: (pid: string) => void;
-}
-
-function PublisherRow({ pub, isLast, loadingUid, onJoin, onRemove, onNavigate }: PublisherRowProps) {
-    // const isBusy = loadingUid === pub.pid;
-    const status = pub.status;
+    if (logo && !failed) {
+        return (
+            <img
+                src={logo}
+                alt=""
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl object-cover ring-2 ring-white shadow-sm shrink-0"
+                onError={() => setFailed(true)}
+            />
+        );
+    }
 
     return (
-        <div
-            className={cn(
-                'flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-accent/30 transition-colors gap-4',
-                !isLast && 'border-b border-border/50',
-            )}
-        >
-            {/* Left: Avatar + info */}
-            <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
-                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-slate-200 flex-shrink-0 flex items-center justify-center text-slate-700 font-bold text-lg sm:text-xl select-none">
-                    {pub.name?.charAt(0) ?? '?'}
-                </div>
-
-                <div className="flex-1 min-w-0 pt-1 sm:pt-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <span
-                            className="font-bold text-sm sm:text-base text-foreground truncate hover:underline hover:text-violet-600 cursor-pointer transition-colors"
-                            onClick={() => onNavigate(pub.pid)}
-                            role="link"
-                            tabIndex={0}
-                            onKeyDown={e => e.key === 'Enter' && onNavigate(pub.pid)}
-                        >
-                            {pub.name}
-                        </span>
-                        {/* <StatusBadge status={status} /> */}
-                    </div>
-                    {pub.description && (
-                        <p className="text-muted-foreground text-xs sm:text-sm mt-0.5 truncate">{pub.description}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{pub.email}</p>
-                </div>
-            </div>
-
-            {/* Right: Action buttons eligible publishers list will be presenting here */}
-            <div className="flex gap-2 sm:ml-4 flex-shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
-                <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={false}
-                    className="rounded-full cursor-pointer flex-1 sm:flex-none border-slate-300 text-slate-700 hover:bg-slate-50 font-bold"
-                    onClick={() => onNavigate(pub.pid)}
-                >
-                    <Eye className="w-4 h-4 mr-1.5" />
-                    View Us
-                </Button>
-
-                <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={false}
-                    className="rounded-full cursor-pointer flex-1 sm:flex-none border-blue-600 text-blue-600 hover:bg-blue-50 font-bold"
-                    onClick={() => onJoin(pub)}
-                >
-
-                    <UserPlus className="w-4 h-4 mr-1.5" />
-
-                    Join
-                </Button>
-            </div>
+        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex-shrink-0 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+            {pub.name?.charAt(0)?.toUpperCase() ?? '?'}
         </div>
     );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+interface PublisherRowProps {
+    pub: Publisher;
+    index: number;
+    loadingUid: string | null;
+    onJoin: (pub: Publisher) => void;
+    onNavigate: (pid: string) => void;
+}
+
+function PublisherRow({ pub, index, loadingUid, onJoin, onNavigate }: PublisherRowProps) {
+    const isBusy = loadingUid === pub.pid;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.04 }}
+            className="p-4 sm:p-5 hover:bg-slate-50/80 transition-colors border-b border-slate-100 last:border-b-0"
+        >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <button
+                    type="button"
+                    onClick={() => onNavigate(pub.pid)}
+                    className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 text-left group flex-1"
+                >
+                    <PublisherAvatar pub={pub} />
+                    <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm sm:text-base text-foreground truncate group-hover:text-violet-600 transition-colors">
+                            {pub.name}
+                        </p>
+                        {pub.description && (
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 line-clamp-2 sm:line-clamp-1">
+                                {pub.description}
+                            </p>
+                        )}
+                        {pub.email && (
+                            <p className="text-[11px] text-muted-foreground/80 mt-1 truncate">{pub.email}</p>
+                        )}
+                    </div>
+                </button>
+
+                <div className="flex gap-2 w-full sm:w-auto sm:shrink-0">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 sm:flex-none h-10 rounded-xl border-slate-200 font-medium"
+                        onClick={() => onNavigate(pub.pid)}
+                    >
+                        <Eye className="w-4 h-4 mr-1.5 shrink-0" />
+                        View
+                    </Button>
+                    <Button
+                        size="sm"
+                        disabled={isBusy}
+                        className="flex-1 sm:flex-none h-10 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-medium shadow-sm"
+                        onClick={() => onJoin(pub)}
+                    >
+                        {isBusy ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <>
+                                <UserPlus className="w-4 h-4 mr-1.5 shrink-0" />
+                                Join
+                            </>
+                        )}
+                    </Button>
+                </div>
+            </div>
+        </motion.div>
+    );
+}
+
+function EmptyState({
+    icon: Icon,
+    title,
+    action,
+}: {
+    icon: typeof Building2;
+    title: string;
+    action?: ReactNode;
+}) {
+    return (
+        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 p-10 sm:p-12 flex flex-col items-center gap-3 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
+                <Icon className="w-7 h-7 text-slate-400" />
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            {action}
+        </div>
+    );
+}
+
 export function PublishersTab() {
     const [publishers, setPublishers] = useAtom(publishersAtom);
     const [loading, setLoading] = useState(false);
@@ -129,7 +148,6 @@ export function PublishersTab() {
     const { toasts, show: showToast } = useToast();
     const navigate = useNavigate();
 
-    // ── Fetch publisher list ──────────────────────────────────────────────────
     const loadPublishers = useCallback(async () => {
         const uid = localStorage.getItem('uid');
         if (!uid) {
@@ -141,8 +159,10 @@ export function PublishersTab() {
         try {
             const data = await fetchPublisherList(uid);
             setPublishers(data as Publisher[]);
-        } catch (err: any) {
-            const msg = err?.response?.data?.message ?? 'Failed to load publishers.';
+        } catch (err: unknown) {
+            const msg =
+                (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+                'Failed to load publishers.';
             setFetchError(msg);
         } finally {
             setLoading(false);
@@ -151,28 +171,20 @@ export function PublishersTab() {
 
     useEffect(() => {
         loadPublishers();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [loadPublishers]);
 
-    // ── Join request ──────────────────────────────────────────────────────────
     const handleJoin = async (pub: Publisher) => {
         setLoadingUid(pub.pid);
         try {
             await requestJoinPublisher(pub.pid);
-            // Optimistically mark as Pending + generate a temporary assignment_id
             loadPublishers();
             showToast(`Join request sent to ${pub.name}!`, 'success');
-        } catch (err: any) {
-            const msg = err?.response?.data?.message ?? 'Failed to send request.';
-            // If already exists, reflect it in the UI
-            if (err?.response?.status === 409) {
-                setPublishers(prev =>
-                    prev.map(p =>
-                        p.pid === pub.pid
-                            ? { ...p, status: 'Pending', assignment_id: 'pending_' + pub.pid }
-                            : p
-                    )
-                );
+        } catch (err: unknown) {
+            const status = (err as { response?: { status?: number; data?: { message?: string } } })?.response?.status;
+            const msg =
+                (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+                'Failed to send request.';
+            if (status === 409) {
                 showToast('Request already exists.', 'error');
             } else {
                 showToast(msg, 'error');
@@ -182,73 +194,52 @@ export function PublishersTab() {
         }
     };
 
-    // ── Remove / cancel ───────────────────────────────────────────────────────
-    const handleRemove = async (pub: Publisher) => {
-        setLoadingUid(pub.pid);
-        try {
-            await removePublisherAssignment(pub.pid);
-            // Optimistically mark as Removed and clear assignment_id
-            setPublishers(prev =>
-                prev.map(p =>
-                    p.pid === pub.pid
-                        ? { ...p, status: 'Removed', assignment_id: '' }
-                        : p
-                )
-            );
-            showToast(`Removed from ${pub.name}.`, 'success');
-        } catch (err: any) {
-            const msg = err?.response?.data?.message ?? 'Failed to remove assignment.';
-            showToast(msg, 'error');
-        } finally {
-            setLoadingUid(null);
-        }
-    };
-
-    // ── Render ────────────────────────────────────────────────────────────────
-    console.log("publishers Atom", publishers)
     if (loading) {
         return (
-            <div className="bg-white dark:bg-card border border-border rounded-xl shadow-sm p-8 flex flex-col items-center gap-3 text-muted-foreground">
-                <Loader2 className="w-7 h-7 animate-spin text-green-600" />
-                <span className="text-sm font-medium">Loading publishers…</span>
+            <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 p-12 flex flex-col items-center gap-3">
+                <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
+                <span className="text-sm text-muted-foreground">Loading publishers…</span>
             </div>
         );
     }
 
     if (fetchError) {
         return (
-            <div className="bg-white dark:bg-card border border-border rounded-xl shadow-sm p-8 flex flex-col items-center gap-3 text-center">
-                <Building2 className="w-10 h-10 text-muted-foreground/40" />
-                <p className="text-sm font-medium text-red-500">{fetchError}</p>
-                <Button size="sm" variant="outline" onClick={loadPublishers} className="gap-2">
-                    <RefreshCw className="w-4 h-4" /> Retry
-                </Button>
-            </div>
+            <EmptyState
+                icon={Building2}
+                title={fetchError}
+                action={
+                    <Button size="sm" variant="outline" onClick={loadPublishers} className="gap-2 rounded-xl mt-2">
+                        <RefreshCw className="w-4 h-4" /> Retry
+                    </Button>
+                }
+            />
         );
     }
 
     if (publishers.length === 0) {
         return (
-            <div className="bg-white dark:bg-card border border-border rounded-xl shadow-sm p-8 flex flex-col items-center gap-3 text-center text-muted-foreground">
-                <Building2 className="w-10 h-10 text-muted-foreground/40" />
-                <p className="text-sm font-medium">No publishers found.</p>
-                <Button size="sm" variant="outline" onClick={loadPublishers} className="gap-2">
-                    <RefreshCw className="w-4 h-4" /> Refresh
-                </Button>
-            </div>
+            <EmptyState
+                icon={Building2}
+                title="No publishers found."
+                action={
+                    <Button size="sm" variant="outline" onClick={loadPublishers} className="gap-2 rounded-xl mt-2">
+                        <RefreshCw className="w-4 h-4" /> Refresh
+                    </Button>
+                }
+            />
         );
     }
 
     return (
         <>
-            {/* Toast container */}
-            <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none">
-                {toasts.map(t => (
+            <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-50 flex flex-col gap-2 pointer-events-none max-w-sm sm:max-w-xs ml-auto">
+                {toasts.map((t) => (
                     <div
                         key={t.id}
                         className={cn(
-                            'px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white pointer-events-auto transition-all duration-300',
-                            t.type === 'success' ? 'bg-green-600' : 'bg-red-500',
+                            'px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white pointer-events-auto',
+                            t.type === 'success' ? 'bg-emerald-600' : 'bg-red-500'
                         )}
                     >
                         {t.message}
@@ -256,40 +247,38 @@ export function PublishersTab() {
                 ))}
             </div>
 
-            {/* Publisher list card */}
-            <div className="bg-white dark:bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-                <div className="flex items-center justify-between p-4 border-b border-border/50">
-                    <h2 className="text-base font-bold text-foreground">Suggested for you</h2>
+            <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 overflow-hidden">
+                <div className="flex items-center justify-between px-4 sm:px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+                    <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-violet-500" />
+                        <h2 className="text-sm sm:text-base font-semibold text-foreground">Suggested for you</h2>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
+                            {publishers.length}
+                        </span>
+                    </div>
                     <button
+                        type="button"
                         onClick={loadPublishers}
                         disabled={loading}
-                        className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-accent/50"
-                        title="Refresh publisher list"
+                        className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-slate-100 transition-colors touch-manipulation"
+                        title="Refresh"
                     >
                         <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
                     </button>
                 </div>
 
-                <div className="flex flex-col">
+                <div>
                     {publishers.map((pub, index) => (
                         <PublisherRow
                             key={pub.pid}
                             pub={pub}
-                            isLast={index === publishers.length - 1}
+                            index={index}
                             loadingUid={loadingUid}
                             onJoin={handleJoin}
-                            onRemove={handleRemove}
                             onNavigate={(pid) => navigate({ to: '/publishers/$pid', params: { pid } })}
                         />
                     ))}
                 </div>
-
-                {/* <button
-                    className="w-full p-3 text-sm font-bold text-muted-foreground hover:bg-accent/50 transition-colors border-t border-border/50"
-                    onClick={loadPublishers}
-                >
-                    Show more
-                </button> */}
             </div>
         </>
     );

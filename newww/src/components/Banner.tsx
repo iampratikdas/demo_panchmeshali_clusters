@@ -4,37 +4,51 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 interface BannerProps {
     title: string;
     image: string;
+    subtitle?: string;
 }
 
-export function Banner({ title, image }: BannerProps) {
+export function Banner({ title, image, subtitle }: BannerProps) {
     const ref = useRef(null);
     const { scrollYProgress } = useScroll({
         target: ref,
-        offset: ["start start", "end start"]
+        offset: ['start start', 'end start'],
     });
 
-    const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
-    const opacity = useTransform(scrollYProgress, [0, 0.8], [0.8, 0]);
+    const y = useTransform(scrollYProgress, [0, 1], ['0%', '20%']);
+    const opacity = useTransform(scrollYProgress, [0, 1], [1, 0.4]);
 
     return (
-        <div className="relative h-48 sm:h-64 md:h-80 w-full overflow-hidden" ref={ref}>
-            <motion.div style={{ y, opacity }} className="absolute inset-0 w-full h-full">
-                <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent z-10" />
+        <div
+            ref={ref}
+            className="relative h-36 sm:h-44 md:h-52 w-full overflow-hidden bg-slate-900"
+        >
+            <motion.div style={{ y, opacity }} className="absolute inset-0">
                 <img
                     src={image}
-                    alt={title}
-                    className="w-full h-full object-cover"
+                    alt=""
+                    className="w-full h-full object-cover scale-105"
                 />
             </motion.div>
-            <div className="absolute bottom-0 left-0 w-full p-6 z-20">
-                <div className="container mx-auto">
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-slate-900/50 to-slate-900/20" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
+
+            <div className="absolute inset-0 flex items-end">
+                <div className="w-full px-4 sm:px-6 lg:px-8 pb-5 sm:pb-6 max-w-6xl mx-auto">
+                    <motion.div
+                        initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-3xl border-b-4 border-white pb-3 sm:text-4xl md:text-5xl font-bold text-white drop-shadow-lg"
+                        transition={{ duration: 0.35 }}
                     >
-                        {title}
-                    </motion.h1>
+                        <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] text-emerald-300/90 mb-1">
+                            Admin Portal
+                        </p>
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">
+                            {title}
+                        </h1>
+                        {subtitle && (
+                            <p className="text-sm text-white/70 mt-1 max-w-lg hidden sm:block">{subtitle}</p>
+                        )}
+                    </motion.div>
                 </div>
             </div>
         </div>

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { fetchContents } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
@@ -9,114 +9,140 @@ import {
     Clock,
     XCircle,
     TrendingUp,
-    Search,
-    Image as ImageIcon,
-    Smile,
-    Calendar,
-    MapPin,
     BarChart2,
-    ListVideo
+    Users2,
+    CalendarDays,
 } from 'lucide-react';
 import { useAtom } from 'jotai';
 import { currentUserAtom } from '../store/atoms';
 import { cn } from '../lib/utils';
-import { useSounds } from '../utils/Sounds';
 import { PublishersTab } from '../components/dashboard/PublishersTab';
-import { NewsFeedTab } from '../components/dashboard/NewsFeedTab';
 import { ActiveEventsTab } from '../components/dashboard/ActiveEventsTab';
+import { motion } from 'framer-motion';
+
+type DashboardTab = 'analytics' | 'publishers' | 'active-events';
 
 export default function Dashboard() {
-    const { bootPlay } = useSounds();
     const [user] = useAtom(currentUserAtom);
-    const [activeTab, setActiveTab] = useState<'analytics' | 'news-feed' | 'publishers' | 'active-events'>('analytics');
+    const isWriter = user.role === 'writer';
+    const [activeTab, setActiveTab] = useState<DashboardTab>(isWriter ? 'publishers' : 'analytics');
 
     useEffect(() => {
-        if (user.role === 'writer') {
-            setActiveTab('publishers');
-        }
-    }, [user]);
+        if (isWriter) setActiveTab('publishers');
+    }, [isWriter]);
+
     const { data, isLoading } = useQuery({
         queryKey: ['contents'],
         queryFn: () => fetchContents(1, 100),
     });
 
-    if (isLoading) {
-        return <LoadingSkeleton />;
-    }
+    const tabs = useMemo(() => {
+        const items: { id: DashboardTab; label: string; icon: typeof BarChart2 }[] = [];
+        if (isWriter) {
+            items.push({ id: 'publishers', label: 'Following', icon: Users2 });
+            items.push({ id: 'active-events', label: 'Active Events', icon: CalendarDays });
+        }
+        items.push({ id: 'analytics', label: 'Analytics', icon: BarChart2 });
+        return items;
+    }, [isWriter]);
+
+    if (isLoading) return <LoadingSkeleton />;
 
     const contents = data?.data || [];
     const stats = {
         total: contents.length,
-        approved: contents.filter(c => c.status === 'Approved').length,
-        underReview: contents.filter(c => c.status === 'Under Review').length,
-        rejected: contents.filter(c => c.status === 'Rejected').length,
+        approved: contents.filter((c) => c.status === 'Approved').length,
+        underReview: contents.filter((c) => c.status === 'Under Review').length,
+        rejected: contents.filter((c) => c.status === 'Rejected').length,
     };
 
     const statCards = [
-        { title: 'Total Submissions', value: stats.total, icon: FileText, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
-        { title: 'Approved', value: stats.approved, icon: CheckCircle, color: 'text-green-500', bgColor: 'bg-green-500/10' },
-        { title: 'Under Review', value: stats.underReview, icon: Clock, color: 'text-yellow-500', bgColor: 'bg-yellow-500/10' },
-        { title: 'Rejected', value: stats.rejected, icon: XCircle, color: 'text-red-500', bgColor: 'bg-red-500/10' },
+        { title: 'Total', value: stats.total, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50', ring: 'ring-blue-100' },
+        { title: 'Approved', value: stats.approved, icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', ring: 'ring-emerald-100' },
+        { title: 'In Review', value: stats.underReview, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', ring: 'ring-amber-100' },
+        { title: 'Rejected', value: stats.rejected, icon: XCircle, color: 'text-red-600', bg: 'bg-red-50', ring: 'ring-red-100' },
     ];
 
     const recentContent = contents.slice(0, 5);
 
     const renderAnalytics = () => (
-        <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {statCards.map((stat) => {
+        <div className="space-y-4 sm:space-y-5">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {statCards.map((stat, i) => {
                     const Icon = stat.icon;
                     return (
-                        <Card key={stat.title} className="hover:shadow-md transition-shadow border border-border bg-white dark:bg-card rounded-xl">
-                            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
-                                    {stat.title}
-                                </CardTitle>
-                                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                                    <Icon className={`h-4 w-4 ${stat.color}`} />
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl sm:text-3xl font-bold">{stat.value}</div>
-                            </CardContent>
-                        </Card>
+                        <motion.div
+                            key={stat.title}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.05 }}
+                        >
+                            <Card className={cn('border-0 shadow-sm ring-1', stat.ring, 'rounded-2xl overflow-hidden')}>
+                                <CardContent className="p-4 sm:p-5">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div>
+                                            <p className="text-[11px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                {stat.title}
+                                            </p>
+                                            <p className="text-2xl sm:text-3xl font-bold mt-1 tabular-nums">{stat.value}</p>
+                                        </div>
+                                        <div className={cn('p-2.5 rounded-xl', stat.bg)}>
+                                            <Icon className={cn('h-4 w-4 sm:h-5 sm:w-5', stat.color)} />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
                     );
                 })}
             </div>
 
-            <Card className="border border-border bg-white dark:bg-card rounded-xl">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                        <TrendingUp className="h-5 w-5" />
+            <Card className="border-0 shadow-sm ring-1 ring-slate-100 rounded-2xl">
+                <CardHeader className="pb-3 px-4 sm:px-6 pt-5 sm:pt-6">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg font-semibold">
+                        <TrendingUp className="h-5 w-5 text-emerald-600" />
                         Recent Submissions
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="space-y-3 sm:space-y-4">
-                        {recentContent.map((content) => (
-                            <div key={content.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors gap-2 sm:gap-0">
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-sm sm:text-base truncate">{content.title}</p>
-                                    <p className="text-xs sm:text-sm text-muted-foreground">
-                                        {new Date(content.createdAt).toLocaleDateString()}
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                    <span className="text-xs text-muted-foreground capitalize px-2 py-1 bg-muted rounded">
-                                        {content.type}
-                                    </span>
-                                    <div className={cn(
-                                        'text-xs sm:text-sm font-medium px-2 py-1 rounded',
-                                        content.status === 'Approved' && 'text-green-600 bg-green-100',
-                                        content.status === 'Rejected' && 'text-red-600 bg-red-100',
-                                        content.status === 'Under Review' && 'text-yellow-600 bg-yellow-100',
-                                        content.status === 'Submitted' && 'text-blue-600 bg-blue-100'
-                                    )}>
-                                        {content.status}
+                <CardContent className="px-4 sm:px-6 pb-5 sm:pb-6 pt-0">
+                    <div className="space-y-2 sm:space-y-3">
+                        {recentContent.length === 0 ? (
+                            <p className="text-sm text-muted-foreground py-6 text-center">No submissions yet.</p>
+                        ) : (
+                            recentContent.map((content) => (
+                                <div
+                                    key={content.id}
+                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl bg-slate-50/80 hover:bg-slate-100/80 transition-colors"
+                                >
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-sm sm:text-base truncate">{content.title}</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                            {new Date(content.createdAt).toLocaleDateString(undefined, {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric',
+                                            })}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-[10px] sm:text-xs capitalize px-2 py-0.5 bg-white rounded-md text-muted-foreground ring-1 ring-slate-200">
+                                            {content.type}
+                                        </span>
+                                        <span
+                                            className={cn(
+                                                'text-[10px] sm:text-xs font-semibold px-2.5 py-0.5 rounded-full',
+                                                content.status === 'Approved' && 'bg-emerald-100 text-emerald-700',
+                                                content.status === 'Rejected' && 'bg-red-100 text-red-700',
+                                                content.status === 'Under Review' && 'bg-amber-100 text-amber-700',
+                                                content.status === 'Submitted' && 'bg-blue-100 text-blue-700'
+                                            )}
+                                        >
+                                            {content.status}
+                                        </span>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </CardContent>
             </Card>
@@ -124,155 +150,52 @@ export default function Dashboard() {
     );
 
     return (
-        <div className="min-h-screen bg-[#f3f2ef] dark:bg-background pt-4 pb-12 sm:pt-6 px-0 sm:px-4 md:px-8 lg:px-0">
-            <div className="flex flex-col lg:flex-row max-w-6xl mx-auto gap-6 lg:px-4">
-                {/* Left Column (Main Feed) */}
-                <div className="flex-1 lg:max-w-[65%] xl:max-w-[70%] space-y-4">
+        <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-5 pb-8">
+            {/* Welcome strip */}
+            <div className="px-1 sm:px-0">
+                <p className="text-sm text-muted-foreground">
+                    Welcome back,{' '}
+                    <span className="font-semibold text-foreground">{user.name || 'Writer'}</span>
+                </p>
+            </div>
 
-                    {/* Top Navigation Bar */}
-                    <div className="bg-white dark:bg-white dark:bg-card rounded-xl border border-border flex justify-around overflow-hidden shadow-sm">
-                        {
-                            false ?
-
-                                <button
-                                    className={cn("flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'news-feed' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
-                                    onClick={() => setActiveTab('news-feed')}
-                                >
-                                    For you
-                                    {activeTab === 'news-feed' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-green-600 rounded-t-full"></div>}
-                                </button> : null
-                        }
-                        {
-                            user.role == "writer" ?
-                                <button
-                                    className={cn(" cursor-pointer flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'publishers' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
-                                    onClick={() => setActiveTab('publishers')}
-                                >
-                                    Following
-                                    {activeTab === 'publishers' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-green-600 rounded-t-full"></div>}
-                                </button> : null
-                        }
-
-                        {
-                            user.role == "writer" ?
-                                <button
-                                    id="active-events-tab"
-                                    className={cn("cursor-pointer flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'active-events' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
-                                    onClick={() => setActiveTab('active-events')}
-                                >
-                                    Active Events
-                                    {activeTab === 'active-events' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-1 bg-indigo-600 rounded-t-full"></div>}
-                                </button> : null
-                        }
-
-                        <button
-                            className={cn("cursor-pointer flex-1 py-4 text-sm font-medium transition-colors hover:bg-accent/50 relative", activeTab === 'analytics' ? "text-foreground font-bold" : "text-muted-foreground hover:text-foreground")}
-                            onClick={() => setActiveTab('analytics')}
-                        >
-                            Analytics
-                            {activeTab === 'analytics' && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-16 h-1 bg-green-600 rounded-t-full"></div>}
-                        </button>
-                    </div>
-
-                    {/* What's happening input */}
-                    {/* <div className="p-4 border border-border bg-white dark:bg-white dark:bg-card rounded-xl shadow-sm">
-                        <div className="flex gap-4">
-                            <div className="w-12 h-12 rounded-full bg-slate-200 flex-shrink-0 flex items-center justify-center text-slate-700 font-bold">
-                                {user.name?.charAt(0) || 'U'}
-                            </div>
-                            <div className="flex-1">
-                                <textarea
-                                    placeholder="Start a post"
-                                    className="w-full bg-transparent border border-muted-foreground/30 rounded-3xl px-5 py-3 text-sm text-foreground placeholder:text-muted-foreground hover:bg-muted/10 focus:bg-background focus:ring-1 focus:ring-blue-500 transition-all font-medium outline-none resize-none"
-                                    rows={1}
-                                    onInput={(e) => {
-                                        const target = e.target as HTMLTextAreaElement;
-                                        target.style.height = 'auto';
-                                        target.style.height = `${target.scrollHeight}px`;
-                                    }}
-                                ></textarea>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-around mt-3 pt-1">
-                            <button className="flex items-center gap-2 p-3 rounded-lg hover:bg-accent/50 transition-colors text-blue-600 font-medium text-sm">
-                                <ImageIcon className="w-5 h-5" />
-                                <span className="hidden sm:inline text-muted-foreground">Photo</span>
+            {/* Tab bar — scrollable on mobile */}
+            <div className="overflow-x-auto scrollbar-hide -mx-1 px-1">
+                <div className="inline-flex sm:flex w-max sm:w-full min-w-full sm:min-w-0 gap-1 p-1 bg-white rounded-2xl shadow-sm ring-1 ring-slate-100">
+                    {tabs.map((tab) => {
+                        const Icon = tab.icon;
+                        const active = activeTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => setActiveTab(tab.id)}
+                                className={cn(
+                                    'flex-1 flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-medium transition-all whitespace-nowrap touch-manipulation',
+                                    active
+                                        ? 'bg-slate-900 text-white shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-slate-50'
+                                )}
+                            >
+                                <Icon className="h-4 w-4 shrink-0" />
+                                {tab.label}
                             </button>
-                            <button className="flex items-center gap-2 p-3 rounded-lg hover:bg-accent/50 transition-colors text-green-600 font-medium text-sm">
-                                <ListVideo className="w-5 h-5" />
-                                <span className="hidden sm:inline text-muted-foreground">Video</span>
-                            </button>
-                            <button className="flex items-center gap-2 p-3 rounded-lg hover:bg-accent/50 transition-colors text-orange-600 font-medium text-sm">
-                                <BarChart2 className="w-5 h-5" />
-                                <span className="hidden sm:inline text-muted-foreground">Poll</span>
-                            </button>
-                            <button className="flex items-center gap-2 p-3 rounded-lg hover:bg-accent/50 transition-colors text-red-500 font-medium text-sm">
-                                <Calendar className="w-5 h-5" />
-                                <span className="hidden sm:inline text-muted-foreground">Write article</span>
-                            </button>
-                        </div>
-                    </div> */}
-
-                    {/* Feed Content */}
-                    <div className="space-y-4">
-                        {activeTab === 'analytics' && renderAnalytics()}
-                        {activeTab === 'news-feed' && <NewsFeedTab />}
-                        {activeTab === 'publishers' && <PublishersTab />}
-                        {activeTab === 'active-events' && <ActiveEventsTab />}
-                    </div>
-
-                </div>
-
-                {/* Right Column (Sidebar) */}
-                <div className="hidden lg:flex flex-col w-[300px] xl:w-[350px] space-y-4">
-
-                    {/* Search Bar */}
-                    {/* Later features we can add this  */}
-                    {/* <div className="bg-white dark:bg-white dark:bg-card  relative group rounded-full">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground group-focus-within:text-foreground" />
-                        <input
-                            type="text"
-                            placeholder="Search"
-                            className="bg-white dark:bg-white dark:bg-card w-full bg-white dark:bg-card border border-border rounded-full py-2.5 pl-12 pr-4 outline-none focus:ring-1 focus:ring-foreground transition-all text-sm font-medium shadow-sm"
-                        />
-                    </div> */}
-
-                    {/* Today's News */}
-                    {/* <div className="bg-white dark:bg-white dark:bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-                        <h2 className="text-base font-bold p-4 pb-2 text-foreground">LinkedIn News</h2>
-
-                        <div className="hover:bg-accent/50 p-4 py-2 cursor-pointer transition-colors">
-                            <p className="font-bold text-sm text-foreground">Top tech & startup experts</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">1h ago · 4,241 readers</p>
-                        </div>
-
-                        <div className="hover:bg-accent/50 p-4 py-2 cursor-pointer transition-colors">
-                            <p className="font-bold text-sm text-foreground">Global consumer firms tap India</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">1h ago</p>
-                        </div>
-
-                        <div className="hover:bg-accent/50 p-4 py-2 cursor-pointer transition-colors">
-                            <p className="font-bold text-sm text-foreground">AI fuels Bollywood's next act</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">58m ago</p>
-                        </div>
-
-                        <button className="w-full text-left p-4 py-3 text-muted-foreground font-bold hover:bg-accent/50 cursor-pointer transition-colors text-sm rounded-b-xl">
-                            Show more news
-                        </button>
-                    </div> */}
-
-                    {/* Premium Box */}
-                    {/* <div className="bg-white dark:bg-card border border-border rounded-xl p-4 shadow-sm">
-                        <h2 className="text-base font-bold mb-2 text-foreground">Subscribe to Premium</h2>
-                        <p className="text-sm text-muted-foreground mb-4 leading-snug">
-                            Get rid of ads, see your analytics, boost your replies and unlock 20+ features.
-                        </p>
-                        <button className="bg-blue-600 text-white font-bold py-1.5 px-4 rounded-full hover:bg-blue-700 transition-colors text-sm w-full">
-                            Retry Premium
-                        </button>
-                    </div> */}
+                        );
+                    })}
                 </div>
             </div>
+
+            {/* Tab content */}
+            <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+            >
+                {activeTab === 'analytics' && renderAnalytics()}
+                {activeTab === 'publishers' && <PublishersTab />}
+                {activeTab === 'active-events' && <ActiveEventsTab />}
+            </motion.div>
         </div>
     );
 }

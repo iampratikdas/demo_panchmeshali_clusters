@@ -27,6 +27,16 @@ function authHeaders() {
     };
 }
 
+function getApiErrorMessage(err: unknown, fallback: string): string {
+    if (axios.isAxiosError(err)) {
+        const data = err.response?.data as { message?: string } | undefined;
+        if (data?.message) return data.message;
+        return err.message || fallback;
+    }
+    if (err instanceof Error && err.message) return err.message;
+    return fallback;
+}
+
 
 export const apiCaller = async (data: any, url: string) => {
     try {
@@ -368,32 +378,43 @@ export const fetchCommentsByContentId = async (contentId: string): Promise<Comme
 
 export const submitContent = async (
     formData: any
-): Promise<any> => {
-    // await delay(1000);
+): Promise<{ message?: string }> => {
     const form_data = {
         type: formData.type,
         storyName: formData.title,
         eid: formData.selectedEventId ?? "",
         storyContent: formData.content,
         url: formData.selectedFolder ?? "",
-        // page_id: formData.selectedPublisher ?? "",
         event_content: formData.newContent ?? false,
         isOriginalWork: formData.isOriginal ?? false,
-        // parent_id: formData.parentId ?? "",
         category: formData.category ?? "",
         coverImage: formData.coverImage ?? "",
         backgroundImage: formData.backgroundImage ?? "",
-        // content: formData.content ?? "",
         episodeNumber: formData.episodeNumber ?? "",
         publisher: formData.publisher ?? "",
         destination: formData.destination ?? "",
         wordCount: formData.wordCount ?? 0,
         parent_id: formData.parent_id ?? "",
         h_title: formData.h_title ?? "",
+    };
+
+    try {
+        const response = await axios.post(
+            `${API_BASE_URL}${apiJson.submitContents.url}`,
+            { ...form_data },
+            { headers: apiJson.submitContents.headers }
+        );
+        const message = response.data?.message ?? '';
+        if (message.toLowerCase().includes('already submitted')) {
+            throw new Error(message);
+        }
+        if (response.data?.status && Number(response.data.status) >= 400) {
+            throw new Error(message || 'Submission failed');
+        }
+        return response.data;
+    } catch (err) {
+        throw new Error(getApiErrorMessage(err, 'Submission failed'));
     }
-    console.log("formData:================>", form_data);
-    const response = await axios.post(`${API_BASE_URL}${apiJson.submitContents.url}`, { ...form_data }, { headers: apiJson.submitContents.headers });
-    return response.data;
 };
 
 export const addComment = async (

@@ -364,6 +364,15 @@ body {
   backface-visibility: hidden;
 }
 
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* PDF export: hex-only overrides (html2canvas cannot parse oklch) */
 .book-pdf-export-root,
 .book-pdf-export-root * {

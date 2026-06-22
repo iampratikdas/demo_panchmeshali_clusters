@@ -1,5 +1,7 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
+import Swal from 'sweetalert2';
 import { submitContent, fetchEventsUsers, fetchEventEpisodes } from '../lib/api';
 import type { EventEpisode } from '../lib/api';
 import { useAtom } from 'jotai';
@@ -86,6 +88,7 @@ function getStoryName(
 }
 
 export function useSubmissionForm() {
+    const navigate = useNavigate();
     const [type, setType] = useState<string>('story');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -232,6 +235,36 @@ export function useSubmissionForm() {
     useEffect(() => {
         setModalWordCount(wordCount);
     }, [wordCount]);
+
+    const resetForm = useCallback(() => {
+        setType('story');
+        setTitle('');
+        setContent('');
+        setSelectedEventId('');
+        setSelectedPublisher('');
+        setSelectedFolder('root');
+        setIsOriginal(false);
+        setNewSubmission(true);
+        setNewContent('');
+        setCategory('');
+        setEpisodeNumber('');
+        setHeadTitle('');
+        setPreviousEpisode('');
+        setBackgroundImage('');
+        setCoverImage('');
+        setDestination('');
+        setPublicationDestination('app');
+        setStoryTitle('');
+        setShowPaidEventModal(false);
+        setModalWordCount(0);
+        if (backgroundInputRef.current) {
+            backgroundInputRef.current.value = '';
+        }
+        if (coverInputRef.current) {
+            coverInputRef.current.value = '';
+        }
+    }, []);
+
     const submitMutation = useMutation({
         mutationFn: async () => {
             const formData = {
@@ -265,19 +298,29 @@ export function useSubmissionForm() {
 
             return submitContent(formData);
         },
-        onSuccess: () => {
+        onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['contents'] });
 
-            toast({
-                title: 'Success!',
-                description: 'Your submission has been received.',
+            Swal.fire({
+                icon: 'success',
+                title: 'Submission Successful!',
+                text: data?.message || 'Your submission has been received.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#059669',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    resetForm();
+                    navigate({ to: '/content' });
+                }
             });
         },
         onError: (error: Error) => {
-            toast({
-                title: 'Submission failed',
-                description: error.message || 'Please check all required fields.',
-                variant: 'destructive',
+            Swal.fire({
+                icon: 'error',
+                title: 'Submission Failed',
+                text: error.message || 'Please check all required fields and try again.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#059669',
             });
         },
     });
@@ -349,35 +392,6 @@ export function useSubmissionForm() {
 
     const dismissPaidEventModal = () => {
         setShowPaidEventModal(false);
-    };
-
-    const resetForm = () => {
-        setType('story');
-        setTitle('');
-        setContent('');
-        setSelectedEventId('');
-        setSelectedPublisher('');
-        setSelectedFolder('root');
-        setIsOriginal(false);
-        setNewSubmission(true);
-        setNewContent('');
-        setCategory('');
-        setEpisodeNumber('');
-        setHeadTitle('');
-        setPreviousEpisode('');
-        setBackgroundImage('');
-        setCoverImage('');
-        setDestination('');
-        setPublicationDestination('app');
-        setStoryTitle('');
-        setShowPaidEventModal(false);
-        setModalWordCount(0);
-        if (backgroundInputRef.current) {
-            backgroundInputRef.current.value = '';
-        }
-        if (coverInputRef.current) {
-            coverInputRef.current.value = '';
-        }
     };
 
     const eventFolders = selectedEvent?.default_folder

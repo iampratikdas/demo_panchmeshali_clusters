@@ -1,14 +1,12 @@
-import { Loader2, Send, FileText, CalendarDays, ChevronRight, ChevronLeft, Check, PlusCircle, Trash2 } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
-import { useSubmissionForm } from '../hooks/useSubmissionForm';
+import { Loader2, Send, ChevronRight, ChevronLeft, Check, PlusCircle, Trash2, PenLine } from 'lucide-react';
+import { useState, useMemo, useEffect, type ReactNode } from 'react';import { useSubmissionForm } from '../hooks/useSubmissionForm';
 import { CONTENT_TYPES } from '../constants/submission';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { AnimatedSelect } from '../ui/animated-select';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
-import { ConfirmModal } from '../components/teams/ConfirmModal';
+import { Tabs, TabsContent } from '../ui/tabs';import { ConfirmModal } from '../components/teams/ConfirmModal';
 import { WordCountDisplay } from '../components/submission/WordCountDisplay';
 import { countWordsFromHtml } from '../lib/wordCount';// Sub-components
 import { EventSubmissionCard } from '../components/submission/EventSubmissionCard';
@@ -17,6 +15,9 @@ import { SubmissionTypeCard } from '../components/submission/SubmissionTypeCard'
 import { ImageUploadField } from '../components/submission/ImageUploadField';
 import { OriginalConfirmationCard } from '../components/submission/OriginalConfirmationCard';
 import { CheckForApp } from '../components/submission/CheckForApp';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const innerCardClass = 'border-0 shadow-none ring-1 ring-slate-100 rounded-xl bg-white';
 
 // ─── Step Indicator ──────────────────────────────────────────────────────────
 
@@ -31,59 +32,84 @@ interface StepIndicatorProps {
 }
 
 function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
+    const pct = ((currentStep + 1) / steps.length) * 100;
+
     return (
-        <div className="w-full mb-8">
-            <div className="flex items-center justify-between relative">
-                {/* connecting line behind circles */}
-                <div className="absolute top-5 left-0 right-0 h-0.5 bg-border z-0" />
-                <div
-                    className="absolute top-5 left-0 h-0.5 bg-primary z-0 transition-all duration-500"
-                    style={{
-                        width: steps.length > 1
-                            ? `${(currentStep / (steps.length - 1)) * 100}%`
-                            : '0%'
+        <div className="mb-6 sm:mb-8">
+            {/* Mobile: compact progress */}
+            <div className="sm:hidden space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">
+                        Step {currentStep + 1} of {steps.length}
+                    </span>
+                    <span className="font-semibold text-emerald-700">{steps[currentStep]?.label}</span>
+                </div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <motion.div
+                        className="h-full bg-emerald-600 rounded-full"
+                        initial={false}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 0.35, ease: 'easeOut' }}
+                    />
+                </div>
+                <p className="text-xs text-muted-foreground text-center">{steps[currentStep]?.description}</p>
+            </div>
+
+            {/* Desktop: horizontal stepper */}
+            <div className="hidden sm:flex items-start justify-between relative px-2">
+                <div className="absolute top-5 left-8 right-8 h-0.5 bg-slate-200 z-0" />
+                <motion.div
+                    className="absolute top-5 left-8 h-0.5 bg-emerald-600 z-0"
+                    initial={false}
+                    animate={{
+                        width:
+                            steps.length > 1
+                                ? `calc(${(currentStep / (steps.length - 1)) * 100}% - 4rem)`
+                                : '0%',
                     }}
+                    transition={{ duration: 0.4, ease: 'easeOut' }}
                 />
 
                 {steps.map((step, index) => {
                     const isCompleted = index < currentStep;
                     const isActive = index === currentStep;
                     return (
-                        <div key={index} className="flex flex-col items-center z-10 flex-1">
+                        <div key={step.label} className="flex flex-col items-center z-10 flex-1 min-w-0 px-1">
                             <div
                                 className={`
                                     w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 font-semibold text-sm
                                     ${isCompleted
-                                        ? 'bg-primary border-primary text-white shadow-md bg-black'
+                                        ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
                                         : isActive
-                                            ? 'bg-background border-primary text-primary shadow-lg ring-4 ring-primary/20 shadow-[rgba(50,50,93,0.25)_0px_50px_100px_-20px,rgba(0,0,0,0.3)_0px_30px_60px_-30px,rgba(10,37,64,0.35)_0px_-2px_6px_0px_inset]'
-                                            : 'bg-background border-border text-muted-foreground'
+                                            ? 'bg-white border-emerald-600 text-emerald-700 ring-4 ring-emerald-100 shadow-sm'
+                                            : 'bg-white border-slate-200 text-slate-400'
                                     }
                                 `}
                             >
-                                {isCompleted ? (
-                                    <Check className="w-4 h-4" />
-                                ) : (
-                                    <span>{index + 1}</span>
-                                )}
+                                {isCompleted ? <Check className="w-4 h-4" /> : <span>{index + 1}</span>}
                             </div>
-                            <div className="mt-2 text-center hidden sm:block">
-                                <p className={`text-xs font-semibold transition-colors ${isActive ? 'text-primary' : isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
+                            <div className="mt-2.5 text-center max-w-[7rem]">
+                                <p
+                                    className={`text-xs font-semibold truncate ${
+                                        isActive ? 'text-emerald-700' : isCompleted ? 'text-foreground' : 'text-muted-foreground'
+                                    }`}
+                                >
                                     {step.label}
                                 </p>
-                                <p className={`text-[10px] mt-0.5 transition-colors ${isActive ? 'text-muted-foreground' : 'text-muted-foreground/60'}`}>
-                                    {step.description}
-                                </p>
+                                <p className="text-[10px] mt-0.5 text-muted-foreground line-clamp-2">{step.description}</p>
                             </div>
                         </div>
                     );
                 })}
             </div>
-            {/* Mobile: active step label */}
-            <div className="sm:hidden mt-3 text-center">
-                <p className="text-sm font-semibold text-primary">{steps[currentStep]?.label}</p>
-                <p className="text-xs text-muted-foreground">{steps[currentStep]?.description}</p>
-            </div>
+        </div>
+    );
+}
+
+function WizardShell({ children }: { children: ReactNode }) {
+    return (
+        <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-100 overflow-hidden">
+            <div className="p-4 sm:p-6 md:p-8">{children}</div>
         </div>
     );
 }
@@ -108,49 +134,51 @@ function NavButtons({ step, totalSteps, onBack, onNext, onSubmit, onDraft, isPen
     const isLastStep = step === totalSteps - 1;
 
     return (
-        <div className="flex flex-col-reverse  sm:flex-row justify-between gap-3 pt-6 border-t border-border mt-6">
-            <Button
-                variant="outline"
-                onClick={onBack}
-                disabled={step === 0}
-                className="w-full sm:w-auto min-h-[44px] gap-2 cursor-pointer"
-            >
-                <ChevronLeft className="h-4 w-4" />
-                Back
-            </Button>
+        <div className="sticky bottom-0 z-20 -mx-4 sm:mx-0 px-4 sm:px-0 py-4 sm:py-0 mt-6 sm:mt-8 bg-white/95 backdrop-blur-sm sm:bg-transparent sm:backdrop-blur-none border-t border-slate-100 sm:border-t sm:border-slate-100 sm:pt-6">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 max-w-3xl mx-auto">
+                <Button
+                    variant="outline"
+                    onClick={onBack}
+                    disabled={step === 0}
+                    className="w-full sm:w-auto min-h-[48px] gap-2 rounded-xl border-slate-200 touch-manipulation"
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                    Back
+                </Button>
 
-            <div className="flex flex-col sm:flex-row gap-3">
-                {isLastStep && onDraft && (
-                    <Button
-                        variant="outline"
-                        onClick={onDraft}
-                        disabled={!isOriginal || isPending}
-                        className="w-full sm:w-auto min-h-[44px] gap-2 cursor-pointer"
-                    >
-                        {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        Save as Draft
-                    </Button>
-                )}
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    {isLastStep && onDraft && (
+                        <Button
+                            variant="outline"
+                            onClick={onDraft}
+                            disabled={!isOriginal || isPending}
+                            className="w-full sm:w-auto min-h-[48px] gap-2 rounded-xl border-slate-200 touch-manipulation"
+                        >
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                            Save as Draft
+                        </Button>
+                    )}
 
-                {isLastStep ? (
-                    <Button
-                        onClick={onSubmit}
-                        disabled={!isOriginal || isPending || disableSubmit}
-                        className="w-full sm:w-auto min-h-[44px] gap-2 cursor-pointer"
-                    >
-                        {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        {submitLabel ?? 'Submit'}
-                    </Button>
-                ) : (
-                    <Button
-                        onClick={onNext}
-                        disabled={disableNext}
-                        className="w-full sm:w-auto min-h-[44px] gap-2 cursor-pointer"
-                    >
-                        Next
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
-                )}
+                    {isLastStep ? (
+                        <Button
+                            onClick={onSubmit}
+                            disabled={!isOriginal || isPending || disableSubmit}
+                            className="w-full sm:w-auto min-h-[48px] gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm touch-manipulation"
+                        >
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                            {submitLabel ?? 'Submit'}
+                        </Button>
+                    ) : (
+                        <Button
+                            onClick={onNext}
+                            disabled={disableNext}
+                            className="w-full sm:w-auto min-h-[48px] gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm touch-manipulation disabled:opacity-50"
+                        >
+                            Next
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -181,17 +209,23 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
     const goBack = () => setStep(s => Math.max(s - 1, 0));
 
     return (
-        <div>
+        <div className="w-full max-w-3xl mx-auto">
             <StepIndicator steps={CONTENT_STEPS} currentStep={step} />
 
-            <Card className="shadow-sm" style={{ backgroundColor: '#d1baba25', boxShadow: "rgba(50, 50, 93, 0.25) 0px 30px 60px -12px inset, rgba(0, 0, 0, 0.3) 0px 18px 36px -18px inset" }}>
-                <CardContent className="pt-6">
+            <WizardShell>
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={step}
+                            initial={{ opacity: 0, x: 12 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -12 }}
+                            transition={{ duration: 0.25 }}
+                            className="space-y-4 sm:space-y-5"
+                        >
                     {/* Step 1 – Destination */}
                     {step === 0 && (
-                        <div className="space-y-4 sm:space-y-6">
-
-
-                            <Card>
+                        <div className="space-y-4 sm:space-y-5">
+                            <Card className={innerCardClass}>
                                 <CardHeader>
                                     <CardTitle>Submission Type</CardTitle>
                                     <CardDescription>Is this a new submission or an update to an existing submission?</CardDescription>
@@ -251,7 +285,7 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
                             )}
 
                             {state.newSubmission && (
-                                <Card>
+                                <Card className={innerCardClass}>
                                     <CardHeader>
                                         <CardTitle>Story Title</CardTitle>
                                         <CardDescription>Enter a compelling title for your story</CardDescription>
@@ -261,6 +295,7 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
                                             placeholder="Enter your story title..."
                                             value={state.story_title}
                                             onChange={(e) => actions.setStoryTitle(e.target.value)}
+                                            className="rounded-xl h-11"
                                         />
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Destination</label>
@@ -291,7 +326,7 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
                             />
 
                             {!state.newSubmission && (
-                                <Card>
+                                <Card className={innerCardClass}>
                                     <CardHeader>
                                         <CardTitle>Episode Title</CardTitle>
                                         <CardDescription>Enter a compelling title for your {state.type}</CardDescription>
@@ -311,7 +346,7 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
                     {/* Step 3 – Write */}
                     {step === 2 && (
                         <div className="space-y-4">
-                            <Card>
+                            <Card className={innerCardClass}>
                                 <CardHeader>
                                     <CardTitle>Content</CardTitle>
                                     <CardDescription>Write your {state.type} below</CardDescription>
@@ -338,6 +373,9 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
                         </div>
                     )}
 
+                        </motion.div>
+                    </AnimatePresence>
+
                     <NavButtons
                         step={step}
                         totalSteps={total}
@@ -356,8 +394,7 @@ function ContentWizard({ state, actions, refs, contentSubmissionOptions, content
                             ))
                         }
                     />
-                </CardContent>
-            </Card>
+            </WizardShell>
         </div>
     );
 }
@@ -451,20 +488,28 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
     const goBack = () => setStep(s => Math.max(s - 1, 0));
 
     return (
-        <div>
+        <div className="w-full max-w-3xl mx-auto">
             <StepIndicator steps={EVENT_STEPS} currentStep={step} />
-            <Card className="shadow-sm">
-                <CardContent className="pt-6">
+            <WizardShell>
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={step}
+                        initial={{ opacity: 0, x: 12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -12 }}
+                        transition={{ duration: 0.25 }}
+                        className="space-y-4 sm:space-y-5"
+                    >
                     {/* Step 1 – Event selection */}
                     {step === 0 && (
-                        <div className="space-y-4 sm:space-y-6">
+                        <div className="space-y-4 sm:space-y-5">
                             <EventSubmissionCard
                                 selectedEventId={state.selectedEventId}
                                 setSelectedEventId={actions.setSelectedEventId}
                                 events={state.events}
                             />
                             {state.selectedEventId && selectedEvent?.categories && selectedEvent.categories.length > 0 && (
-                                <Card>
+                                <Card className={innerCardClass}>
                                     <CardHeader>
                                         <CardTitle>Category</CardTitle>
                                         <CardDescription>Select a category for your submission</CardDescription>
@@ -480,7 +525,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                             )}
                             {isEpisodeWise && (
                                 <>
-                                    <Card>
+                                    <Card className={innerCardClass}>
                                         <CardHeader>
                                             <CardTitle>Submission Type</CardTitle>
                                             <CardDescription>Is this a new submission or the next episode?</CardDescription>
@@ -494,7 +539,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                         </CardContent>
                                     </Card>
                                     {!state.newSubmission && (
-                                        <Card>
+                                        <Card className={innerCardClass}>
                                             <CardHeader>
                                                 <CardTitle>Previous Episode</CardTitle>
                                                 <CardDescription>Select the previous episode this continues from</CardDescription>
@@ -514,7 +559,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                             </CardContent>
                                         </Card>
                                     )}
-                                    <Card>
+                                    <Card className={innerCardClass}>
                                         <CardHeader>
                                             <CardTitle>Head Title</CardTitle>
                                             <CardDescription>
@@ -532,7 +577,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                             )}
                                         </CardContent>
                                     </Card>
-                                    <Card>
+                                    <Card className={innerCardClass}>
                                         <CardHeader>
                                             <CardTitle>Episode Number</CardTitle>
                                             <CardDescription>
@@ -569,7 +614,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                 /* ── Multi-episode mode ── */
                                 <>
                                     {episodes.map((ep, index) => (
-                                        <Card key={ep.id} className="border border-border shadow-sm">
+                                        <Card key={ep.id} className={innerCardClass}>
                                             <CardHeader className="pb-3">
                                                 <div className="flex items-center justify-between">
                                                     <div>
@@ -634,7 +679,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                             ) : (
                                 /* ── Normal mode ── */
                                 <>
-                                    <Card>
+                                    <Card className={innerCardClass}>
                                         <CardHeader>
                                             <CardTitle>Title</CardTitle>
                                             <CardDescription>Enter a compelling title for your {state.type}</CardDescription>
@@ -659,7 +704,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                         </CardContent>
                                     </Card>
 
-                                    <Card>
+                                    <Card className={innerCardClass}>
                                         <CardHeader>
                                             <CardTitle>Content</CardTitle>
                                             <CardDescription>Write your {state.type} below</CardDescription>
@@ -690,17 +735,20 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                 setIsOriginal={actions.setIsOriginal}
                             />
                             {disableSubmit && (
-                                <p className="text-sm text-destructive font-medium rounded-lg border border-destructive/90 bg-black/10 px-4 py-3">
+                                <p className="text-sm text-red-700 font-medium rounded-xl ring-1 ring-red-200 bg-red-50 px-4 py-3">
                                     Your word count ({currentWordCount}) exceeds the allowed limit of {selectedEvent?.w_count} words. Please reduce your content to submit.
                                 </p>
                             )}
                             {!disableSubmit && (
-                                <p className="text-sm text-primary font-medium rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
-                                    Your content is ready to be submitted. Please check once before submitting.
+                                <p className="text-sm text-emerald-800 font-medium rounded-xl ring-1 ring-emerald-200 bg-emerald-50 px-4 py-3">
+                                    Your content is ready to be submitted. Please review once before submitting.
                                 </p>
                             )}
                         </div>
                     )}
+
+                    </motion.div>
+                </AnimatePresence>
 
                     <NavButtons
                         step={step}
@@ -723,8 +771,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                             (step === 1 && !state.title.trim())
                         }
                     />
-                </CardContent>
-            </Card>
+            </WizardShell>
         </div>
     );
 }
@@ -761,36 +808,30 @@ export default function Submit() {
     ];
 
     return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-background via-background to-muted/30">
-            {/* <div className="container mx-auto px-4 py-6 sm:py-8 ">
-                <div className="mb-6 sm:mb-8">
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">Submit Your Work</h1>
-                    <p className="text-sm sm:text-base text-muted-foreground">
-                        Share your story or poem with our community
-                    </p>
+        <div className="w-full max-w-3xl mx-auto pb-6 sm:pb-8">
+            <div className="mb-5 sm:mb-6 px-1">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                        <PenLine className="h-5 w-5 text-emerald-700" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg sm:text-xl font-semibold text-foreground">Submit your work</h2>
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                            Complete each step to send your content to an event
+                        </p>
+                    </div>
                 </div>
+            </div>
 
-
-            </div> */}
-            <Tabs value={activeTab} onValueChange={(val) => {
-                setActiveTab(val);
-                actions.setIsEvent(val === 'event');
-                actions.resetForm();
-            }}>
-                {/* <div className="mb-8 flex justify-center">
-                    <TabsList>
-                        <TabsTrigger value="content">
-                            <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                            <span>Content Submission</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="event">
-                            <CalendarDays className="w-4 h-4 sm:w-5 sm:h-5" />
-                            <span>Event Submission</span>
-                        </TabsTrigger>
-                    </TabsList>
-                </div> */}
-
-                <TabsContent value="content">
+            <Tabs
+                value={activeTab}
+                onValueChange={(val) => {
+                    setActiveTab(val);
+                    actions.setIsEvent(val === 'event');
+                    actions.resetForm();
+                }}
+            >
+                <TabsContent value="content" className="mt-0">
                     <ContentWizard
                         state={state}
                         actions={actions}
@@ -800,7 +841,7 @@ export default function Submit() {
                     />
                 </TabsContent>
 
-                <TabsContent value="event">
+                <TabsContent value="event" className="mt-0">
                     <EventWizard
                         state={state}
                         actions={actions}
@@ -821,7 +862,6 @@ export default function Submit() {
                     )}
                 </TabsContent>
             </Tabs>
-
         </div>
     );
 }
