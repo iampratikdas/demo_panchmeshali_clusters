@@ -146,9 +146,9 @@ export function Layout({ children }: LayoutProps) {
                 </div>
             )}
             {/* Top Header with Notification */}
-            <div className="fixed top-0 right-0 z-50 p-4 flex items-center gap-2">
+            {/* <div className="fixed top-0 right-0 z-50 p-4 flex items-center gap-2">
                 <NotificationDropdown />
-            </div>
+            </div> */}
 
             {/* Mobile menu button */}
             {(!sidebarOpen || isMobile) && (

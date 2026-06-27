@@ -593,12 +593,12 @@ class ContentController {
         ? { uid: token_data.uid, ...(data.filter || {}) }
         : { ...(data.filter || {}) };
 
-      console.log("filter===============>", { $match: matchFilter });
+      
 
       const rawLists = await this.contentFunc.findUserEventAggregates(
         this._contentListPipeline(matchFilter, sortBy)
       );
-
+      console.log("rawLists===============>", rawLists);
       const episodeWiseMap = await this._getEpisodeWiseMap(
         rawLists.map((item) => item.eid)
       );
@@ -623,6 +623,7 @@ class ContentController {
           const eidContents = await this.contentFunc.findUserEventAggregates(
             this._contentListPipeline(eidFilter, sortBy)
           );
+          console.log("eidContents===============>", eidContents);
           seriesItems = eidContents.filter(
             (i) => (i.h_title || i.cont_id) === seriesKey
           );
@@ -641,7 +642,7 @@ class ContentController {
       const totalPages = Math.ceil(totalContents / limit) || 0;
       const lists = groupedLists.slice(skip, skip + limit);
 
-      console.log("lists====================>", lists.length, "of", totalContents);
+      console.log("lists====================>zxxzxz", lists.length, "of", totalContents);
 
       return res.status(200).json({
         message: "Content lists fetched",
