@@ -9,10 +9,11 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { Pagination } from '../components/Pagination';
-import { Users as UsersIcon, Plus, Mail, Ban, Trash2, CheckCircle2, XCircle, Search, ArrowUpDown, Key, Edit2 } from 'lucide-react';
-import { useToast } from '../hooks/useToast';
+import { Users as UsersIcon, Plus, Mail, Ban, Trash2, CheckCircle2, XCircle, Search, Key, Edit2 } from 'lucide-react';
 import type { CreateUserData } from '../types/user';
 import Swal from 'sweetalert2';
+import { EditUserModal } from '../components/EditUserModal';
+import type { EditUserFormData } from '../components/EditUserModal';
 
 export default function Users() {
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -52,8 +53,10 @@ export default function Users() {
         address: '',
     });
 
+    const [editingUser, setEditingUser] = useState<User | null>(null);
+    const isAdmin = localStorage.getItem('role') === 'admin';
+
     const queryClient = useQueryClient();
-    const { toast } = useToast();
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -238,14 +241,15 @@ export default function Users() {
         }
     };
 
-    const changeNameMutation = useMutation({
-        mutationFn: ({ userId, data }: { userId: string; data: any }) => updateUser(userId, data),
+    const editUserMutation = useMutation({
+        mutationFn: ({ userId, data }: { userId: string; data: EditUserFormData }) => updateUser(userId, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
+            setEditingUser(null);
             Swal.fire({
                 icon: 'success',
                 title: 'Success!',
-                text: 'Name updated successfully.',
+                text: 'User updated successfully.',
                 confirmButtonColor: '#cb8959',
             });
         },
@@ -253,34 +257,20 @@ export default function Users() {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: error.message || 'Failed to update name.',
+                text: error.message || 'Failed to update user.',
                 confirmButtonColor: '#cb8959',
             });
         },
     });
 
-    const handleChangeName = async (user: User) => {
-        const { value: newName } = await Swal.fire({
-            title: 'Change Name',
-            input: 'text',
-            inputLabel: 'Full Name',
-            inputValue: user.full_name,
-            inputAttributes: {
-                autocomplete: 'off'
-            },
-            showCancelButton: true,
-            confirmButtonText: 'Update',
-            confirmButtonColor: '#cb8959',
-            inputValidator: (value) => {
-                if (!value || value.trim().length === 0) {
-                    return 'Name cannot be empty!';
-                }
-            }
-        });
+    const handleSaveUser = (data: EditUserFormData) => {
+        if (!editingUser?.uid) return;
+        editUserMutation.mutate({ userId: editingUser.uid, data });
+    };
 
-        if (newName && newName.trim() !== user.full_name) {
-            changeNameMutation.mutate({ userId: user.uid || '', data: { full_name: newName.trim() } });
-        }
+    const openEditUser = (user: User) => {
+        if (!isAdmin) return;
+        setEditingUser(user);
     };
 
     const handleCreateUser = (e: React.FormEvent) => {
@@ -358,7 +348,7 @@ export default function Users() {
                     <p className="text-sm sm:text-base text-muted-foreground">Manage users, send emails, and moderate accounts</p>
                 </div>
                 {/* Create User — admin only */}
-                {localStorage.getItem('role') === 'admin' && (
+                {isAdmin && (
                     <Button onClick={() => setShowCreateForm(!showCreateForm)} className="h-12 w-full sm:w-auto gap-2">
                         <Plus className="h-4 w-4" />
                         {showCreateForm ? 'Cancel' : 'Create User'}
@@ -367,7 +357,7 @@ export default function Users() {
             </div>
 
             {/* Create User Form — admin only */}
-            {showCreateForm && localStorage.getItem('role') === 'admin' && (
+            {showCreateForm && isAdmin && (
                 <Card className="border-2 border-primary/20 shadow-lg">
                     <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-xl">
@@ -693,20 +683,31 @@ export default function Users() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {paginatedUsers.map((user: User) => (
-                            <Card key={user.uid} className={`hover:shadow-lg transition-shadow ${selectedUsers.includes(user.uid || '') ? 'border-primary' : ''}`}>
+                            <Card
+                                key={user.uid}
+                                className={`hover:shadow-lg transition-shadow ${selectedUsers.includes(user.uid || '') ? 'border-primary' : ''} ${isAdmin ? 'cursor-pointer' : ''}`}
+                                onClick={() => openEditUser(user)}
+                            >
                                 <CardHeader>
                                     <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                                         <div className="flex items-start gap-3 flex-1 w-full">
-                                            <input type="checkbox" checked={selectedUsers.includes(user.uid || '')} onChange={() => toggleUserSelection(user.uid || '')} className="mt-1 h-4 w-4 flex-shrink-0" />
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedUsers.includes(user.uid || '')}
+                                                onChange={() => toggleUserSelection(user.uid || '')}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="mt-1 h-4 w-4 flex-shrink-0"
+                                            />
                                             <div className="flex-1 min-w-0">
                                                 <CardTitle className="text-lg truncate block pb-1 flex items-center gap-2">
                                                     {user.full_name}
-                                                    {localStorage.getItem("role") === "admin" && (
+                                                    {isAdmin && (
                                                         <button
-                                                            onClick={() => handleChangeName(user)}
-                                                            disabled={changeNameMutation.isPending}
+                                                            type="button"
+                                                            onClick={(e) => { e.stopPropagation(); openEditUser(user); }}
+                                                            disabled={editUserMutation.isPending}
                                                             className="text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-                                                            title="Edit Name"
+                                                            title="Edit User"
                                                         >
                                                             <Edit2 className="h-4 w-4" />
                                                         </button>
@@ -735,13 +736,13 @@ export default function Users() {
                                         {user.lastLogin && <p>Last login: {new Date(user.lastLogin).toLocaleDateString()}</p>}
                                     </div>
 
-                                    <div className="flex gap-2 flex-wrap items-center mt-4">
+                                    <div className="flex gap-2 flex-wrap items-center mt-4" onClick={(e) => e.stopPropagation()}>
                                         <Button variant="outline" size="sm" className="flex-1 min-w-[80px]" onClick={() => handleSendEmail([user.uid || ''])}>
                                             <Mail className="h-4 w-4 mr-2" />
                                             Chat
                                         </Button>
                                         {
-                                            localStorage.getItem("role") === "admin" && (
+                                            isAdmin && (
                                                 <Button variant="outline" size="sm" className="flex-1 min-w-[80px]" onClick={() => handleChangePassword(user)} disabled={changePasswordMutation.isPending}>
                                                     <Key className="h-4 w-4 mr-2" />
                                                     Password
@@ -749,7 +750,7 @@ export default function Users() {
                                             )
                                         }
                                         {
-                                            localStorage.getItem("role") === "admin" ?
+                                            isAdmin ?
                                                 user.isActive ? (
                                                     <Button variant="outline" size="sm" className="flex-1 min-w-[80px]" onClick={() => banMutation.mutate({ userId: user.uid || '', data: { isActive: false } })} disabled={banMutation.isPending}>
                                                         <Ban className="h-4 w-4 mr-2" />
@@ -765,7 +766,7 @@ export default function Users() {
                                         }
 
                                         {
-                                            localStorage.getItem("role") === "admin" ?
+                                            isAdmin ?
                                                 <Button variant="destructive" size="sm" className="flex-1 min-w-[80px]" onClick={() => removeMutation.mutate({ userId: user.uid || '', data: { is_deleted: true } })} disabled={removeMutation.isPending}>
                                                     <Trash2 className="h-4 w-4 mr-2" />
                                                     Remove Account
@@ -798,6 +799,14 @@ export default function Users() {
                     />
                 </>
             )}
+
+            <EditUserModal
+                isOpen={!!editingUser}
+                user={editingUser}
+                onClose={() => setEditingUser(null)}
+                onSave={handleSaveUser}
+                isPending={editUserMutation.isPending}
+            />
         </div>
     );
 }

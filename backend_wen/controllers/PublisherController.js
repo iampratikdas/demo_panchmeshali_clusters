@@ -89,6 +89,7 @@ class PublisherController {
 
             const body = req.body;
             const uid = body.uids;
+            const proofreaderUids = body.proofreader_uids;
 
             if (!body.name) {
                 return res.status(400).json({ status: 400, message: "Company name is required", data: {} });
@@ -102,6 +103,21 @@ class PublisherController {
             if (!body.phone) {
                 return res.status(400).json({ status: 400, message: "Company phone is required", data: {} });
             }
+            if (!Array.isArray(uid) || uid.length === 0) {
+                return res.status(400).json({ status: 400, message: "At least one manager or publisher is required", data: {} });
+            }
+            if (!Array.isArray(proofreaderUids) || proofreaderUids.length === 0) {
+                return res.status(400).json({ status: 400, message: "At least one proofreader is required", data: {} });
+            }
+
+            const proofreaders = await this.userFunc.userListByData({ uid: { $in: proofreaderUids } });
+            if (proofreaders.length !== proofreaderUids.length) {
+                return res.status(400).json({ status: 400, message: "One or more proofreaders were not found", data: {} });
+            }
+            const invalidProofreaders = proofreaders.filter(user => user.role !== "proofreader");
+            if (invalidProofreaders.length > 0) {
+                return res.status(400).json({ status: 400, message: "Selected users must have the proofreader role", data: {} });
+            }
 
             const existingCompany = await this.publisherFunc.findOnePublisher({ email: body.email });
             if (existingCompany) {
@@ -111,6 +127,7 @@ class PublisherController {
             const companyData = {
                 pid: gen(10),
                 uids: uid,
+                proofreader_uids: proofreaderUids,
                 name: body.name,
                 description: body.description || "",
                 email: body.email,

@@ -9,7 +9,7 @@ import { useToast } from '../hooks/useToast';
 import {
     Building, Mail, Phone, FileText, Image as ImageIcon,
     Briefcase, Loader2, X, ChevronDown, Search, Users,
-    Plus, List, Calendar, CheckCircle, Clock
+    Plus, List, Calendar, CheckCircle, Clock, SpellCheck2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -170,10 +170,14 @@ function CompanyList({ onCreateClick }: { onCreateClick: () => void }) {
                                             )}
                                         </div>
 
-                                        <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground/70">
+                                        <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground/70 flex-wrap">
                                             <span className="flex items-center gap-1">
                                                 <Users className="h-3 w-3" />
-                                                {Array.isArray(company.uids) ? company.uids.length : 0} user{Array.isArray(company.uids) && company.uids.length !== 1 ? 's' : ''} linked
+                                                {Array.isArray(company.uids) ? company.uids.length : 0} publisher{Array.isArray(company.uids) && company.uids.length !== 1 ? 's' : ''}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <SpellCheck2 className="h-3 w-3" />
+                                                {Array.isArray(company.proofreader_uids) ? company.proofreader_uids.length : 0} proofreader{Array.isArray(company.proofreader_uids) && company.proofreader_uids.length !== 1 ? 's' : ''}
                                             </span>
                                             {company.createdAt && (
                                                 <span className="flex items-center gap-1">
@@ -209,21 +213,33 @@ function StatusBadge({ status }: { status: string }) {
     );
 }
 
-// ─── Create Publisher Form Tab ───────────────────────────────────────────────
-function CreatePublisherForm({ toast, onSuccess }: { toast: any; onSuccess: () => void }) {
-    const [formData, setFormData] = useState({
-        name: '', email: '', phone: '', description: '', logo_url: '', rgst_gov_id: '',
-    });
-    const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
-    const [userSearch, setUserSearch] = useState('');
+// ─── Reusable role-based user multi-select ───────────────────────────────────
+function RoleUserSelect({
+    label,
+    icon: Icon,
+    roles,
+    selectedUsers,
+    onChange,
+    emptyMessage,
+    roleBadgeClass,
+}: {
+    label: string;
+    icon: any;
+    roles: string[];
+    selectedUsers: any[];
+    onChange: (users: any[]) => void;
+    emptyMessage: string;
+    roleBadgeClass?: (role: string) => string;
+}) {
+    const [search, setSearch] = useState('');
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const { data: usersData, isLoading: usersLoading } = useQuery({
-        queryKey: ['publisher-users', userSearch],
+        queryKey: ['role-users', roles.join(','), search],
         queryFn: () => fetchUsers(1, 50, {
-            roles: ['manager', 'publisher'],
-            searchQuery: userSearch || undefined,
+            roles,
+            searchQuery: search || undefined,
         }),
         staleTime: 30_000,
     });
@@ -231,15 +247,111 @@ function CreatePublisherForm({ toast, onSuccess }: { toast: any; onSuccess: () =
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setDropdownOpen(false);
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setDropdownOpen(false);
+            }
         };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
     const toggleUser = (user: any) => {
-        setSelectedUsers(prev => prev.find(u => u.uid === user.uid) ? prev.filter(u => u.uid !== user.uid) : [...prev, user]);
+        onChange(
+            selectedUsers.find(u => u.uid === user.uid)
+                ? selectedUsers.filter(u => u.uid !== user.uid)
+                : [...selectedUsers, user]
+        );
     };
+
+    const filteredUsers = availableUsers.filter(u => !selectedUsers.find(s => s.uid === u.uid));
+    const defaultBadgeClass = (role: string) =>
+        role === 'proofreader' ? 'bg-violet-500/10 text-violet-500' : role === 'publisher' ? 'bg-blue-500/10 text-blue-500' : 'bg-amber-500/10 text-amber-500';
+
+    return (
+        <div className="space-y-2 md:col-span-2" ref={dropdownRef}>
+            <label className="text-sm font-medium flex items-center gap-2">
+                <Icon className="h-4 w-4 text-muted-foreground" />
+                {label}
+            </label>
+
+            {selectedUsers.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                    {selectedUsers.map(u => (
+                        <span key={u.uid} className="inline-flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-medium px-2.5 py-1 rounded-full border border-primary/20">
+                            {u.full_name}
+                            <span className="text-muted-foreground capitalize">({u.role})</span>
+                            <button type="button" onClick={() => onChange(selectedUsers.filter(x => x.uid !== u.uid))} className="ml-1 hover:text-destructive transition-colors">
+                                <X className="h-3 w-3" />
+                            </button>
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            <div
+                className="relative flex items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm cursor-pointer shadow-sm hover:border-primary/50 transition-colors"
+                onClick={() => setDropdownOpen(v => !v)}
+            >
+                <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <input
+                    className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+                    placeholder="Search by name or email..."
+                    value={search}
+                    onChange={e => { setSearch(e.target.value); setDropdownOpen(true); }}
+                    onClick={e => e.stopPropagation()}
+                />
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+            </div>
+
+            <AnimatePresence>
+                {dropdownOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.15 }}
+                        className="relative z-50 w-full mt-1 max-h-56 overflow-y-auto rounded-lg border border-border bg-card shadow-xl"
+                    >
+                        {usersLoading ? (
+                            <div className="flex items-center justify-center py-6 gap-2 text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" /> Loading users...
+                            </div>
+                        ) : filteredUsers.length === 0 ? (
+                            <div className="py-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>
+                        ) : (
+                            filteredUsers.map(user => (
+                                <div
+                                    key={user.uid}
+                                    onClick={() => { toggleUser(user); setDropdownOpen(false); setSearch(''); }}
+                                    className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/60 transition-colors border-b border-border/30 last:border-none"
+                                >
+                                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/30 to-purple-500/30 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
+                                        {user.full_name?.[0]?.toUpperCase() ?? '?'}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium truncate">{user.full_name}</p>
+                                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                                    </div>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${(roleBadgeClass ?? defaultBadgeClass)(user.role)}`}>
+                                        {user.role}
+                                    </span>
+                                </div>
+                            ))
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+// ─── Create Publisher Form Tab ───────────────────────────────────────────────
+function CreatePublisherForm({ toast, onSuccess }: { toast: any; onSuccess: () => void }) {
+    const [formData, setFormData] = useState({
+        name: '', email: '', phone: '', description: '', logo_url: '', rgst_gov_id: '',
+    });
+    const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
+    const [selectedProofreaders, setSelectedProofreaders] = useState<any[]>([]);
 
     const mutation = useMutation({
         mutationFn: (data: any) => createPublisherCompany(data),
@@ -247,7 +359,8 @@ function CreatePublisherForm({ toast, onSuccess }: { toast: any; onSuccess: () =
             toast({ title: 'Success', description: 'Publisher company created successfully.' });
             setFormData({ name: '', email: '', phone: '', description: '', logo_url: '', rgst_gov_id: '' });
             setSelectedUsers([]);
-            onSuccess(); // switch to list tab
+            setSelectedProofreaders([]);
+            onSuccess();
         },
         onError: (error: any) => {
             toast({
@@ -264,14 +377,20 @@ function CreatePublisherForm({ toast, onSuccess }: { toast: any; onSuccess: () =
             toast({ title: 'Validation Error', description: 'Please select at least one manager or publisher user.', variant: 'destructive' });
             return;
         }
-        mutation.mutate({ ...formData, uids: selectedUsers.map(u => u.uid) });
+        if (selectedProofreaders.length === 0) {
+            toast({ title: 'Validation Error', description: 'Please select at least one proofreader.', variant: 'destructive' });
+            return;
+        }
+        mutation.mutate({
+            ...formData,
+            uids: selectedUsers.map(u => u.uid),
+            proofreader_uids: selectedProofreaders.map(u => u.uid),
+        });
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
-
-    const filteredUsers = availableUsers.filter(u => !selectedUsers.find(s => s.uid === u.uid));
 
     return (
         <Card className="border-border/50 shadow-lg bg-card/50 backdrop-blur-sm">
@@ -339,81 +458,23 @@ function CreatePublisherForm({ toast, onSuccess }: { toast: any; onSuccess: () =
                             />
                         </div>
 
-                        {/* ─── Multi-select Users ─── */}
-                        <div className="space-y-2 md:col-span-2" ref={dropdownRef}>
-                            <label className="text-sm font-medium flex items-center gap-2">
-                                <Users className="h-4 w-4 text-muted-foreground" />
-                                Assign Managers / Publishers *
-                            </label>
+                        <RoleUserSelect
+                            label="Assign Managers / Publishers *"
+                            icon={Users}
+                            roles={['manager', 'publisher', 'both', 'admin']}
+                            selectedUsers={selectedUsers}
+                            onChange={setSelectedUsers}
+                            emptyMessage="No manager/publisher users found."
+                        />
 
-                            {selectedUsers.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                    {selectedUsers.map(u => (
-                                        <span key={u.uid} className="inline-flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-medium px-2.5 py-1 rounded-full border border-primary/20">
-                                            {u.full_name}
-                                            <span className="text-muted-foreground capitalize">({u.role})</span>
-                                            <button type="button" onClick={() => setSelectedUsers(p => p.filter(x => x.uid !== u.uid))} className="ml-1 hover:text-destructive transition-colors">
-                                                <X className="h-3 w-3" />
-                                            </button>
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-
-                            <div
-                                className="relative flex items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm cursor-pointer shadow-sm hover:border-primary/50 transition-colors"
-                                onClick={() => setDropdownOpen(v => !v)}
-                            >
-                                <Search className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                <input
-                                    className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
-                                    placeholder="Search by name or email..."
-                                    value={userSearch}
-                                    onChange={e => { setUserSearch(e.target.value); setDropdownOpen(true); }}
-                                    onClick={e => e.stopPropagation()}
-                                />
-                                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-                            </div>
-
-                            <AnimatePresence>
-                                {dropdownOpen && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -4 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -4 }}
-                                        transition={{ duration: 0.15 }}
-                                        className="relative z-50 w-full mt-1 max-h-56 overflow-y-auto rounded-lg border border-border bg-card shadow-xl"
-                                    >
-                                        {usersLoading ? (
-                                            <div className="flex items-center justify-center py-6 gap-2 text-sm text-muted-foreground">
-                                                <Loader2 className="h-4 w-4 animate-spin" /> Loading users...
-                                            </div>
-                                        ) : filteredUsers.length === 0 ? (
-                                            <div className="py-6 text-center text-sm text-muted-foreground">No manager/publisher users found.</div>
-                                        ) : (
-                                            filteredUsers.map(user => (
-                                                <div
-                                                    key={user.uid}
-                                                    onClick={() => { toggleUser(user); setDropdownOpen(false); setUserSearch(''); }}
-                                                    className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/60 transition-colors border-b border-border/30 last:border-none"
-                                                >
-                                                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/30 to-purple-500/30 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
-                                                        {user.full_name?.[0]?.toUpperCase() ?? '?'}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium truncate">{user.full_name}</p>
-                                                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                                                    </div>
-                                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${user.role === 'publisher' ? 'bg-blue-500/10 text-blue-500' : 'bg-amber-500/10 text-amber-500'}`}>
-                                                        {user.role}
-                                                    </span>
-                                                </div>
-                                            ))
-                                        )}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
+                        <RoleUserSelect
+                            label="Assign Proofreaders *"
+                            icon={SpellCheck2}
+                            roles={['proofreader']}
+                            selectedUsers={selectedProofreaders}
+                            onChange={setSelectedProofreaders}
+                            emptyMessage="No proofreader users found."
+                        />
                     </div>
 
                     <div className="flex justify-end border-t border-border/10 pt-4 mt-6">

@@ -7,6 +7,10 @@ const publisherSchema = new mongoose.Schema({
     required: true,
     // unique: true
   },
+  proofreader_uids: {
+    type: [String],
+    default: [],
+  },
   pid: {
     type: String,
     required: true,
