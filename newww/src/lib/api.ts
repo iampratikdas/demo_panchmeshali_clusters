@@ -659,6 +659,9 @@ export const fetchUsers = async (page: number, limit: number, queryFilters: any 
         if (queryFilters.full_name) filter.full_name = { $regex: queryFilters.full_name, $options: "i" };
         if (queryFilters.phone_number) filter.phone_number = { $regex: queryFilters.phone_number, $options: "i" };
         if (queryFilters.uid) filter.uid = { $regex: queryFilters.uid, $options: "i" };
+        if (queryFilters.uids && Array.isArray(queryFilters.uids) && queryFilters.uids.length > 0) {
+            filter.uid = { $in: queryFilters.uids };
+        }
 
         if (queryFilters.isActive && queryFilters.isActive !== 'all') {
             filter.isActive = queryFilters.isActive === 'true';
@@ -851,6 +854,15 @@ export const fetchEventEpisodes = async (eid: string): Promise<EventEpisode[]> =
 export const createPublisherCompany = async (data: any): Promise<any> => {
     const response = await axios.post(
         `${API_BASE_URL}/create_publisher_company`,
+        data,
+        { headers: getAuthHeaders() }
+    );
+    return response.data;
+};
+
+export const updatePublisherCompany = async (pid: string, data: any): Promise<any> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/update_publisher_company/${pid}`,
         data,
         { headers: getAuthHeaders() }
     );

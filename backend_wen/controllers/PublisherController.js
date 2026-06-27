@@ -150,6 +150,98 @@ class PublisherController {
     }
 
     /**
+     * POST /update_publisher_company/:pid
+     * Admin updates an existing publisher company.
+     */
+    async updateCompany(req, res, user_data) {
+        try {
+            const pid = req.params.pid;
+            const body = req.body;
+            const uid = body.uids;
+            const proofreaderUids = body.proofreader_uids;
+
+            if (user_data.role !== "admin") {
+                return res.status(403).json({ status: 403, message: "Access denied. Admins only.", data: {} });
+            }
+            if (!pid) {
+                return res.status(400).json({ status: 400, message: "Missing pid parameter", data: {} });
+            }
+            if (!body.name) {
+                return res.status(400).json({ status: 400, message: "Company name is required", data: {} });
+            }
+            if (!body.email) {
+                return res.status(400).json({ status: 400, message: "Company email is required", data: {} });
+            }
+            if (!body.phone) {
+                return res.status(400).json({ status: 400, message: "Company phone is required", data: {} });
+            }
+            if (!Array.isArray(uid) || uid.length === 0) {
+                return res.status(400).json({ status: 400, message: "At least one manager or publisher is required", data: {} });
+            }
+            if (!Array.isArray(proofreaderUids) || proofreaderUids.length === 0) {
+                return res.status(400).json({ status: 400, message: "At least one proofreader is required", data: {} });
+            }
+
+            const existingCompany = await this.publisherFunc.findOnePublisher({ pid });
+            if (!existingCompany) {
+                return res.status(404).json({ status: 404, message: "Publisher company not found", data: {} });
+            }
+
+            const duplicateEmail = await this.publisherFunc.findOnePublisher({ email: body.email, pid: { $ne: pid } });
+            if (duplicateEmail) {
+                return res.status(409).json({ status: 409, message: "Another company already uses this email", data: {} });
+            }
+
+            const proofreaders = await this.userFunc.userListByData({ uid: { $in: proofreaderUids } });
+            if (proofreaders.length !== proofreaderUids.length) {
+                return res.status(400).json({ status: 400, message: "One or more proofreaders were not found", data: {} });
+            }
+            const invalidProofreaders = proofreaders.filter(user => user.role !== "proofreader");
+            if (invalidProofreaders.length > 0) {
+                return res.status(400).json({ status: 400, message: "Selected users must have the proofreader role", data: {} });
+            }
+
+            const publishers = await this.userFunc.userListByData({ uid: { $in: uid } });
+            if (publishers.length !== uid.length) {
+                return res.status(400).json({ status: 400, message: "One or more publisher users were not found", data: {} });
+            }
+
+            const allowedStatuses = ["Active", "Pending", "Inactive"];
+            const status = allowedStatuses.includes(body.status) ? body.status : existingCompany.status;
+
+            const updateData = {
+                uids: uid,
+                proofreader_uids: proofreaderUids,
+                name: body.name,
+                description: body.description || "",
+                email: body.email,
+                phone: body.phone,
+                logo_url: body.logo_url || "",
+                rgst_gov_id: body.rgst_gov_id || "",
+                address: body.address || "",
+                city: body.city || "",
+                state: body.state || "",
+                country: body.country || "",
+                zip_code: body.zip_code || "",
+                status,
+                updatedAt: moment().unix(),
+            };
+
+            await this.publisherFunc.updatePublisherByPid(pid, updateData);
+            const updatedCompany = await this.publisherFunc.findOnePublisher({ pid });
+
+            return res.status(200).json({
+                status: 200,
+                message: "Publisher company updated successfully",
+                data: updatedCompany,
+            });
+        } catch (error) {
+            console.error("Error updating publisher company:", error);
+            res.status(500).json({ status: 500, message: "Internal server error", data: {} });
+        }
+    }
+
+    /**
      * POST /request_publisher_users/:uid
      * Send a join request between publisher and writer.
      */

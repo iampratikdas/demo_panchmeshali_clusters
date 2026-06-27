@@ -206,6 +206,15 @@ class PublishersFunctions {
         }
     }
 
+    async updatePublisherByPid(pid, publisherData) {
+        try {
+            return await this.publishermodel.updateOne({ pid }, { $set: publisherData });
+        } catch (error) {
+            console.error("Error updating publisher by pid:", error);
+            throw new Error("Failed to update publisher");
+        }
+    }
+
     /**
      * GET /publisher_profile/:pid
      * Fetch a single publisher's full profile by pid.
