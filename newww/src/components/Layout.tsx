@@ -38,16 +38,16 @@ interface LayoutProps {
 
 const navItems = [
     { to: '/', label: 'Dashboard', icon: Home },
-    { to: '/submit', label: 'Submit', icon: PenTool },
+    { to: '/submit', label: 'Submit', icon: PenTool , roles: ['writer']},
     { to: '/content', label: 'My Content', icon: FileText, badge: 4 },
     { to: '/events', label: 'Events', icon: Calendar },
-    { to: '/users', label: 'Users', icon: Users },
+    { to: '/users', label: 'Users', icon: Users , roles: ['admin'] },
     { to: '/chats', label: 'Chats', icon: MessageSquare, badge: 2 },
-    { to: '/workspace', label: 'Workspace', icon: FolderOpen },
-    { to: '/proofread', label: 'Proof Read Room', icon: SpellCheck2, roles: ['admin', 'manager', 'publisher'] },
+    { to: '/workspace', label: 'Workspace', icon: FolderOpen, roles: ['writer', 'publisher'] },
+    { to: '/proofread', label: 'Proof Read Room', icon: SpellCheck2, roles: [ 'proofreader', 'publisher'] },
     { to: '/rankings', label: 'Rank the Contents', icon: Trophy },
-    { to: '/publish-preview', label: 'Book Publish Preview', icon: Newspaper, roles: ['admin', 'manager', 'publisher'] },
-    { to: '/publishers', label: 'Publishers', icon: Building },
+    { to: '/publish-preview', label: 'Book Publish Preview', icon: Newspaper, roles: [ 'manager', 'publisher'] },
+    { to: '/publishers', label: 'Publishers', icon: Building , roles: ['admin']  },
     { to: '/teams', label: 'Teams', icon: Users2, roles: ['publisher', 'writer', 'both'] },
 ];
 
@@ -238,10 +238,11 @@ export function Layout({ children }: LayoutProps) {
                             {/* <BookPreviewList /> */}
 
                             <div className="pt-4">
-                                <div className="px-3 mb-2">
+                                {/* <================================ We will add more items here later==================================> */}
+                                {/* <div className="px-3 mb-2">
                                     <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider">More</h3>
-                                </div>
-                                {projectItems.map((item) => {
+                                </div> */}
+                                {/* {projectItems.map((item) => {
                                     const Icon = item.icon;
                                     const isActive = location.pathname === item.to;
                                     return (
@@ -258,7 +259,7 @@ export function Layout({ children }: LayoutProps) {
                                             <span>{item.label}</span>
                                         </Link>
                                     );
-                                })}
+                                })} */}
                                 <Button style={{ border: "1px solid white", background: "black", cursor: "pointer", width: "100%", position: "relative", top: "12px" }}
                                     onClick={
                                         () => {
