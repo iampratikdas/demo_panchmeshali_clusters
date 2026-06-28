@@ -56,6 +56,7 @@ export default function Events() {
         logo_url: '',
         event_type: 'Story',
         episode_wise: false,
+        multiple_content: true,
         is_book: false,
         paid: false,
         paid_amt: 0,
@@ -142,6 +143,7 @@ export default function Events() {
             logo_url: '',
             event_type: 'Story',
             episode_wise: false,
+            multiple_content: true,
             is_book: false,
             paid: false,
             paid_amt: 0,
@@ -183,6 +185,7 @@ export default function Events() {
             logo_url: event.logo_url || '',
             event_type: event.event_type || 'Story',
             episode_wise: event.episode_wise ?? false,
+            multiple_content: event.multiple_content !== false,
             is_book: event.is_book ?? false,
             paid: event.paid ?? false,
             paid_amt: event.paid_amt || 0,
@@ -402,6 +405,7 @@ export default function Events() {
                                         {event.paid && <Badge className="bg-yellow-500 text-black text-xs">Paid ({event.paid_amt})</Badge>}
                                         {event.competition && <Badge variant="secondary" className="text-xs">Competition</Badge>}
                                         {event.episode_wise && <Badge variant="secondary" className="text-xs">Episode Wise</Badge>}
+                                        {event.multiple_content === false && <Badge variant="secondary" className="text-xs">Single Content</Badge>}
                                         {event.is_book && <Badge variant="secondary" className="text-xs">Book</Badge>}
                                     </div>
 
@@ -651,7 +655,8 @@ export default function Events() {
                                             { id: 'is_social_media', label: 'Social Media', desc: 'For social platforms' },
                                             { id: 'is_book', label: 'Is Book', desc: 'Book collection' },
                                             { id: 'is_app', label: 'Is App', desc: 'App exclusive' },
-                                            { id: 'episode_wise', label: 'Episode Wise', desc: 'Multi-part event' }
+                                            { id: 'episode_wise', label: 'Episode Wise', desc: 'Multi-part event' },
+                                            { id: 'multiple_content', label: 'Multiple Content', desc: 'Writer can publish more than one piece' }
                                         ].map(toggle => (
                                             <div key={toggle.id} className="flex items-start gap-3">
                                                 <input

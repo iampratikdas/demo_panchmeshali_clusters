@@ -16,6 +16,7 @@ import {
     getUsedEpisodeNumbers,
     validateEpisodeNumber,
 } from '../lib/episodeNumber';
+import { isSingleNovelEpisodeMode, requiresHeadTitle } from '../lib/eventRules';
 export const submissionSchema = z.object({
     type: z.string().min(1, "Type is required"),
     newSubmission: z.boolean(),
@@ -191,6 +192,13 @@ export function useSubmissionForm() {
     });
 
     useEffect(() => {
+        if (!selectedEvent || !isSingleNovelEpisodeMode(selectedEvent)) return;
+        if (eventEpisodes.length > 0) {
+            setNewSubmission(false);
+        }
+    }, [selectedEvent, eventEpisodes.length]);
+
+    useEffect(() => {
         if (newSubmission) {
             setPreviousEpisode('');
         }
@@ -346,7 +354,7 @@ export function useSubmissionForm() {
             return;
         }
 
-        if (selectedEvent?.episode_wise && !h_title.trim()) {
+        if (requiresHeadTitle(selectedEvent) && !h_title.trim()) {
             toast({
                 title: 'Head title required',
                 description: 'Please enter the head title for this story series.',

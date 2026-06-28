@@ -81,6 +81,10 @@ const eventSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  multiple_content: {
+    type: Boolean,
+    default: true,
+  },
   active: {
     type: Boolean
   },

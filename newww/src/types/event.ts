@@ -34,6 +34,7 @@ export interface Event {
     is_app: boolean;                // Is app
     event_type: EventType;          // Event Type enum
     episode_wise: boolean;          // Episode wise submissions allowed
+    multiple_content?: boolean;    // When false, one piece per writer per event
     active: boolean;                // Is event currently active
     created_by: string;             // User ID who created the event
     team: string[];                 // Team member names
@@ -70,6 +71,7 @@ export interface CreateEventData {
     is_app: boolean;                // Is app
     event_type: EventType;          // Event Type enum
     episode_wise: boolean;          // Episode wise submissions allowed
+    multiple_content?: boolean;    // When false, one piece per writer per event
     active: boolean;                // Is event currently active
     team: string[];                 // Team member names
     st_dt: string;                  // Unix timestamp as string

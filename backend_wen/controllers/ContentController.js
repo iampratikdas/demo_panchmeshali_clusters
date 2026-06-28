@@ -388,8 +388,10 @@ class ContentController {
       if (!event) {
         return res.status(404).json({ message: "Event not found" });
       }
-      if(event.episode_wise === true){
-        if(!h_title || !String(h_title).trim()){
+      const allowMultiple = event.multiple_content !== false;
+
+      if (event.episode_wise === true && allowMultiple) {
+        if (!h_title || !String(h_title).trim()) {
           return res.status(400).json({ message: "Please provide the h_title" });
         }
       }
@@ -471,18 +473,31 @@ class ContentController {
         publisher,
         wordCount,
         parent_id: parent_id || "",
-        h_title: event.episode_wise ? String(h_title || "").trim() : "",
+        h_title: event.episode_wise
+          ? (allowMultiple ? String(h_title || "").trim() : "")
+          : "",
       }
       let existingContent = await this.contentFunc.findOneEvenTContentAll({ eid: eid, uid: token_data.uid, event_content: event_content });
 
       console.log("existingUser=========>", existingContent)
-      if (existingContent.length > 0 && event.episode_wise === false) {
+      if (existingContent.length > 0 && !allowMultiple && event.episode_wise === false) {
         return res.status(200).json({
           status: 200,
           message: 'This User has already submitted the content for this event'
         })
-      }else{
-        if(event.episode_wise === true){
+      }
+
+      if (existingContent.length > 0 && !allowMultiple && event.episode_wise === true) {
+        const seriesTitle = existingContent.find(c => c.h_title)?.h_title;
+        if (seriesTitle && h_title && String(h_title).trim() !== String(seriesTitle).trim()) {
+          return res.status(400).json({
+            status: 400,
+            message: 'You must continue the same novel for this event',
+          });
+        }
+      }
+
+      if (event.episode_wise === true) {
           episodeNumber = episodeNumber === "" ? "1" : String(episodeNumber).trim();
           const normalizedNum = parseInt(episodeNumber, 10);
           if (Number.isNaN(normalizedNum) || normalizedNum < 1) {
@@ -503,7 +518,6 @@ class ContentController {
             });
           }
           contents.episodeNumber = episodeNumber;
-        }
       }
 
       // ── Workspace Integration: Save as JSON file ──

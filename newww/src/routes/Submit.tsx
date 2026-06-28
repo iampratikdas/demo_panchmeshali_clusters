@@ -8,7 +8,8 @@ import { Button } from '../ui/button';
 import { AnimatedSelect } from '../ui/animated-select';
 import { Tabs, TabsContent } from '../ui/tabs';import { ConfirmModal } from '../components/teams/ConfirmModal';
 import { WordCountDisplay } from '../components/submission/WordCountDisplay';
-import { countWordsFromHtml } from '../lib/wordCount';// Sub-components
+import { countWordsFromHtml } from '../lib/wordCount';
+import { isSingleNovelEpisodeMode, requiresHeadTitle } from '../lib/eventRules';
 import { EventSubmissionCard } from '../components/submission/EventSubmissionCard';
 import { PublicationDestinationCard } from '../components/submission/PublicationDestinationCard';
 import { SubmissionTypeCard } from '../components/submission/SubmissionTypeCard';
@@ -439,10 +440,11 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
     ];
 
     const isEpisodeWise = !!selectedEvent?.episode_wise;
+    const showHeadTitle = requiresHeadTitle(selectedEvent);
     const hasNoEpisodes = !state.eventEpisodes?.length;
     const isNextEpisodeBlocked =
         isEpisodeWise && !state.newSubmission && (hasNoEpisodes || !state.previousEpisode);
-    const isHeadTitleBlocked = isEpisodeWise && !state.h_title.trim();
+    const isHeadTitleBlocked = showHeadTitle && !state.h_title.trim();
     const isEpisodeNumberBlocked = isEpisodeWise && !!state.episodeNumberError;
 
     const previousEpisodeOptions = [
@@ -559,11 +561,12 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                             </CardContent>
                                         </Card>
                                     )}
+                                    {showHeadTitle && (
                                     <Card className={innerCardClass}>
                                         <CardHeader>
                                             <CardTitle>Head Title</CardTitle>
                                             <CardDescription>
-                                                Main series title — required for all episode-wise submissions
+                                                Main series title — required for episode-wise events with multiple content
                                             </CardDescription>
                                         </CardHeader>
                                         <CardContent>
@@ -577,6 +580,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                             )}
                                         </CardContent>
                                     </Card>
+                                    )}
                                     <Card className={innerCardClass}>
                                         <CardHeader>
                                             <CardTitle>Episode Number</CardTitle>
@@ -791,14 +795,19 @@ export default function Submit() {
     // Get the selected event to check episode_wise property
     const selectedEvent = state.selectedEvent ?? state.events?.find(event => event.eid === state.selectedEventId);
     const isEpisodeWise = selectedEvent?.episode_wise === undefined ? false : selectedEvent?.episode_wise ? true : false;
+    const singleNovelMode = isSingleNovelEpisodeMode(selectedEvent);
+    const hasExistingEpisodes = !!state.eventEpisodes?.length;
 
-    // Build dropdown options for event submissions based on episode_wise property
     let eventSubmissionOptions = [
         { value: 'true', label: 'New Submission' },
     ];
 
     if (isEpisodeWise) {
         eventSubmissionOptions.push({ value: 'false', label: 'Next Episode' });
+    }
+
+    if (singleNovelMode && hasExistingEpisodes) {
+        eventSubmissionOptions = [{ value: 'false', label: 'Next Episode' }];
     }
 
     // Content submission options
