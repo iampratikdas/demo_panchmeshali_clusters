@@ -60,6 +60,122 @@ class ContentController {
     return String(status || "").toLowerCase() === "approved";
   }
 
+  _resolveWorkspaceFilePath(stored_name) {
+    const primary = path.join(__dirname, "../public/workspace", stored_name);
+    if (fs.existsSync(primary)) return primary;
+    const legacy = path.join(__dirname, "../../public/workspace", stored_name);
+    if (fs.existsSync(legacy)) return legacy;
+    return primary;
+  }
+
+  async _findLinkedWorkspaceFile(uid, cont_id, fallbackName) {
+    let fileRecord = await this.workspaceFileFunc.findByContId(cont_id);
+    if (!fileRecord && fallbackName) {
+      fileRecord = await this.workspaceFileFunc.findByUserAndOriginalName(uid, fallbackName);
+    }
+    return fileRecord;
+  }
+
+  async _syncWorkspaceFileForContent(uid, cont_id, title, content, fallbackName) {
+    const fileRecord = await this._findLinkedWorkspaceFile(uid, cont_id, fallbackName);
+    if (!fileRecord || fileRecord.uid !== uid || fileRecord.ext !== "json") return;
+
+    const jsonData = Buffer.from(JSON.stringify({ title, content }));
+    const physicalPath = this._resolveWorkspaceFilePath(fileRecord.stored_name);
+    fs.writeFileSync(physicalPath, jsonData);
+
+    const rawText = content ? content.replace(/<[^>]+>/g, "").substring(0, 150) : "";
+    await this.workspaceFileFunc.updateFile(fileRecord.file_id, uid, {
+      size_bytes: jsonData.length,
+      excerpt: rawText,
+      original_name: title || fileRecord.original_name,
+      cont_id,
+      updatedAt: String(moment().unix()),
+    });
+  }
+
+  async updateWriterContent(req, res, token_data) {
+    try {
+      const role = (token_data.role || "").toLowerCase();
+      const writerRoles = ["writer", "both", "user"];
+      if (!writerRoles.includes(role)) {
+        return res.status(403).json({
+          status: 403,
+          message: "Only the content writer can update unapproved content.",
+          data: {},
+        });
+      }
+
+      const { cont_id, name, content } = req.body;
+      if (!cont_id) {
+        return res.status(400).json({ status: 400, message: "cont_id is required", data: {} });
+      }
+      if (name === undefined && content === undefined) {
+        return res.status(400).json({
+          status: 400,
+          message: "At least one of name or content is required",
+          data: {},
+        });
+      }
+
+      const contentItem = await this.contentFunc.findOneEvenTContentOne({ cont_id });
+      if (!contentItem) {
+        return res.status(404).json({ status: 404, message: "Content not found", data: {} });
+      }
+
+      if (contentItem.uid !== token_data.uid) {
+        return res.status(403).json({
+          status: 403,
+          message: "You can only edit your own content.",
+          data: {},
+        });
+      }
+
+      if (this._isApprovedStatus(contentItem.status)) {
+        return res.status(403).json({
+          status: 403,
+          message: "Approved content cannot be edited by the writer.",
+          data: {},
+        });
+      }
+
+      const updates = {};
+      if (name !== undefined) {
+        const trimmedName = String(name).trim();
+        if (!trimmedName) {
+          return res.status(400).json({ status: 400, message: "Title cannot be empty", data: {} });
+        }
+        updates.name = trimmedName;
+      }
+      if (content !== undefined) {
+        const trimmedContent = String(content);
+        updates.content = trimmedContent;
+        updates.wordCount = this._countWords(trimmedContent);
+      }
+
+      await this.contentFunc.updateContentByContId(cont_id, updates);
+
+      const nextTitle = updates.name ?? contentItem.name;
+      const nextContent = updates.content ?? contentItem.content;
+      await this._syncWorkspaceFileForContent(
+        token_data.uid,
+        cont_id,
+        nextTitle,
+        nextContent,
+        contentItem.name
+      );
+
+      return res.status(200).json({
+        status: 200,
+        message: "Content updated successfully.",
+        data: { cont_id, wordCount: updates.wordCount ?? contentItem.wordCount },
+      });
+    } catch (err) {
+      console.error("updateWriterContent error:", err);
+      return res.status(500).json({ status: 500, message: "Error updating content", data: {} });
+    }
+  }
+
   async _getProofreadScopeEids(token_data) {
     const role = (token_data.role || "").toLowerCase();
     if (["admin", "manager"].includes(role)) return null;
@@ -788,6 +904,7 @@ class ContentController {
           ext: 'json',
           size_bytes: fileSize,
           is_content: true,
+          cont_id,
           excerpt: rawText,
           createdAt: String(moment().unix()),
           updatedAt: String(moment().unix()),

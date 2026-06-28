@@ -30,6 +30,7 @@ export interface ApiWorkspaceFile {
     size_bytes: number;
     is_content?: boolean;
     excerpt?: string;
+    cont_id?: string;
     is_deleted: boolean;
     createdAt: string;
     updatedAt: string;

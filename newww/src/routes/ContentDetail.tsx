@@ -6,8 +6,11 @@ import {
     fetchContentById,
     fetchCommentsByContentId,
     addContentMarks,
+    updateWriterContent,
 } from '../lib/api';
-import { canUserComment, canUserGiveMarks, canUserViewMarks } from '../lib/contentMapper';
+import { canUserComment, canUserGiveMarks, canUserViewMarks, canWriterEditContent } from '../lib/contentMapper';
+import { RichTextEditor } from '../components/RichTextEditor';
+import { Input } from '../ui/input';
 import { MarksDisplay } from '../components/MarksDisplay';
 import { ContentMarkModal } from '../components/ContentMarkModal';
 import { useAtomValue } from 'jotai';
@@ -29,9 +32,13 @@ import {
     X,
     Layers,
     Hash,
+    Pencil,
+    Check,
+    RotateCcw,
     type LucideIcon,
 } from 'lucide-react';
 import type { Episode } from '../types/content';
+import { countWordsFromHtml } from '../lib/wordCount';
 
 const pageVariants = {
     hidden: { opacity: 0 },
@@ -234,6 +241,9 @@ export default function ContentDetail() {
     const queryClient = useQueryClient();
     const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
     const [markModalOpen, setMarkModalOpen] = useState(false);
+    const [editMode, setEditMode] = useState(false);
+    const [draftTitle, setDraftTitle] = useState('');
+    const [draftContent, setDraftContent] = useState('');
     const user = useAtomValue(currentUserAtom);
     const canComment = canUserComment(user.role);
     const canGiveMarks = canUserGiveMarks(user.role);
@@ -242,6 +252,22 @@ export default function ContentDetail() {
     const { data: content, isLoading: contentLoading } = useQuery({
         queryKey: ['content', id],
         queryFn: () => fetchContentById(id),
+    });
+
+    const canWriterEdit = content ? canWriterEditContent(content, user.uid) : false;
+
+    const updateMutation = useMutation({
+        mutationFn: () =>
+            updateWriterContent({
+                cont_id: id,
+                name: draftTitle,
+                content: draftContent,
+            }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['content', id] });
+            queryClient.invalidateQueries({ queryKey: ['contents'] });
+            setEditMode(false);
+        },
     });
 
     const markMutation = useMutation({
@@ -285,6 +311,31 @@ export default function ContentDetail() {
     const isEpisodeWise = !!content.episodeWise;
     const episodes = content.episodes ?? [];
     const Icon = content.type === 'story' ? FileText : BookOpen;
+
+    const startEditing = () => {
+        setDraftTitle(content.title);
+        setDraftContent(content.content);
+        setEditMode(true);
+    };
+
+    const cancelEditing = () => {
+        setEditMode(false);
+        setDraftTitle(content.title);
+        setDraftContent(content.content);
+    };
+
+    const handleSave = async () => {
+        if (!draftTitle.trim()) {
+            alert('Title cannot be empty.');
+            return;
+        }
+        try {
+            await updateMutation.mutateAsync();
+        } catch (error) {
+            console.error(error);
+            alert(error instanceof Error ? error.message : 'Failed to save changes.');
+        }
+    };
 
     return (
         <>
@@ -354,7 +405,46 @@ export default function ContentDetail() {
                                     </div>
                                 </div>
                             </div>
-                            <StatusBadge status={content.status} />
+                            <div className="flex flex-col items-end gap-2 shrink-0">
+                                <StatusBadge status={content.status} />
+                                {canWriterEdit && (
+                                    <div className="flex items-center gap-2">
+                                        {!editMode ? (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={startEditing}
+                                                className="h-8 gap-1.5 text-xs"
+                                            >
+                                                <Pencil className="h-3.5 w-3.5" />
+                                                Edit
+                                            </Button>
+                                        ) : (
+                                            <>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={cancelEditing}
+                                                    className="h-8 gap-1 text-xs"
+                                                    disabled={updateMutation.isPending}
+                                                >
+                                                    <RotateCcw className="h-3.5 w-3.5" />
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={handleSave}
+                                                    className="h-8 gap-1.5 text-xs"
+                                                    disabled={updateMutation.isPending}
+                                                >
+                                                    <Check className="h-3.5 w-3.5" />
+                                                    {updateMutation.isPending ? 'Saving…' : 'Save'}
+                                                </Button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {canViewMarks && (
@@ -385,23 +475,74 @@ export default function ContentDetail() {
                     {/* Body */}
                     <div className="px-6 sm:px-8 py-6">
                         {!isEpisodeWise && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.2 }}
-                                className="prose prose-sm max-w-none prose-headings:text-foreground rounded-xl bg-white/50 p-5 border border-border/40"
-                                dangerouslySetInnerHTML={{ __html: content.content }}
-                            />
+                            editMode ? (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="space-y-4"
+                                >
+                                    <div>
+                                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                            Title
+                                        </label>
+                                        <Input
+                                            value={draftTitle}
+                                            onChange={(e) => setDraftTitle(e.target.value)}
+                                            className="mt-1.5"
+                                        />
+                                    </div>
+                                    <RichTextEditor
+                                        content={draftContent}
+                                        onChange={setDraftContent}
+                                    />
+                                    {content.type === 'story' && (
+                                        <p className="text-xs text-muted-foreground">
+                                            {countWordsFromHtml(draftContent)} words
+                                        </p>
+                                    )}
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="prose prose-sm max-w-none prose-headings:text-foreground rounded-xl bg-white/50 p-5 border border-border/40"
+                                    dangerouslySetInnerHTML={{ __html: content.content }}
+                                />
+                            )
                         )}
 
                         {isEpisodeWise && content.content && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: 0.2 }}
-                                className="prose prose-sm max-w-none mb-8 prose-headings:text-foreground rounded-xl bg-white/50 p-5 border border-border/40"
-                                dangerouslySetInnerHTML={{ __html: content.content }}
-                            />
+                            editMode ? (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="space-y-4 mb-8"
+                                >
+                                    <div>
+                                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                            Title
+                                        </label>
+                                        <Input
+                                            value={draftTitle}
+                                            onChange={(e) => setDraftTitle(e.target.value)}
+                                            className="mt-1.5"
+                                        />
+                                    </div>
+                                    <RichTextEditor
+                                        content={draftContent}
+                                        onChange={setDraftContent}
+                                    />
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="prose prose-sm max-w-none mb-8 prose-headings:text-foreground rounded-xl bg-white/50 p-5 border border-border/40"
+                                    dangerouslySetInnerHTML={{ __html: content.content }}
+                                />
+                            )
                         )}
 
                         {isEpisodeWise && episodes.length > 0 && (

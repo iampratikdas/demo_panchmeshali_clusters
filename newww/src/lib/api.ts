@@ -337,6 +337,21 @@ export const fetchContentById = async (id: string): Promise<Content | null> => {
     return mapBackendContentDetail(item);
 };
 
+export const updateWriterContent = async (payload: {
+    cont_id: string;
+    name?: string;
+    content?: string;
+}): Promise<void> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/update_writer_content`,
+        payload,
+        { headers: authHeaders() }
+    );
+    if (response.data?.status !== 200) {
+        throw new Error(response.data?.message || 'Failed to update content');
+    }
+};
+
 export const addContentMarks = async (payload: {
     cont_id: string;
     marks: number;

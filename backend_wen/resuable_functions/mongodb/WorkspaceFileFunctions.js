@@ -37,6 +37,21 @@ class WorkspaceFileFunctions {
         return await this.fileModel.findOne({ file_id, is_deleted: false }).lean();
     }
 
+    /** Return a workspace file linked to a submitted content record */
+    async findByContId(cont_id) {
+        if (!cont_id) return null;
+        return await this.fileModel.findOne({ cont_id, is_deleted: false }).lean();
+    }
+
+    /** Fallback lookup for legacy submissions without cont_id on the file record */
+    async findByUserAndOriginalName(uid, original_name) {
+        if (!uid || !original_name) return null;
+        return await this.fileModel
+            .findOne({ uid, original_name, ext: 'json', is_deleted: false })
+            .sort({ createdAt: -1 })
+            .lean();
+    }
+
     // ── Storage Quota ────────────────────────────────────────────────────────
 
     /**

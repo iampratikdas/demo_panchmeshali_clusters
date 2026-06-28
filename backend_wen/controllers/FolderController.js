@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const GenKey = require('../utils/GenKey');
 const moment = require('moment');
+const { stripHtml } = require('../utils/ai/proofreadService');
 
 // ─── Allowed extensions and MIME types ──────────────────────────────────────
 const ALLOWED_EXTS = ['.pdf', '.docx'];
@@ -12,6 +13,29 @@ const ALLOWED_MIMES = [
 
 // 10 MB storage threshold per user
 const STORAGE_LIMIT_BYTES = 10 * 1024 * 1024;
+
+function countWords(text = '') {
+    const plain = stripHtml(text);
+    return plain.split(/\s+/).filter(Boolean).length;
+}
+
+async function resolveLinkedContent(contentFunc, fileRecord, token_data) {
+    if (!fileRecord || fileRecord.ext !== 'json') return null;
+    if (fileRecord.cont_id) {
+        return await contentFunc.findOneEvenTContentOne({ cont_id: fileRecord.cont_id });
+    }
+    if (fileRecord.is_content) {
+        return await contentFunc.findOneEvenTContentOne({
+            uid: token_data.uid,
+            name: fileRecord.original_name,
+        });
+    }
+    return null;
+}
+
+function isApprovedStatus(status) {
+    return String(status || '').toLowerCase() === 'approved';
+}
 
 function resolveWorkspaceFilePath(stored_name) {
     const primary = path.join(__dirname, '../public/workspace', stored_name);
@@ -312,6 +336,24 @@ class FolderController {
             if (fileRecord.uid !== token_data.uid) return res.status(403).json({ status: 403, message: 'Forbidden.', data: {} });
             if (fileRecord.ext !== 'json') return res.status(400).json({ status: 400, message: 'Not a JSON content file.', data: {} });
 
+            const linkedContent = await resolveLinkedContent(
+                this.userFunc.contentFunctions,
+                fileRecord,
+                token_data
+            );
+            if (linkedContent) {
+                if (linkedContent.uid !== token_data.uid) {
+                    return res.status(403).json({ status: 403, message: 'Forbidden.', data: {} });
+                }
+                if (isApprovedStatus(linkedContent.status)) {
+                    return res.status(403).json({
+                        status: 403,
+                        message: 'Approved content cannot be edited.',
+                        data: {},
+                    });
+                }
+            }
+
             const jsonData = Buffer.from(JSON.stringify({ title, content }));
             const newSize = jsonData.length;
             const sizeDiff = newSize - fileRecord.size_bytes;
@@ -340,6 +382,14 @@ class FolderController {
                 original_name: title || fileRecord.original_name,
                 updatedAt: String(moment().unix())
             });
+
+            if (linkedContent) {
+                await this.userFunc.contentFunctions.updateContentByContId(linkedContent.cont_id, {
+                    name: title || linkedContent.name,
+                    content,
+                    wordCount: countWords(content),
+                });
+            }
 
             return res.status(200).json({
                 status: 200,

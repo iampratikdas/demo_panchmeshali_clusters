@@ -215,3 +215,16 @@ export function canUserComment(role?: string | null): boolean {
     if (!role) return false;
     return COMMENT_ALLOWED_ROLES.has(role.toLowerCase());
 }
+
+export function isContentApproved(status?: ContentStatus | string): boolean {
+    if (!status) return false;
+    return mapStatusFromBackend(String(status)) === 'Approved';
+}
+
+export function canWriterEditContent(
+    content: { status: ContentStatus; authorId: string },
+    userUid?: string | null
+): boolean {
+    if (!userUid || content.authorId !== userUid) return false;
+    return !isContentApproved(content.status);
+}

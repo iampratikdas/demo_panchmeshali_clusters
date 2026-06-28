@@ -482,6 +482,7 @@ export default function Workspace() {
                                                         createdAt: file.createdAt,
                                                         modifiedAt: file.updatedAt,
                                                         excerpt: file.excerpt,
+                                                        contId: file.cont_id || undefined,
                                                         fullContentUrl: file.file_path, // We will fetch it in the modal
                                                     });
                                                 }
@@ -531,6 +532,7 @@ export default function Workspace() {
                                                                         createdAt: file.createdAt,
                                                                         modifiedAt: file.updatedAt,
                                                                         excerpt: file.excerpt,
+                                                                        contId: file.cont_id || undefined,
                                                                         fullContentUrl: file.file_path,
                                                                     });
                                                                 }}

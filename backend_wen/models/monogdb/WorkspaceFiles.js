@@ -64,6 +64,12 @@ const workspaceFileSchema = new mongoose.Schema({
         type: String,
         default: '',
     },
+    // Linked submitted content id (when saved from event submission)
+    cont_id: {
+        type: String,
+        default: '',
+        trim: true,
+    },
     // Size in bytes — used for storage quota calculation
     size_bytes: {
         type: Number,

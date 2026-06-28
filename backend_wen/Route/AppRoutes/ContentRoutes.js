@@ -23,6 +23,11 @@ class ContentRoutes {
 
             return res.status(404).json({ status: 404, message: data.message, data: {} });
         }));
+        router.post("/update_writer_content", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) =>
+            await initializes(req, res, userFunc, ["writer", "both", "user"])
+                .then((token_data) => token_data && ContentController.updateWriterContent(req, res, token_data))
+                .catch((data) => res.status(404).json({ status: 404, message: data.message, data: {} }))
+        );
         router.post("/list_contents", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && ContentController.listContents(req, res, token_data)).catch((data) => {
 
             return res.status(404).json({ status: 404, message: data.message, data: {} });

@@ -6,11 +6,16 @@ import {
 import type { WorkspaceFile } from '../types/workspace';
 import { cn } from '../lib/utils';
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useAtomValue } from 'jotai';
+import { currentUserAtom } from '../store/atoms';
 import { RichTextEditor } from './RichTextEditor';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useUpdateWorkspaceContent } from '../hooks/useWorkspaceFiles';
 import { apiFetchWorkspaceContent } from '../lib/workspaceFileApi';
+import { fetchContentById } from '../lib/api';
+import { canWriterEditContent } from '../lib/contentMapper';
 import { Loader2 } from 'lucide-react';
 
 interface ContentPreviewModalProps {
@@ -105,6 +110,17 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
     }, [file?.id, file?.type, isOpen]);
 
     const updateMutation = useUpdateWorkspaceContent(file?.folderId || 'root');
+    const user = useAtomValue(currentUserAtom);
+
+    const { data: linkedContent, isLoading: linkedContentLoading } = useQuery({
+        queryKey: ['content', file?.contId],
+        queryFn: () => fetchContentById(file!.contId!),
+        enabled: isOpen && !!file?.contId,
+    });
+
+    const canEdit = file?.contId
+        ? !!linkedContent && canWriterEditContent(linkedContent, user.uid)
+        : true;
 
     if (!file) return null;
 
@@ -234,7 +250,7 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
 
                                 {/* Action buttons — desktop only in header */}
                                 <div className="hidden sm:flex items-center gap-1 shrink-0">
-                                    {!editMode ? (
+                                    {!editMode && canEdit && !linkedContentLoading && (
                                         <Button
                                             size="sm"
                                             variant="outline"
@@ -244,7 +260,8 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
                                             <Pencil className="h-3.5 w-3.5" />
                                             Edit
                                         </Button>
-                                    ) : (
+                                    )}
+                                    {editMode && (
                                         <>
                                             <Button size="sm" variant="ghost" onClick={handleCancel} className="h-8 gap-1 text-xs text-gray-500">
                                                 <RotateCcw className="h-3.5 w-3.5" />
@@ -464,7 +481,7 @@ export function ContentPreviewModal({ file, isOpen, onClose }: ContentPreviewMod
                             {/* ── Footer ── */}
                             <div className="border-t px-4 sm:px-6 py-3 flex items-center justify-between bg-gray-50/40 shrink-0">
                                 {/* Mobile edit button (not shown in edit mode) */}
-                                {!editMode && (
+                                {!editMode && canEdit && !linkedContentLoading && (
                                     <Button
                                         size="sm"
                                         variant="outline"

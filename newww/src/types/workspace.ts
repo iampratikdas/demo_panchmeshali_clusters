@@ -27,6 +27,7 @@ export interface WorkspaceFile {
     author?: string;
     status?: string;
     eventName?: string;   // if this was an event submission
+    contId?: string;      // linked submitted content id
 }
 
 
