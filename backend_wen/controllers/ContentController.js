@@ -606,11 +606,6 @@ class ContentController {
       }
       const allowMultiple = event.multiple_content !== false;
 
-      if (event.episode_wise === true && allowMultiple) {
-        if (!h_title || !String(h_title).trim()) {
-          return res.status(400).json({ message: "Please provide the h_title" });
-        }
-      }
       if (eid != "") {
 
         // console.log("parent_id:================>", (!parent_id || parent_id === "") , event.parent , event)
@@ -689,6 +684,15 @@ class ContentController {
         }
       }
 
+      const isFirstEpisodeSubmission = existingContent.length === 0;
+      const isContinuingSingleNovel = existingContent.length > 0 && !allowMultiple && event.episode_wise;
+
+      if (event.episode_wise && isFirstEpisodeSubmission) {
+        if (!h_title || !String(h_title).trim()) {
+          return res.status(400).json({ message: "Please provide the h_title" });
+        }
+      }
+
       const cont_id = storyName.split(" ").join("_").trim()+"_"+gen(10);
       const eventParentId = event.parent || event.parent_id || "";
       const novelParentId = this._resolveNovelParentId(
@@ -719,7 +723,9 @@ class ContentController {
         wordCount,
         parent_id: event.episode_wise ? novelParentId : (parent_id || ""),
         h_title: event.episode_wise
-          ? (allowMultiple ? String(h_title || "").trim() : "")
+          ? (isContinuingSingleNovel
+              ? (existingContent.find((c) => c.h_title)?.h_title || "")
+              : String(h_title || "").trim())
           : "",
       }
 

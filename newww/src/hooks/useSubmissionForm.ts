@@ -375,7 +375,7 @@ export function useSubmissionForm() {
             return;
         }
 
-        if (requiresHeadTitle(selectedEvent) && !h_title.trim()) {
+        if (requiresHeadTitle(selectedEvent, newSubmission, eventEpisodes.length > 0) && !h_title.trim()) {
             toast({
                 title: 'Head title required',
                 description: 'Please enter the head title for this story series.',

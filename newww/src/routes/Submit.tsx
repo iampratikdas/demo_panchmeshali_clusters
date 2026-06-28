@@ -440,12 +440,16 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
     ];
 
     const isEpisodeWise = !!selectedEvent?.episode_wise;
+    const hasNoEpisodes = !state.eventEpisodes?.length;
     const showCategory = !!(
         selectedEvent?.categories?.length
         && requiresCategorySelection(selectedEvent, state.newSubmission)
     );
-    const showHeadTitle = requiresHeadTitle(selectedEvent);
-    const hasNoEpisodes = !state.eventEpisodes?.length;
+    const showHeadTitle = requiresHeadTitle(
+        selectedEvent,
+        state.newSubmission,
+        !hasNoEpisodes
+    );
     const isNextEpisodeBlocked =
         isEpisodeWise && !state.newSubmission && (hasNoEpisodes || !state.previousEpisode);
     const isHeadTitleBlocked = showHeadTitle && !state.h_title.trim();
@@ -570,7 +574,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                         <CardHeader>
                                             <CardTitle>Head Title</CardTitle>
                                             <CardDescription>
-                                                Main series title — required for episode-wise events with multiple content
+                                                Main series title — required when starting a new episode-wise submission
                                             </CardDescription>
                                         </CardHeader>
                                         <CardContent>
