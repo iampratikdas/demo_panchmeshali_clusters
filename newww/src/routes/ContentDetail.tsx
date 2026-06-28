@@ -89,18 +89,16 @@ function EpisodeCard({ episode, index, onClick }: EpisodeCardProps) {
             transition={{ duration: 0.35, delay: index * 0.06, ease: 'easeOut' }}
             whileHover={isClickable ? { y: -4, scale: 1.01 } : undefined}
             whileTap={isClickable ? { scale: 0.98 } : undefined}
-            className={`group relative overflow-hidden rounded-2xl border p-4 transition-colors duration-300 ${
-                isClickable
+            className={`group relative overflow-hidden rounded-2xl border p-4 transition-colors duration-300 ${isClickable
                     ? 'cursor-pointer border-border/60 bg-white/80 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10'
                     : 'border-amber-200/50 bg-gradient-to-br from-amber-50/50 to-orange-50/30 opacity-95'
-            }`}
+                }`}
             onClick={isClickable ? onClick : undefined}
         >
-            <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-full transition-all duration-300 ${
-                isClickable
+            <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-full transition-all duration-300 ${isClickable
                     ? 'bg-gradient-to-b from-primary/40 to-indigo-400/40 group-hover:from-primary group-hover:to-indigo-500'
                     : 'bg-gradient-to-b from-amber-400 to-orange-400'
-            }`} />
+                }`} />
 
             <div className="flex items-start justify-between gap-3 pl-2">
                 <div className="flex-1 min-w-0">
@@ -512,6 +510,37 @@ export default function ContentDetail() {
                             )
                         )}
 
+
+
+                        {isEpisodeWise && episodes.length > 0 && (
+                            <div className="space-y-4 mb-8">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/10 to-indigo-100">
+                                        <Layers className="h-4 w-4 text-primary" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-bold">Chapters</h2>
+                                        <p className="text-xs text-muted-foreground">{episodes.length} {episodes.length > 1 ? 'episodes' : 'episode'} available</p>
+                                    </div>
+                                </div>
+                                <motion.div
+                                    variants={pageVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    className="grid grid-cols-1 md:grid-cols-2 gap-3"
+                                >
+                                    {episodes.map((episode, index) => (
+                                        <EpisodeCard
+                                            key={episode.id}
+                                            episode={episode}
+                                            index={index}
+                                            onClick={() => setSelectedEpisode(episode)}
+                                        />
+                                    ))}
+                                </motion.div>
+                            </div>
+                        )}
+
                         {isEpisodeWise && content.content && (
                             editMode ? (
                                 <motion.div
@@ -543,35 +572,6 @@ export default function ContentDetail() {
                                     dangerouslySetInnerHTML={{ __html: content.content }}
                                 />
                             )
-                        )}
-
-                        {isEpisodeWise && episodes.length > 0 && (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2.5">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/10 to-indigo-100">
-                                        <Layers className="h-4 w-4 text-primary" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-lg font-bold">Chapters</h2>
-                                        <p className="text-xs text-muted-foreground">{episodes.length} episodes available</p>
-                                    </div>
-                                </div>
-                                <motion.div
-                                    variants={pageVariants}
-                                    initial="hidden"
-                                    animate="visible"
-                                    className="grid grid-cols-1 md:grid-cols-2 gap-3"
-                                >
-                                    {episodes.map((episode, index) => (
-                                        <EpisodeCard
-                                            key={episode.id}
-                                            episode={episode}
-                                            index={index}
-                                            onClick={() => setSelectedEpisode(episode)}
-                                        />
-                                    ))}
-                                </motion.div>
-                            </div>
                         )}
                     </div>
 

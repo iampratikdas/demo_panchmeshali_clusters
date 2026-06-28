@@ -76,7 +76,7 @@ const Login: React.FC = () => {
                 </div>
 
                 {/* Form Section */}
-                <form className="space-y-5 font-sans" onSubmit={handleSubmit}>
+                <form className="space-y-5 font-sans mb-8" onSubmit={handleSubmit}>
 
                     {/* Email Field */}
                     <div className="space-y-1.5">
@@ -105,9 +105,9 @@ const Login: React.FC = () => {
                             <label htmlFor="password" className="block text-xs font-semibold tracking-wider text-slate-400 uppercase">
                                 {t('login.passwordLabel')}
                             </label>
-                            <a href="#" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                            {/* <a href="#" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
                                 {t('login.forgotten')}
-                            </a>
+                            </a> */}
                         </div>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -138,18 +138,18 @@ const Login: React.FC = () => {
                 </form>
 
                 {/* Divider */}
-                <div className="mt-8 mb-6 relative flex items-center font-sans tracking-widest text-[10px] uppercase text-slate-500">
+                {/* <div className="mt-8 mb-6 relative flex items-center font-sans tracking-widest text-[10px] uppercase text-slate-500">
                     <div className="flex-grow border-t border-slate-700/80"></div>
                     <span className="flex-shrink-0 mx-4">{t('login.endlessStories')}</span>
                     <div className="flex-grow border-t border-slate-700/80"></div>
-                </div>
+                </div> */}
 
                 {/* Google Login */}
-                <button
+                {/* <button
                     type="button"
                     className="w-full cursor-pointer bg-[#2a3143] hover:bg-[#32394d] text-slate-200 border border-slate-600/50 py-3 rounded-xl transition-colors flex items-center justify-center space-x-3 font-sans text-sm mb-6"
                 >
-                    {/* Simple custom Google Icon since Lucide doesn't have brand icons */}
+                   
                     <svg className="w-4 h-4" viewBox="0 0 24 24">
                         <path
                             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -170,12 +170,12 @@ const Login: React.FC = () => {
                         <path d="M1 1h22v22H1z" fill="none" />
                     </svg>
                     <span>{t('login.googleSignIn')}</span>
-                </button>
+                </button> */}
 
                 {/* Footer Link */}
-                <div className="text-center font-sans text-xs text-slate-500">
+                {/* <div className="text-center font-sans text-xs text-slate-500">
                     {t('login.newWanderer')} <a href="#" className="text-slate-300 font-medium hover:text-white transition-colors">{t('login.beginJourney')}</a>
-                </div>
+                </div> */}
             </div>
 
             {/* Quote Footer - Only visible if screen is tall enough, or scrolls into view */}

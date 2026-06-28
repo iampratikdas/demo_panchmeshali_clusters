@@ -1,11 +1,11 @@
 {
     "login": {
-        "brandName": "The Folio",
+        "brandName": "Panchmeshali",
         "subtitle": "Step into your next chapter",
         "libraryPortal": "Library Portal",
         "emailLabel": "Email Address",
         "emailPlaceholder": "your.name@thefolio.com",
-        "passwordLabel": "Access Key",
+        "passwordLabel": "PASSWORD",
         "forgotten": "Forgotten?",
         "passwordPlaceholder": "••••••••",
         "unlockBtn": "Unlock the Archives",
