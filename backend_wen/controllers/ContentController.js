@@ -304,7 +304,13 @@ class ContentController {
 
   _rankingPipeline(eid) {
     return [
-      { $match: { eid } },
+      {
+        $match: {
+          eid,
+          status: { $in: ["Approved", "approved", "Selected", "selected"] },
+          type: { $in: ["story", "Story"] },
+        },
+      },
       {
         $lookup: {
           from: "votes",
