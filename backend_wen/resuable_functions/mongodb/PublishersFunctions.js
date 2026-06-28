@@ -24,6 +24,9 @@ class PublishersFunctions {
     async findAllPublishers(data = {}) {
         return await this.publishermodel.find(data).sort({ createdAt: -1 }).lean()
     }
+    async findPublishersByUserUid(uid) {
+        return await this.publishermodel.find({ uids: { $in: [uid] } }).sort({ createdAt: -1 }).lean()
+    }
     async publisherCount(data) {
         return await this.publishermodel.find(data).countDocuments().lean()
     }

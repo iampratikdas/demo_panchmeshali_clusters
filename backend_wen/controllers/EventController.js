@@ -132,12 +132,23 @@ class EventController {
         }
       }
 
-      // Find the publisher this user belongs to, to set the event's pid
-      let publisher_pid = "";
+      // Resolve publisher company for this event
+      let publisher_pid = req.body.pid || "";
       if (this.publisherFunc) {
-        const publishers = await this.publisherFunc.findOnePublisher({ uids: { $in: [token_data.uid] } });
-        if (publishers && publishers.length > 0) {
-          publisher_pid = publishers[0].pid;
+        if (publisher_pid) {
+          const company = await this.publisherFunc.findOnePublisher({ pid: publisher_pid });
+          if (!company) {
+            return res.status(404).json({ status: 404, message: "Publisher company not found", data: {} });
+          }
+          const isAssigned = (company.uids || []).includes(token_data.uid);
+          if (!isAssigned && token_data.role !== "admin") {
+            return res.status(403).json({ status: 403, message: "You are not assigned to this publisher company", data: {} });
+          }
+        } else {
+          const publisherCompany = await this.publisherFunc.findOnePublisher({ uids: { $in: [token_data.uid] } });
+          if (publisherCompany) {
+            publisher_pid = publisherCompany.pid;
+          }
         }
       }
 

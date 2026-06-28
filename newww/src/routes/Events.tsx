@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchEvents, createEvent, updateEvent, fetchPublisherTeamLists } from '../lib/api';
+import { fetchEvents, createEvent, updateEvent, fetchPublisherTeamLists, fetchMyPublisherCompanies } from '../lib/api';
 import type { Event, CreateEventData, EventType } from '../types/event';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../ui/card';
 import { Input } from '../ui/input';
@@ -29,6 +29,7 @@ export default function Events() {
 
     const [formData, setFormData] = useState<CreateEventData>({
         eid: '',
+        pid: '',
         name: '',
         description: '',
         active: true,
@@ -64,6 +65,12 @@ export default function Events() {
         queryFn: fetchPublisherTeamLists,
     });
 
+    const { data: publisherCompanies = [] } = useQuery({
+        queryKey: ['myPublisherCompanies'],
+        queryFn: fetchMyPublisherCompanies,
+        staleTime: 30_000,
+    });
+
     const createMutation = useMutation({
         mutationFn: (data: CreateEventData) => createEvent(data),
         onSuccess: () => {
@@ -88,18 +95,27 @@ export default function Events() {
         }
     });
 
-    const generateEid = () => {
-        const userStr = localStorage.getItem('user');
-        const user = userStr ? JSON.parse(userStr) : null;
-        const pubName = user?.full_name ? user.full_name.replace(/\s+/g, '') : 'Publisher';
+    const generateEid = (publisherName?: string) => {
+        const pubName = publisherName ? publisherName.replace(/\s+/g, '') : 'Publisher';
         const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
         const randomNum = Math.floor(Math.random() * 10000);
         return `${pubName}-${date}-${randomNum}`;
     };
 
+    const handlePublisherChange = (pid: string) => {
+        const company = publisherCompanies.find((c: any) => c.pid === pid);
+        setFormData(prev => ({
+            ...prev,
+            pid,
+            eid: !isEditing ? generateEid(company?.name) : prev.eid,
+        }));
+    };
+
     const openCreateForm = () => {
+        const defaultCompany = publisherCompanies[0];
         setFormData({
-            eid: generateEid(),
+            eid: generateEid(defaultCompany?.name),
+            pid: defaultCompany?.pid || '',
             name: '',
             description: '',
             active: true,
@@ -140,6 +156,7 @@ export default function Events() {
     const openEditForm = (event: Event) => {
         setFormData({
             eid: event.eid,
+            pid: event.pid || '',
             name: event.name || '',
             description: event.description || '',
             active: event.active ?? true,
@@ -170,6 +187,10 @@ export default function Events() {
     };
 
     const validateForm = () => {
+        if (!isEditing && !formData.pid) {
+            toast({ title: 'Validation Error', description: 'Please select a publisher company.', variant: 'destructive' });
+            return false;
+        }
         if (formData.st_dt) {
             const startTimestamp = new Date(formData.st_dt).getTime();
             if (startTimestamp < Date.now() - 86400000 && !isEditing) {
@@ -415,6 +436,34 @@ export default function Events() {
                             <CardContent>
                                 <form id="event-form" onSubmit={handleSubmit} className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Publisher Company */}
+                                        <div>
+                                            <label className="text-sm font-medium mb-2 block">
+                                                Publisher Name *
+                                            </label>
+                                            <select
+                                                required
+                                                value={formData.pid || ''}
+                                                onChange={(e) => handlePublisherChange(e.target.value)}
+                                                disabled={isEditing}
+                                                className={`w-full h-9 px-3 py-1 rounded-md border border-input bg-transparent text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${isEditing ? 'bg-muted cursor-not-allowed' : ''}`}
+                                            >
+                                                <option value="">Select publisher company</option>
+                                                {isEditing && formData.pid && !publisherCompanies.some((c: any) => c.pid === formData.pid) && (
+                                                    <option value={formData.pid} className="bg-background text-foreground">
+                                                        {formData.pid}
+                                                    </option>
+                                                )}
+                                                {publisherCompanies.map((company: any) => (
+                                                    <option key={company.pid} value={company.pid} className="bg-background text-foreground">
+                                                        {company.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            {publisherCompanies.length === 0 && (
+                                                <p className="text-xs text-muted-foreground mt-1">No publisher companies assigned to your account.</p>
+                                            )}
+                                        </div>
                                         {/* Event ID */}
                                         <div>
                                             <label className="text-sm font-medium mb-2 block text-muted-foreground">Event ID (EID)</label>
@@ -423,12 +472,12 @@ export default function Events() {
                                                 value={formData.eid}
                                                 disabled={true}
                                                 onChange={(e) => setFormData({ ...formData, eid: e.target.value })}
-                                                placeholder="e.g., Publisher-Date-Random"
+                                                placeholder="e.g., PublisherName-Date-Random"
                                                 className="bg-muted"
                                             />
                                         </div>
                                         {/* Event Name */}
-                                        <div>
+                                        <div className="md:col-span-2">
                                             <label className="text-sm font-medium mb-2 block">Event Name *</label>
                                             <Input
                                                 required

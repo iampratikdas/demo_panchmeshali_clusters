@@ -10,6 +10,7 @@ class Publisher {
         router.post("/update_publisher_users/:uid", (req, res, next) => MethodValidate(req, res, next, "POST"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && publisherController.updatepublisher(req, res, token_data)));
         router.post("/create_publisher_company", (req, res, next) => MethodValidate(req, res, next, "POST"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && publisherController.createCompany(req, res, token_data)));
         router.post("/update_publisher_company/:pid", (req, res, next) => MethodValidate(req, res, next, "POST"), async (req, res) => await initializes(req, res, userFunc, ["admin"]).then((token_data) => token_data && publisherController.updateCompany(req, res, token_data)));
+        router.get("/my_publisher_companies", (req, res, next) => MethodValidate(req, res, next, "GET"), async (req, res) => await initializes(req, res, userFunc).then((token_data) => token_data && publisherController.getMyPublisherCompanies(req, res, token_data)));
 
         // ── Teams section routes ──────────────────────────────────────────────────
         // Publisher: get all writer requests/members for their company

@@ -708,6 +708,40 @@ class PublisherController {
     }
 
     /**
+     * GET /my_publisher_companies
+     * Returns publisher companies assigned to the logged-in user (all for admin).
+     */
+    async getMyPublisherCompanies(req, res, token_data) {
+        try {
+            const role = token_data.role;
+            let companies = [];
+
+            if (role === "admin") {
+                companies = await this.publisherFunc.findAllPublishers();
+            } else if (["publisher", "manager", "both"].includes(role)) {
+                companies = await this.publisherFunc.findPublishersByUserUid(token_data.uid);
+            } else {
+                return res.status(403).json({ status: 403, message: "Access denied.", data: [] });
+            }
+
+            const formatted = companies.map(company => ({
+                pid: company.pid,
+                name: company.name,
+                status: company.status,
+            }));
+
+            return res.status(200).json({
+                status: 200,
+                message: "Assigned publisher companies fetched successfully",
+                data: formatted,
+            });
+        } catch (error) {
+            console.error("Error fetching assigned publisher companies:", error);
+            res.status(500).json({ status: 500, message: "Internal server error", data: [] });
+        }
+    }
+
+    /**
      * GET /publisher_team_lists
      * Fetches the users mentioned in the uids array of the publisher company.
      */

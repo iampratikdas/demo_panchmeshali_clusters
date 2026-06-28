@@ -57,6 +57,7 @@ export interface Event {
 
 export interface CreateEventData {
     eid: string;                    // Event ID
+    pid?: string;                   // Publisher company ID
     logo_url: string;               // Event logo
     name: string;                   // Event name
     paid: boolean;                  // Paid event

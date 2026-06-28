@@ -877,6 +877,14 @@ export const fetchAllPublisherCompanies = async (): Promise<any[]> => {
     return response.data?.data ?? [];
 };
 
+export const fetchMyPublisherCompanies = async (): Promise<any[]> => {
+    const response = await axios.get(
+        `${API_BASE_URL}/my_publisher_companies`,
+        { headers: getAuthHeaders() }
+    );
+    return response.data?.data ?? [];
+};
+
 /**
  * Fetch all publishers that are visible/assigned to the current writer.
  * GET /publisher_lists/:uid
