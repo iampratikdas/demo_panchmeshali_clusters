@@ -33,6 +33,7 @@ export interface BaseContent {
     episodes?: Episode[];
     eid?: string;
     h_title?: string;
+    parentId?: string;
     episodeNumber?: string;
     episodeWise?: boolean;
     totalMarks?: number;

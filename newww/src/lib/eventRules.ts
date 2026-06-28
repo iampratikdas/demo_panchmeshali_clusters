@@ -14,3 +14,12 @@ export function requiresHeadTitle(event?: Pick<Event, 'episode_wise' | 'multiple
 export function isSingleNovelEpisodeMode(event?: Pick<Event, 'episode_wise' | 'multiple_content'> | null): boolean {
     return !!event?.episode_wise && event?.multiple_content === false;
 }
+
+/** Category is chosen on new submissions, or when multiple content is allowed on the event. */
+export function requiresCategorySelection(
+    event?: Pick<Event, 'episode_wise' | 'multiple_content'> | null,
+    newSubmission?: boolean
+): boolean {
+    if (!event?.episode_wise) return true;
+    return !!newSubmission || allowsMultipleContent(event);
+}

@@ -15,6 +15,7 @@ export interface ApiContentItem {
     wordCount?: number;
     category?: string;
     h_title?: string;
+    parent_id?: string;
     episodeNumber?: string;
     episode_wise?: boolean;
     episode_count?: number;
@@ -92,6 +93,7 @@ export function mapBackendContent(item: ApiContentItem, episodeWise = false): Co
         authorName: item.author_name || 'Unknown',
         eid: item.eid,
         h_title: item.h_title,
+        parentId: item.parent_id || '',
         episodeNumber: item.episodeNumber,
         episodeWise,
         totalMarks: item.totalMarks ?? 0,

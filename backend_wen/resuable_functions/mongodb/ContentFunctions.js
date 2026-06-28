@@ -66,11 +66,17 @@ class ContentFunctions {
     }
     async ContentMarksUpdate(contentData, data, token_data, marks) {
         try {
-            return await this.contentmodel.updateOne(contentData, data).then(async (rs) => {
-                if (rs.matchedCount === 0) {
-                    await this.contentmodel.updateOne({ cont_id: contentData.cont_id }, { $push: { marks: { uid: token_data.uid, score: marks } } })
+            const rs = await this.contentmodel.updateOne(contentData, data);
+            if (rs.matchedCount === 0) {
+                const update = {
+                    $push: { marks: { uid: token_data.uid, score: marks } },
+                };
+                if (data?.$set?.status) {
+                    update.$set = { status: data.$set.status };
                 }
-            });
+                await this.contentmodel.updateOne({ cont_id: contentData.cont_id }, update);
+            }
+            return rs;
         } catch (error) {
             console.error("Error updating content marks:", error);
             throw new Error("Failed to update content");

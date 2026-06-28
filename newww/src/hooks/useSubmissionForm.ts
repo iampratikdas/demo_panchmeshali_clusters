@@ -16,7 +16,7 @@ import {
     getUsedEpisodeNumbers,
     validateEpisodeNumber,
 } from '../lib/episodeNumber';
-import { isSingleNovelEpisodeMode, requiresHeadTitle } from '../lib/eventRules';
+import { isSingleNovelEpisodeMode, requiresCategorySelection, requiresHeadTitle } from '../lib/eventRules';
 export const submissionSchema = z.object({
     type: z.string().min(1, "Type is required"),
     newSubmission: z.boolean(),
@@ -199,6 +199,19 @@ export function useSubmissionForm() {
     }, [selectedEvent, eventEpisodes.length]);
 
     useEffect(() => {
+        if (!selectedEvent?.categories?.length) return;
+        if (requiresCategorySelection(selectedEvent, newSubmission)) return;
+
+        const sourceEpisode = previousEpisode
+            ? eventEpisodes.find(ep => ep.cont_id === previousEpisode)
+            : eventEpisodes[eventEpisodes.length - 1];
+
+        if (sourceEpisode?.category) {
+            setCategory(sourceEpisode.category);
+        }
+    }, [selectedEvent, newSubmission, previousEpisode, eventEpisodes]);
+
+    useEffect(() => {
         if (newSubmission) {
             setPreviousEpisode('');
         }
@@ -275,6 +288,14 @@ export function useSubmissionForm() {
 
     const submitMutation = useMutation({
         mutationFn: async () => {
+            const resolvedCategory = requiresCategorySelection(selectedEvent, newSubmission)
+                ? category
+                : (
+                    eventEpisodes.find(ep => ep.cont_id === previousEpisode)?.category
+                    ?? eventEpisodes[eventEpisodes.length - 1]?.category
+                    ?? category
+                );
+
             const formData = {
                 type,
                 title,
@@ -282,7 +303,7 @@ export function useSubmissionForm() {
                 newSubmission,
                 selectedPublisher,
                 selectedFolder,
-                category,
+                category: resolvedCategory,
                 episodeNumber,
                 isOriginal,
                 backgroundImage,
@@ -336,7 +357,7 @@ export function useSubmissionForm() {
     const attemptSubmit = (overrideWordCount?: number) => {
         const count = overrideWordCount ?? wordCount;
 
-        if (isEvent && selectedEvent?.categories?.length && !category) {
+        if (isEvent && selectedEvent?.categories?.length && requiresCategorySelection(selectedEvent, newSubmission) && !category) {
             toast({
                 title: 'Category required',
                 description: 'Please select a category before submitting.',

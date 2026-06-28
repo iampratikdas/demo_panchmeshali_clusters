@@ -9,7 +9,7 @@ import { AnimatedSelect } from '../ui/animated-select';
 import { Tabs, TabsContent } from '../ui/tabs';import { ConfirmModal } from '../components/teams/ConfirmModal';
 import { WordCountDisplay } from '../components/submission/WordCountDisplay';
 import { countWordsFromHtml } from '../lib/wordCount';
-import { isSingleNovelEpisodeMode, requiresHeadTitle } from '../lib/eventRules';
+import { isSingleNovelEpisodeMode, requiresCategorySelection, requiresHeadTitle } from '../lib/eventRules';
 import { EventSubmissionCard } from '../components/submission/EventSubmissionCard';
 import { PublicationDestinationCard } from '../components/submission/PublicationDestinationCard';
 import { SubmissionTypeCard } from '../components/submission/SubmissionTypeCard';
@@ -440,6 +440,10 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
     ];
 
     const isEpisodeWise = !!selectedEvent?.episode_wise;
+    const showCategory = !!(
+        selectedEvent?.categories?.length
+        && requiresCategorySelection(selectedEvent, state.newSubmission)
+    );
     const showHeadTitle = requiresHeadTitle(selectedEvent);
     const hasNoEpisodes = !state.eventEpisodes?.length;
     const isNextEpisodeBlocked =
@@ -510,7 +514,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                                 setSelectedEventId={actions.setSelectedEventId}
                                 events={state.events}
                             />
-                            {state.selectedEventId && selectedEvent?.categories && selectedEvent.categories.length > 0 && (
+                            {showCategory && (
                                 <Card className={innerCardClass}>
                                     <CardHeader>
                                         <CardTitle>Category</CardTitle>
@@ -767,7 +771,7 @@ function EventWizard({ state, actions, eventSubmissionOptions, selectedEvent }: 
                         disableNext={
                             step === 0 && (
                                 !state.selectedEventId ||
-                                (!!selectedEvent?.categories?.length && !state.category) ||
+                                (showCategory && !state.category) ||
                                 isNextEpisodeBlocked ||
                                 isHeadTitleBlocked ||
                                 isEpisodeNumberBlocked

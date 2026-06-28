@@ -27,6 +27,11 @@ class ContentRoutes {
 
             return res.status(404).json({ status: 404, message: data.message, data: {} });
         }));
+        router.post("/event_rankings", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) =>
+            await initializes(req, res, userFunc)
+                .then((token_data) => token_data && ContentController.eventRankings(req, res, token_data))
+                .catch((data) => res.status(404).json({ status: 404, message: data.message, lists: [] }))
+        );
         //** We also need to add a separate route for admin or manager role for listing the contents **
         router.get("/list_notice", (req, res, next) => MethodValidate(req, res, next, "get"), (req, res) => ContentController.allNotice(req, res));
         // router.get("/cretificate_fetch", (req, res, next) => MethodValidate(req, res, next, "get"),  (req, res) => ContentController.certificateFetch(req, res));
@@ -62,7 +67,7 @@ class ContentRoutes {
         );
 
         router.post("/list_proofread_contents", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) =>
-            await initializes(req, res, userFunc, ["admin", "manager", "publisher"])
+            await initializes(req, res, userFunc, ["admin", "manager", "publisher", "proofreader"])
                 .then((token_data) => token_data && ContentController.listProofreadContents(req, res, token_data))
                 .catch((data) => res.status(404).json({ status: 404, message: data.message, data: {} }))
         );

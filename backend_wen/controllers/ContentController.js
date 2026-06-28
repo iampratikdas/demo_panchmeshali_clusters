@@ -56,19 +56,75 @@ class ContentController {
     return plain.split(/\s+/).filter(Boolean).length;
   }
 
+  _isApprovedStatus(status) {
+    return String(status || "").toLowerCase() === "approved";
+  }
+
+  async _getProofreadScopeEids(token_data) {
+    const role = (token_data.role || "").toLowerCase();
+    if (["admin", "manager"].includes(role)) return null;
+
+    let pids = [];
+    if (role === "publisher" || role === "both") {
+      const publishers = await this.publisherFunc.findPublishersByUserUid(token_data.uid);
+      pids = publishers.map((p) => p.pid).filter(Boolean);
+    } else if (role === "proofreader") {
+      const publishers = await this.publisherFunc.findPublishersByProofreaderUid(token_data.uid);
+      pids = publishers.map((p) => p.pid).filter(Boolean);
+    }
+
+    if (!pids.length) return [];
+
+    const events = await this.eventFunc.findAllEvents({ pid: { $in: pids } });
+    return events.map((e) => e.eid).filter(Boolean);
+  }
+
   async _canProofreadContent(token_data, contentItem) {
     const role = (token_data.role || "").toLowerCase();
     if (["admin", "manager"].includes(role)) return true;
-    if (role !== "publisher" || !contentItem?.eid) return false;
+    if (!contentItem?.eid) return false;
 
     const event = await this.eventFunc.findOneEvent({ eid: contentItem.eid });
     if (!event?.pid) return false;
 
-    const publisher = await this.publisherFunc.findOnePublisher({
-      pid: event.pid,
-      uids: { $in: [token_data.uid] },
-    });
-    return !!publisher;
+    if (role === "publisher" || role === "both") {
+      const publisher = await this.publisherFunc.findOnePublisher({
+        pid: event.pid,
+        uids: { $in: [token_data.uid] },
+      });
+      return !!publisher;
+    }
+
+    if (role === "proofreader") {
+      const publisher = await this.publisherFunc.findOnePublisher({
+        pid: event.pid,
+        proofreader_uids: { $in: [token_data.uid] },
+      });
+      return !!publisher;
+    }
+
+    return false;
+  }
+
+  _resolveNovelParentId(event, existingContent, cont_id, eventParentId) {
+    if (!event?.episode_wise) {
+      return eventParentId || "";
+    }
+    if (eventParentId) {
+      return eventParentId;
+    }
+    if (!existingContent?.length) {
+      return cont_id;
+    }
+    const sorted = [...existingContent].sort(
+      (a, b) =>
+        parseInt(a.episodeNumber || "9999", 10) - parseInt(b.episodeNumber || "9999", 10)
+    );
+    const root = sorted[0];
+    if (root.parent_id && root.parent_id !== "") {
+      return root.parent_id;
+    }
+    return root.cont_id;
   }
 
   sanitizeFileName(name) {
@@ -85,6 +141,7 @@ class ContentController {
       eid: 1,
       name: 1,
       type: 1,
+      parent_id: 1,
       h_title: 1,
       episodeNumber: 1,
       wordCount: 1,
@@ -127,6 +184,165 @@ class ContentController {
       { $project: this._contentListProject() },
       { $sort: sortBy || { createdAt: -1 } },
     ];
+  }
+
+  _rankingPipeline(eid) {
+    return [
+      { $match: { eid } },
+      {
+        $lookup: {
+          from: "votes",
+          localField: "cont_id",
+          foreignField: "cont_id",
+          as: "votes",
+        },
+      },
+      {
+        $addFields: {
+          voteCount: { $size: { $ifNull: ["$votes", []] } },
+          totalMarks: {
+            $sum: {
+              $map: {
+                input: { $ifNull: ["$marks", []] },
+                as: "m",
+                in: {
+                  $sum: {
+                    $map: {
+                      input: { $objectToArray: "$$m" },
+                      as: "kv",
+                      in: "$$kv.v",
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          cont_id: 1,
+          eid: 1,
+          name: 1,
+          type: 1,
+          parent_id: 1,
+          h_title: 1,
+          episodeNumber: 1,
+          uid: 1,
+          author_name: 1,
+          totalMarks: 1,
+          voteCount: 1,
+        },
+      },
+    ];
+  }
+
+  _episodeOne(item, items = []) {
+    const sorted = [...items].sort(
+      (a, b) =>
+        parseInt(a.episodeNumber || "9999", 10) - parseInt(b.episodeNumber || "9999", 10)
+    );
+    return sorted.find((ep) => parseInt(String(ep.episodeNumber || "").trim(), 10) === 1) || sorted[0] || item;
+  }
+
+  _aggregateEventRankings(event, items = []) {
+    const eventUsesVotes = String(event?.type || "").toLowerCase() === "vote";
+    const hasVotes = items.some((item) => (item.voteCount || 0) > 0);
+    const preferVotes = eventUsesVotes || hasVotes;
+
+    if (event?.episode_wise) {
+      const groups = new Map();
+
+      for (const item of items) {
+        let parentId = String(item.parent_id || "").trim();
+        if (!parentId) {
+          const epNum = parseInt(String(item.episodeNumber || "1").trim(), 10);
+          if (Number.isNaN(epNum) || epNum === 1) {
+            parentId = item.cont_id;
+          } else {
+            continue;
+          }
+        }
+        if (!groups.has(parentId)) groups.set(parentId, []);
+        groups.get(parentId).push(item);
+      }
+
+      return Array.from(groups.entries()).map(([parentId, episodes]) => {
+        const episodeOne = this._episodeOne(
+          episodes.find((ep) => ep.cont_id === parentId) || episodes[0],
+          episodes
+        );
+        const headTitle = String(episodeOne.h_title || "").trim() || episodeOne.name || "Untitled";
+        const totalMarks = episodes.reduce((sum, ep) => sum + (ep.totalMarks || 0), 0);
+        const voteCount = episodes.reduce((sum, ep) => sum + (ep.voteCount || 0), 0);
+
+        return {
+          cont_id: parentId,
+          parent_id: parentId,
+          title: headTitle,
+          type: episodeOne.type || "story",
+          author_name: episodeOne.author_name || "Unknown",
+          uid: episodeOne.uid || "",
+          totalMarks,
+          voteCount,
+          usesVotes: preferVotes && voteCount > 0,
+        };
+      });
+    }
+
+    return items
+      .filter((item) => !String(item.parent_id || "").trim())
+      .map((item) => {
+        const voteCount = item.voteCount || 0;
+        const totalMarks = item.totalMarks || 0;
+        return {
+          cont_id: item.cont_id,
+          parent_id: "",
+          title: item.name || "Untitled",
+          type: item.type || "story",
+          author_name: item.author_name || "Unknown",
+          uid: item.uid || "",
+          totalMarks,
+          voteCount,
+          usesVotes: preferVotes && voteCount > 0,
+        };
+      });
+  }
+
+  async eventRankings(req, res, token_data) {
+    try {
+      const { eid } = req.body;
+      if (!eid) {
+        return res.status(400).json({ status: 400, message: "eid is required", lists: [] });
+      }
+
+      const event = await this.eventFunc.findOneEvent({ eid });
+      if (!event) {
+        return res.status(404).json({ status: 404, message: "Event not found", lists: [] });
+      }
+
+      const rawItems = await this.contentFunc.findUserEventAggregates(this._rankingPipeline(eid));
+      const aggregated = this._aggregateEventRankings(event, rawItems);
+
+      const lists = aggregated
+        .map((item) => ({
+          ...item,
+          score: item.usesVotes ? item.voteCount : item.totalMarks,
+        }))
+        .sort((a, b) => b.score - a.score)
+        .map((item, index) => ({ ...item, rank: index + 1 }));
+
+      return res.status(200).json({
+        status: 200,
+        message: "Event rankings fetched",
+        episode_wise: !!event.episode_wise,
+        event_type: event.type || "number",
+        lists,
+      });
+    } catch (err) {
+      console.error("eventRankings error:", err);
+      return res.status(500).json({ status: 500, message: "Error fetching event rankings", lists: [] });
+    }
   }
 
   async _getEpisodeWiseMap(eids) {
@@ -453,30 +669,6 @@ class ContentController {
         event
       );
 
-      let contents = {
-        uid: token_data.uid,
-        eid: eid,
-        cont_id: storyName.split(" ").join("_").trim()+"_"+gen(10),
-        type,
-        pid: event.pid,
-        name: storyName,
-        author_name: token_data.full_name,
-        content: storyContent,
-        url: workspaceFolderId,
-        event_content,
-        orgin_content: isOriginalWork,
-        backgroundImage,
-        category,
-        coverImage,
-        destination,
-        episodeNumber,
-        publisher,
-        wordCount,
-        parent_id: parent_id || "",
-        h_title: event.episode_wise
-          ? (allowMultiple ? String(h_title || "").trim() : "")
-          : "",
-      }
       let existingContent = await this.contentFunc.findOneEvenTContentAll({ eid: eid, uid: token_data.uid, event_content: event_content });
 
       console.log("existingUser=========>", existingContent)
@@ -495,6 +687,40 @@ class ContentController {
             message: 'You must continue the same novel for this event',
           });
         }
+      }
+
+      const cont_id = storyName.split(" ").join("_").trim()+"_"+gen(10);
+      const eventParentId = event.parent || event.parent_id || "";
+      const novelParentId = this._resolveNovelParentId(
+        event,
+        existingContent,
+        cont_id,
+        eventParentId
+      );
+
+      let contents = {
+        uid: token_data.uid,
+        eid: eid,
+        cont_id,
+        type,
+        pid: event.pid,
+        name: storyName,
+        author_name: token_data.full_name,
+        content: storyContent,
+        url: workspaceFolderId,
+        event_content,
+        orgin_content: isOriginalWork,
+        backgroundImage,
+        category,
+        coverImage,
+        destination,
+        episodeNumber,
+        publisher,
+        wordCount,
+        parent_id: event.episode_wise ? novelParentId : (parent_id || ""),
+        h_title: event.episode_wise
+          ? (allowMultiple ? String(h_title || "").trim() : "")
+          : "",
       }
 
       if (event.episode_wise === true) {
@@ -1345,7 +1571,8 @@ class ContentController {
   async listProofreadContents(req, res, token_data) {
     try {
       const role = (token_data.role || "").toLowerCase();
-      if (!["admin", "manager", "publisher"].includes(role)) {
+      const allowedRoles = ["admin", "manager", "publisher", "proofreader", "both"];
+      if (!allowedRoles.includes(role)) {
         return res.status(403).json({ status: 403, message: "Access denied", lists: [], pagination: {} });
       }
 
@@ -1353,17 +1580,10 @@ class ContentController {
       const search = (req.body.search || "").trim().toLowerCase();
       const dateFilter = req.body.dateFilter || "all";
 
-      let matchFilter = { status: "Approved" };
+      let matchFilter = { status: { $regex: /^approved$/i } };
 
-      if (role === "publisher") {
-        const publisher = await this.publisherFunc.findOnePublisher({
-          uids: { $in: [token_data.uid] },
-        });
-        if (!publisher?.pid) {
-          return res.status(403).json({ status: 403, message: "No publisher company found", lists: [], pagination: {} });
-        }
-        const events = await this.eventFunc.findAllEvents({ pid: publisher.pid });
-        const eids = events.map((e) => e.eid).filter(Boolean);
+      if (!["admin", "manager"].includes(role)) {
+        const eids = await this._getProofreadScopeEids(token_data);
         if (!eids.length) {
           return res.status(200).json({
             message: "No approved content",
@@ -1429,7 +1649,8 @@ class ContentController {
   async proofreadAI(req, res, token_data) {
     try {
       const role = (token_data.role || "").toLowerCase();
-      if (!["admin", "manager", "publisher"].includes(role)) {
+      const allowedRoles = ["admin", "manager", "publisher", "proofreader", "both"];
+      if (!allowedRoles.includes(role)) {
         return res.status(403).json({ status: 403, message: "Access denied", data: {} });
       }
 
@@ -1439,7 +1660,7 @@ class ContentController {
       }
 
       const contentItem = await this.contentFunc.findOneEvenTContentOne({ cont_id });
-      if (!contentItem || contentItem.status !== "Approved") {
+      if (!contentItem || !this._isApprovedStatus(contentItem.status)) {
         return res.status(404).json({ status: 404, message: "Approved content not found", data: {} });
       }
 
@@ -1466,7 +1687,8 @@ class ContentController {
   async saveProofreadContent(req, res, token_data) {
     try {
       const role = (token_data.role || "").toLowerCase();
-      if (!["admin", "manager", "publisher"].includes(role)) {
+      const allowedRoles = ["admin", "manager", "publisher", "proofreader", "both"];
+      if (!allowedRoles.includes(role)) {
         return res.status(403).json({ status: 403, message: "Access denied", data: {} });
       }
 
@@ -1476,7 +1698,7 @@ class ContentController {
       }
 
       const contentItem = await this.contentFunc.findOneEvenTContentOne({ cont_id });
-      if (!contentItem || contentItem.status !== "Approved") {
+      if (!contentItem || !this._isApprovedStatus(contentItem.status)) {
         return res.status(404).json({ status: 404, message: "Approved content not found", data: {} });
       }
 
@@ -1506,7 +1728,8 @@ class ContentController {
   async markProofreadDone(req, res, token_data) {
     try {
       const role = (token_data.role || "").toLowerCase();
-      if (!["admin", "manager", "publisher"].includes(role)) {
+      const allowedRoles = ["admin", "manager", "publisher", "proofreader", "both"];
+      if (!allowedRoles.includes(role)) {
         return res.status(403).json({ status: 403, message: "Access denied", data: {} });
       }
 
@@ -1516,7 +1739,7 @@ class ContentController {
       }
 
       const contentItem = await this.contentFunc.findOneEvenTContentOne({ cont_id });
-      if (!contentItem || contentItem.status !== "Approved") {
+      if (!contentItem || !this._isApprovedStatus(contentItem.status)) {
         return res.status(404).json({ status: 404, message: "Approved content not found", data: {} });
       }
 

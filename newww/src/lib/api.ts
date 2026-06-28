@@ -358,6 +358,39 @@ export const addContentMarks = async (payload: {
     );
 };
 
+export interface EventRankingItem {
+    cont_id: string;
+    parent_id: string;
+    title: string;
+    type: string;
+    author_name: string;
+    uid: string;
+    totalMarks: number;
+    voteCount: number;
+    usesVotes: boolean;
+    score: number;
+    rank: number;
+}
+
+export interface EventRankingsResponse {
+    lists: EventRankingItem[];
+    episode_wise: boolean;
+    event_type: string;
+}
+
+export const fetchEventRankings = async (eid: string): Promise<EventRankingsResponse> => {
+    const response = await axios.post(
+        `${API_BASE_URL}/event_rankings`,
+        { eid },
+        { headers: authHeaders() }
+    );
+    return {
+        lists: response.data?.lists ?? [],
+        episode_wise: !!response.data?.episode_wise,
+        event_type: response.data?.event_type ?? 'number',
+    };
+};
+
 export const fetchCommentsByContentId = async (contentId: string): Promise<Comment[]> => {
     const response = await axios.post(
         `${API_BASE_URL}/content_comments`,
@@ -834,6 +867,7 @@ export interface EventEpisode {
     name: string;
     episodeNumber?: string;
     h_title?: string;
+    category?: string;
     createdAt?: string;
 }
 
