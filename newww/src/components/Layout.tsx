@@ -40,7 +40,7 @@ const navItems = [
     { to: '/', label: 'Dashboard', icon: Home },
     { to: '/submit', label: 'Submit', icon: PenTool , roles: ['writer']},
     { to: '/content', label: 'My Content', icon: FileText, badge: 4 },
-    { to: '/events', label: 'Events', icon: Calendar },
+    { to: '/events', label: 'Events', icon: Calendar  , roles: ['publisher']},
     { to: '/users', label: 'Users', icon: Users , roles: ['admin'] },
     { to: '/chats', label: 'Chats', icon: MessageSquare, badge: 2 },
     { to: '/workspace', label: 'Workspace', icon: FolderOpen, roles: ['writer', 'publisher'] },

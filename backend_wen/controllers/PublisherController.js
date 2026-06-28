@@ -379,7 +379,7 @@ class PublisherController {
                 return res.status(404).json({ status: 404, message: "No publisher company found for this user", data: {} });
             }
 
-            const pid = publisherCompany[0].pid;
+            const pid = publisherCompany.pid;
             const requests = await this.publisherFunc.getWriterRequestsForPublisher(pid);
             console.log("publisherCompany=====>", requests)
 
@@ -463,7 +463,7 @@ class PublisherController {
                 return res.status(404).json({ status: 404, message: "Publisher company not found for this user", data: {} });
             }
 
-            const pid = publisherCompany[0].pid;
+            const pid = publisherCompany.pid;
 
             // Verify assignment exists
             const existingRequest = await this.publisherFunc.findAssignedPublisher({ pid, writer_uid: writerUid });
@@ -724,7 +724,7 @@ class PublisherController {
                 return res.status(404).json({ status: 404, message: "No publisher company found for this user", data: [] });
             }
 
-            const company = publisherCompany[0];
+            const company = publisherCompany;
             const uids = company.uids || [];
 
             if (uids.length === 0) {
