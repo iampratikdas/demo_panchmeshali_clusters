@@ -369,19 +369,27 @@ class PublisherController {
     async getTeamRequests(req, res, token_data) {
         try {
             const role = token_data.role;
-            if (!["publisher", "both"].includes(role)) {
+            if (!["publisher", "both", "manager"].includes(role)) {
                 return res.status(403).json({ status: 403, message: "Access denied. Publishers only.", data: {} });
             }
 
-            // Get the publisher company for this user
-            const publisherCompany = await this.publisherFunc.findOnePublisher({ uids: { "$in": [token_data.uid] } });
-            if (!publisherCompany) {
-                return res.status(404).json({ status: 404, message: "No publisher company found for this user", data: {} });
+            const userCompanies = await this.publisherFunc.findPublishersByUserUid(token_data.uid);
+            if (!userCompanies || userCompanies.length === 0) {
+                return res.status(404).json({ status: 404, message: "No publisher company found for this user", data: [] });
             }
 
-            const pid = publisherCompany.pid;
+            let pid = req.query.pid;
+            if (pid) {
+                const isAssigned = userCompanies.some(company => company.pid === pid);
+                if (!isAssigned) {
+                    return res.status(403).json({ status: 403, message: "You are not assigned to this publisher company", data: [] });
+                }
+            } else {
+                pid = userCompanies[0].pid;
+            }
+
+            const activeCompany = userCompanies.find(company => company.pid === pid) || userCompanies[0];
             const requests = await this.publisherFunc.getWriterRequestsForPublisher(pid);
-            console.log("publisherCompany=====>", requests)
 
             const formattedData = requests.map(r => ({
                 assignment_id: r._id,
@@ -410,7 +418,19 @@ class PublisherController {
             return res.status(200).json({
                 status: 200,
                 message: "Team requests fetched successfully",
-                data: formattedData
+                data: formattedData,
+                publisher: {
+                    pid: activeCompany.pid,
+                    name: activeCompany.name,
+                    logo_url: activeCompany.logo_url || "",
+                    status: activeCompany.status,
+                },
+                companies: userCompanies.map(company => ({
+                    pid: company.pid,
+                    name: company.name,
+                    logo_url: company.logo_url || "",
+                    status: company.status,
+                })),
             });
         } catch (error) {
             console.error("Error during getTeamRequests:", error);
@@ -448,7 +468,7 @@ class PublisherController {
             const request_type = req.body.request_type;
             const role = token_data.role;
 
-            if (!["publisher", "both"].includes(role)) {
+            if (!["publisher", "both", "manager"].includes(role)) {
                 return res.status(403).json({ status: 403, message: "Access denied. Publishers only.", data: {} });
             }
 
@@ -457,13 +477,20 @@ class PublisherController {
                 return res.status(400).json({ status: 400, message: `request_type must be one of: ${validTypes.join(', ')}`, data: {} });
             }
 
-            // Get publisher company
-            const publisherCompany = await this.publisherFunc.findOnePublisher({ uids: token_data.uid });
-            if (!publisherCompany) {
+            const userCompanies = await this.publisherFunc.findPublishersByUserUid(token_data.uid);
+            if (!userCompanies || userCompanies.length === 0) {
                 return res.status(404).json({ status: 404, message: "Publisher company not found for this user", data: {} });
             }
 
-            const pid = publisherCompany.pid;
+            let pid = req.body.pid;
+            if (pid) {
+                const isAssigned = userCompanies.some(company => company.pid === pid);
+                if (!isAssigned) {
+                    return res.status(403).json({ status: 403, message: "You are not assigned to this publisher company", data: {} });
+                }
+            } else {
+                pid = userCompanies[0].pid;
+            }
 
             // Verify assignment exists
             const existingRequest = await this.publisherFunc.findAssignedPublisher({ pid, writer_uid: writerUid });

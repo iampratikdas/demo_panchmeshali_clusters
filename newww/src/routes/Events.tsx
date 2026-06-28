@@ -206,6 +206,14 @@ export default function Events() {
             toast({ title: 'Validation Error', description: 'Please select a publisher company.', variant: 'destructive' });
             return false;
         }
+        if (formData.team.length === 0) {
+            toast({ title: 'Validation Error', description: 'Please select at least one publisher team member.', variant: 'destructive' });
+            return false;
+        }
+        if (formData.categories.length === 0) {
+            toast({ title: 'Validation Error', description: 'Please select at least one category.', variant: 'destructive' });
+            return false;
+        }
         if (formData.st_dt) {
             const startTimestamp = new Date(formData.st_dt).getTime();
             if (startTimestamp < Date.now() - 86400000 && !isEditing) {
@@ -663,9 +671,11 @@ export default function Events() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {/* Team Members */}
-                                        <div className="border border-border p-4 rounded-xl">
-                                            <label className="text-sm font-medium mb-2 block">Publisher Team Members</label>
-                                            <p className="text-xs text-muted-foreground mb-3">Select members from your publisher company team.</p>
+                                        <div className={`border p-4 rounded-xl ${formData.team.length === 0 ? 'border-destructive/40' : 'border-border'}`}>
+                                            <label className="text-sm font-medium mb-2 block">
+                                                Publisher Team Members <span className="text-red-500">*</span>
+                                            </label>
+                                            <p className="text-xs text-muted-foreground mb-3">Select at least one member from your publisher company team.</p>
 
                                             <div className="relative mb-3">
                                                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -717,15 +727,20 @@ export default function Events() {
                                                             />
                                                         </Badge>
                                                     ))}
+                                                    {formData.team.length === 0 && (
+                                                        <span className="text-xs text-muted-foreground italic">No team members selected</span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* Categories */}
-                                        <div className="border border-border p-4 rounded-xl">
-                                            <label className="text-sm font-medium mb-2 block">Categories</label>
+                                        <div className={`border p-4 rounded-xl ${formData.categories.length === 0 ? 'border-destructive/40' : 'border-border'}`}>
+                                            <label className="text-sm font-medium mb-2 block">
+                                                Categories <span className="text-red-500">*</span>
+                                            </label>
                                             <p className="text-xs text-muted-foreground mb-3">
-                                                Pick from default categories or use the list below.
+                                                Select at least one category from the list below.
                                             </p>
 
                                             <Select

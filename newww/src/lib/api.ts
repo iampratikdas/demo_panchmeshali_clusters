@@ -929,9 +929,9 @@ export const removePublisherAssignment = async (pid: string): Promise<any> => {
  * Publisher: fetch all writer requests/members for their company.
  * GET /team_requests
  */
-export const fetchTeamRequests = async (): Promise<any> => {
+export const fetchTeamRequests = async (pid?: string): Promise<any> => {
     const response = await axios.get(
-        `${API_BASE_URL}/team_requests`,
+        `${API_BASE_URL}/team_requests${pid ? `?pid=${encodeURIComponent(pid)}` : ''}`,
         { headers: getAuthHeaders() }
     );
     return response.data;
@@ -941,10 +941,14 @@ export const fetchTeamRequests = async (): Promise<any> => {
  * Publisher: accept / reject / remove a writer.
  * POST /update_team_request/:writerUid
  */
-export const updateTeamRequest = async (writerUid: string, requestType: 'Accepted' | 'Rejected' | 'Cancelled'): Promise<any> => {
+export const updateTeamRequest = async (
+    writerUid: string,
+    requestType: 'Accepted' | 'Rejected' | 'Cancelled',
+    pid?: string
+): Promise<any> => {
     const response = await axios.post(
         `${API_BASE_URL}/update_team_request/${writerUid}`,
-        { request_type: requestType },
+        { request_type: requestType, ...(pid ? { pid } : {}) },
         { headers: getAuthHeaders() }
     );
     return response.data;

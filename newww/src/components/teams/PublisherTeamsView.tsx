@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Users, CheckCircle, XCircle, UserMinus, Search,
-    Star, BookOpen, RefreshCw, Inbox, ServerCrash, MessageSquare
+    Star, BookOpen, RefreshCw, Inbox, ServerCrash, MessageSquare, Building2
 } from 'lucide-react';
-import { fetchTeamRequests, updateTeamRequest, fetchPublisherProfile, createChat } from '../../lib/api';
+import { fetchTeamRequests, updateTeamRequest, fetchMyPublisherCompanies, createChat } from '../../lib/api';
 import { useToast } from '../../hooks/useToast';
 import { Button } from '../../ui/button';
+import { Select } from '../../ui/select';
 import { TeamStatusBadge } from './TeamStatusBadge';
 import { WriterDetailModal } from './WriterDetailModal';
 import { ConfirmModal } from './ConfirmModal';
@@ -203,42 +204,51 @@ export function PublisherTeamsView() {
     } | null>(null);
     const [loadingUid, setLoadingUid] = useState<string | null>(null);
     const [chattingUid, setChattingUid] = useState<string | null>(null);
+    const [selectedPid, setSelectedPid] = useState('');
 
     const [user] = useAtom(currentUserAtom);
 
-    const { data, isLoading, isError, refetch: refetchRequests } = useQuery({
-        queryKey: ['team-requests'],
-        queryFn: fetchTeamRequests,
+    const { data: publisherCompanies = [], isLoading: companiesLoading } = useQuery({
+        queryKey: ['myPublisherCompanies'],
+        queryFn: fetchMyPublisherCompanies,
         staleTime: 30_000,
     });
 
-    const requests: any[] = data?.data ?? [];
-    const firstRequestPid = requests[0]?.pid;
+    useEffect(() => {
+        if (publisherCompanies.length === 0) return;
+        if (!selectedPid || !publisherCompanies.some((c: any) => c.pid === selectedPid)) {
+            setSelectedPid(publisherCompanies[0].pid);
+        }
+    }, [publisherCompanies, selectedPid]);
 
-    const { data: publisherProfile, refetch: refetchProfile } = useQuery({
-        queryKey: ['publisher-profile', firstRequestPid],
-        queryFn: () => fetchPublisherProfile(firstRequestPid),
-        staleTime: 60_000,
-        enabled: !!firstRequestPid,
+    const { data, isLoading, isError, refetch: refetchRequests } = useQuery({
+        queryKey: ['team-requests', selectedPid],
+        queryFn: () => fetchTeamRequests(selectedPid),
+        staleTime: 30_000,
+        enabled: !!selectedPid,
     });
 
-    const publisherInfo = publisherProfile || data?.publisher || {
-        name: user.name || 'Publisher',
-        logo_url: '',
+    const requests: any[] = data?.data ?? [];
+    const selectedCompany = publisherCompanies.find((c: any) => c.pid === selectedPid)
+        || data?.publisher
+        || { name: user.name || 'Publisher', logo_url: '' };
+
+    const publisherInfo = {
+        name: selectedCompany?.name || user.name || 'Publisher',
+        logo_url: selectedCompany?.logo_url || '',
     };
 
     const refetch = () => {
         refetchRequests();
-        refetchProfile();
     };
 
     const mutation = useMutation({
         mutationFn: ({ uid, type }: { uid: string; type: 'Accepted' | 'Rejected' | 'Cancelled' }) =>
-            updateTeamRequest(uid, type),
+            updateTeamRequest(uid, type, selectedPid),
         onSuccess: (_, { type }) => {
             const msgs = { Accepted: 'Writer accepted! ✅', Rejected: 'Request rejected.', Cancelled: 'Writer removed from team.' };
             toast({ title: msgs[type] || 'Done' });
-            queryClient.invalidateQueries({ queryKey: ['team-requests'] });
+            queryClient.invalidateQueries({ queryKey: ['team-requests', selectedPid] });
             setSelectedRequest(null);
             setConfirmAction(null);
             setLoadingUid(null);
@@ -321,27 +331,55 @@ export function PublisherTeamsView() {
                 </AnimatePresence>
             </div>
 
-            {/* Publisher info banner */}
-            {publisherInfo && (
-                <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-primary/5 to-purple-500/5 rounded-xl border border-primary/10">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/10 flex items-center justify-center overflow-hidden">
+            {/* Publisher company selector */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-gradient-to-r from-primary/5 to-purple-500/5 rounded-xl border border-primary/10">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
                         {publisherInfo.logo_url ? (
                             <img src={publisherInfo.logo_url} alt={publisherInfo.name} className="h-full w-full object-cover" />
                         ) : (
                             <span className="text-xs font-bold text-primary">{publisherInfo.name?.[0]?.toUpperCase()}</span>
                         )}
                     </div>
-                    <div>
-                        <p className="text-sm font-semibold text-foreground">{publisherInfo.name}</p>
+                    <div className="min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{publisherInfo.name}</p>
                         <p className="text-xs text-muted-foreground">Managing your writer team</p>
                     </div>
-                    <div className="ml-auto">
-                        <button onClick={() => refetch()} className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors">
-                            <RefreshCw className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                    </div>
                 </div>
-            )}
+
+                <div className="w-full sm:w-auto sm:min-w-[240px]">
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5" />
+                        Publishing Company
+                    </label>
+                    {companiesLoading ? (
+                        <div className="h-10 rounded-md border border-border bg-muted/40 animate-pulse" />
+                    ) : publisherCompanies.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No publishing companies assigned.</p>
+                    ) : (
+                        <Select
+                            value={selectedPid}
+                            onChange={(e) => {
+                                setSelectedPid(e.target.value);
+                                setFilterTab('all');
+                                setSearch('');
+                            }}
+                            className="h-10"
+                            options={publisherCompanies.map((company: any) => ({
+                                value: company.pid,
+                                label: company.name,
+                            }))}
+                        />
+                    )}
+                </div>
+
+                <button
+                    onClick={() => refetch()}
+                    className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-muted transition-colors self-end sm:self-center flex-shrink-0"
+                >
+                    <RefreshCw className="h-4 w-4 text-muted-foreground" />
+                </button>
+            </div>
 
             {/* Tabs */}
             <div className="flex gap-1 p-1 bg-muted/50 rounded-xl border border-border/40 overflow-x-auto">
@@ -372,7 +410,7 @@ export function PublisherTeamsView() {
             </div>
 
             {/* Content */}
-            {isLoading ? (
+            {isLoading || companiesLoading || !selectedPid ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
                 </div>
