@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { useQuery } from '@tanstack/react-query';
-import { fetchEventRankings, fetchEvents } from '../lib/api';
+import { fetchEventRankings, fetchRankingEvents } from '../lib/api';
 import { currentUserAtom } from '../store/atoms';
 import { generateCertificate } from '../lib/certificate';
 import {
@@ -38,8 +38,8 @@ export default function Rankings() {
     const [currentUser] = useAtom(currentUserAtom);
 
     const { data: eventsData, isLoading: eventsLoading } = useQuery({
-        queryKey: ['events'],
-        queryFn: fetchEvents,
+        queryKey: ['ranking-events', currentUser.role],
+        queryFn: fetchRankingEvents,
     });
 
     const [sortBy, setSortBy] = useState<'score' | 'votes'>('score');
@@ -117,8 +117,9 @@ export default function Rankings() {
         }
     };
 
+    const isAdmin = currentUser.role === 'admin';
     const canDownload = (item: RankedRow) =>
-        currentUser.isAdmin || item.authorId === currentUser.id;
+        isAdmin || item.authorId === currentUser.uid;
 
     const titleColumnLabel = isEpisodeWise ? 'Head Title' : 'Title';
 
@@ -138,7 +139,7 @@ export default function Rankings() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {currentUser.isAdmin && (
+                    {isAdmin && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 uppercase tracking-wide">
                             Admin — all certificates visible
                         </span>

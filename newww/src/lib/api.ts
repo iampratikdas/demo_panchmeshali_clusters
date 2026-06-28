@@ -650,6 +650,15 @@ export const fetchEventsUsers = async (): Promise<Event[]> => {
     return response.data?.data || [];
 };
 
+/** Events available in Rankings — writers see joined events; publishers/admins see all. */
+export const fetchRankingEvents = async (): Promise<Event[]> => {
+    const role = localStorage.getItem('role')?.toLowerCase() ?? '';
+    if (['writer', 'both', 'user'].includes(role)) {
+        return fetchEventsUsers();
+    }
+    return fetchEvents();
+};
+
 export const fetchEventById = async (id: string): Promise<Event | null> => {
     // Backend doesn't have an explicit find by ID route, but we can fetch all and filter,
     // or assume we already have it in the list.

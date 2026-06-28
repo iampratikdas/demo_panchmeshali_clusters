@@ -23,7 +23,7 @@ class EventRoutes {
         router.get("/event_lists", (req, res, next) => MethodValidate(req, res, next, "get"), async (req, res) => await initializes(req, res, userFunc, ["admin", "manager", "publisher"]).then((token_data) => token_data && EventController.eventLists(req, res, token_data)).catch((data) => {
             return res.status(404).json({ status: 404, message: data.message, data: {} });
         }));
-        router.get("/event_lists_users", (req, res, next) => MethodValidate(req, res, next, "get"), async (req, res) => await initializes(req, res, userFunc, ["writer"]).then((token_data) => token_data && EventController.eventListsUsers(req, res, token_data)).catch((data) => {
+        router.get("/event_lists_users", (req, res, next) => MethodValidate(req, res, next, "get"), async (req, res) => await initializes(req, res, userFunc, ["writer", "both"]).then((token_data) => token_data && EventController.eventListsUsers(req, res, token_data)).catch((data) => {
             return res.status(404).json({ status: 404, message: data.message, data: {} });
         }));
         router.post("/create_events", (req, res, next) => MethodValidate(req, res, next, "post"), async (req, res) => await initializes(req, res, userFunc, ["admin", "manager", "publisher"]).then((token_data) => token_data && EventController.createEvents(req, res, token_data)).catch((data) => {
