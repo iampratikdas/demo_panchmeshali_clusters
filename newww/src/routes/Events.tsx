@@ -9,6 +9,7 @@ import { Badge } from '../ui/badge';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { Pagination } from '../components/Pagination';
 import { Calendar, Users, Plus, CheckCircle, XCircle, Search, Trophy, FileText, Edit, X } from 'lucide-react';
+import { Select } from '../ui/select';
 import { useToast } from '../hooks/useToast';
 
 const EVENT_TYPES: EventType[] = [
@@ -18,10 +19,24 @@ const EVENT_TYPES: EventType[] = [
     'Movie', 'Web Series', 'Short-stories'
 ];
 
+const DEFAULT_CATEGORIES = [
+    'Fiction',
+    'Non-Fiction',
+    'Romance',
+    'Mystery',
+    'Horror',
+    'Sci-Fi',
+    'Fantasy',
+    'Poetry',
+    'Biography',
+    'Essay',
+    'Short Story',
+    'Drama',
+];
+
 export default function Events() {
     const [showForm, setShowForm] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [categoryInput, setCategoryInput] = useState('');
     const [teamSearch, setTeamSearch] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -238,12 +253,26 @@ export default function Events() {
         }
     };
 
-    const addCategory = () => {
-        if (categoryInput.trim() && !formData.categories.includes(categoryInput.trim())) {
-            setFormData({ ...formData, categories: [...formData.categories, categoryInput.trim()] });
-            setCategoryInput('');
+    const toggleCategory = (category: string) => {
+        if (formData.categories.includes(category)) {
+            setFormData({ ...formData, categories: formData.categories.filter(c => c !== category) });
+        } else {
+            setFormData({ ...formData, categories: [...formData.categories, category] });
         }
     };
+
+    const addCategoryFromDropdown = (category: string) => {
+        if (category && !formData.categories.includes(category)) {
+            setFormData({ ...formData, categories: [...formData.categories, category] });
+        }
+    };
+
+    const categoryDropdownOptions = [
+        { value: '', label: 'Select category to add' },
+        ...DEFAULT_CATEGORIES
+            .filter(category => !formData.categories.includes(category))
+            .map(category => ({ value: category, label: category })),
+    ];
 
     const removeCategory = (category: string) => {
         setFormData({ ...formData, categories: formData.categories.filter(c => c !== category) });
@@ -695,37 +724,55 @@ export default function Events() {
                                         {/* Categories */}
                                         <div className="border border-border p-4 rounded-xl">
                                             <label className="text-sm font-medium mb-2 block">Categories</label>
-                                            <div className="flex gap-2 mb-3">
-                                                <Input
-                                                    value={categoryInput}
-                                                    onChange={(e) => setCategoryInput(e.target.value)}
-                                                    placeholder="Enter category name"
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            e.preventDefault();
-                                                            addCategory();
-                                                        }
-                                                    }}
-                                                    className="h-9"
-                                                />
-                                                <Button type="button" onClick={addCategory} variant="outline" className="h-9">Add</Button>
-                                            </div>
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {formData.categories.map((category) => (
-                                                    <Badge key={category} variant="secondary" className="text-xs">
-                                                        {category}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => removeCategory(category)}
-                                                            className="ml-1 hover:text-destructive"
-                                                        >
-                                                            <X className="h-3 w-3" />
-                                                        </button>
-                                                    </Badge>
+                                            <p className="text-xs text-muted-foreground mb-3">
+                                                Pick from default categories or use the list below.
+                                            </p>
+
+                                            <Select
+                                                key={formData.categories.join(',')}
+                                                value=""
+                                                onChange={(e) => addCategoryFromDropdown(e.target.value)}
+                                                className="h-9 mb-3"
+                                                options={categoryDropdownOptions}
+                                            />
+
+                                            <div className="max-h-[180px] overflow-y-auto space-y-1 border border-border rounded-md p-1 bg-muted/30">
+                                                {DEFAULT_CATEGORIES.map(category => (
+                                                    <div
+                                                        key={category}
+                                                        className="flex items-center gap-2 p-2 hover:bg-muted rounded-md cursor-pointer transition-colors"
+                                                        onClick={() => toggleCategory(category)}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={formData.categories.includes(category)}
+                                                            readOnly
+                                                            className="h-3.5 w-3.5 accent-primary"
+                                                        />
+                                                        <span className="text-sm">{category}</span>
+                                                    </div>
                                                 ))}
-                                                {formData.categories.length === 0 && (
-                                                    <span className="text-xs text-muted-foreground italic">No categories added</span>
-                                                )}
+                                            </div>
+
+                                            <div className="mt-3">
+                                                <p className="text-xs font-medium mb-2">Selected ({formData.categories.length}):</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {formData.categories.map((category) => (
+                                                        <Badge key={category} variant="secondary" className="text-xs">
+                                                            {category}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeCategory(category)}
+                                                                className="ml-1 hover:text-destructive"
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                            </button>
+                                                        </Badge>
+                                                    ))}
+                                                    {formData.categories.length === 0 && (
+                                                        <span className="text-xs text-muted-foreground italic">No categories selected</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
