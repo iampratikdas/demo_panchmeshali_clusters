@@ -1,0 +1,50 @@
+{
+  "patientId": "p1",
+  "contacts": [
+    {
+      "id": "e1",
+      "type": "hospital",
+      "name": "Springfield General Hospital Emergency",
+      "phone": "+1 555-911-0001",
+      "alternatePhone": "+1 555-100-0100",
+      "address": "100 Medical Center Dr, Springfield, IL 62701",
+      "available24x7": true,
+      "notes": "Nearest emergency room — 2.3 miles from home"
+    },
+    {
+      "id": "e2",
+      "type": "family",
+      "name": "Jane Doe",
+      "relationship": "Spouse",
+      "phone": "+1 555-012-7890",
+      "alternatePhone": "+1 555-012-7891",
+      "email": "jane.doe@email.com",
+      "address": "742 Evergreen Terrace, Springfield, IL 62704",
+      "available24x7": false,
+      "notes": "Primary emergency contact"
+    },
+    {
+      "id": "e3",
+      "type": "ambulance",
+      "name": "Springfield EMS",
+      "phone": "911",
+      "alternatePhone": "+1 555-911-0000",
+      "address": "City-wide emergency services",
+      "available24x7": true,
+      "notes": "Call 911 for life-threatening emergencies"
+    },
+    {
+      "id": "e4",
+      "type": "primary_doctor",
+      "name": "Dr. Sandra Perry",
+      "specialization": "General Physician",
+      "phone": "+1 555-100-0001",
+      "alternatePhone": "+1 555-100-0101",
+      "email": "sandra.perry@springfieldhospital.org",
+      "hospital": "Springfield General Hospital",
+      "doctorId": "d1",
+      "available24x7": false,
+      "notes": "Primary care physician — call during office hours 8 AM - 5 PM"
+    }
+  ]
+}

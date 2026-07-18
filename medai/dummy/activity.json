@@ -1,0 +1,85 @@
+{
+  "patientId": "p1",
+  "activities": [
+    {
+      "id": "act1",
+      "type": "medicine",
+      "title": "Took Metformin 850mg",
+      "description": "Morning dose completed",
+      "timestamp": "2026-07-17T08:05:00.000Z",
+      "icon": "💊",
+      "relatedId": "m2",
+      "color": "#6BCB77"
+    },
+    {
+      "id": "act2",
+      "type": "medicine",
+      "title": "Took Amlodipine 5mg",
+      "description": "Morning blood pressure medication",
+      "timestamp": "2026-07-17T07:32:00.000Z",
+      "icon": "💊",
+      "relatedId": "m3",
+      "color": "#93C5FD"
+    },
+    {
+      "id": "act3",
+      "type": "message",
+      "title": "New message from Dr. Chen",
+      "description": "Reply about ECG and ankle swelling",
+      "timestamp": "2026-07-16T14:22:00.000Z",
+      "icon": "💬",
+      "relatedId": "c1",
+      "color": "#818CF8"
+    },
+    {
+      "id": "act4",
+      "type": "appointment",
+      "title": "Appointment reminder set",
+      "description": "Cardiology follow-up on July 24 with Dr. Michael Chen",
+      "timestamp": "2026-07-16T10:00:00.000Z",
+      "icon": "📅",
+      "relatedId": "a1",
+      "color": "#F472B6"
+    },
+    {
+      "id": "act5",
+      "type": "report",
+      "title": "Viewed ECG Report",
+      "description": "Reviewed electrocardiogram from June 12 visit",
+      "timestamp": "2026-07-15T11:15:00.000Z",
+      "icon": "📋",
+      "relatedId": "r2",
+      "color": "#3B82F6"
+    },
+    {
+      "id": "act6",
+      "type": "prescription",
+      "title": "Prescription uploaded",
+      "description": "Atorvastatin 10mg — pending verification",
+      "timestamp": "2026-07-14T09:30:00.000Z",
+      "icon": "📄",
+      "relatedId": "rx4",
+      "color": "#F9A8D4"
+    },
+    {
+      "id": "act7",
+      "type": "health",
+      "title": "Logged blood pressure",
+      "description": "128/78 mmHg — within target range",
+      "timestamp": "2026-07-15T10:00:00.000Z",
+      "icon": "❤️",
+      "relatedId": null,
+      "color": "#EF4444"
+    },
+    {
+      "id": "act8",
+      "type": "visit",
+      "title": "Completed cardiology visit",
+      "description": "Consultation with Dr. Michael Chen — ECG and BP review",
+      "timestamp": "2026-06-12T12:00:00.000Z",
+      "icon": "🏥",
+      "relatedId": "a4",
+      "color": "#14B8A6"
+    }
+  ]
+}

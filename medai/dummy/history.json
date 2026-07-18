@@ -1,0 +1,186 @@
+{
+  "patientId": "p1",
+  "timeline": [
+    {
+      "year": 2026,
+      "events": [
+        {
+          "id": "h2026-01",
+          "year": 2026,
+          "date": "2026-06-12",
+          "title": "Visited Cardiologist",
+          "description": "Consultation with Dr. Michael Chen for hypertension management. ECG performed and Amlodipine 5mg prescribed.",
+          "type": "visit",
+          "doctorId": "d2",
+          "doctorName": "Dr. Michael Chen",
+          "relatedIds": {
+            "appointmentId": "a4",
+            "prescriptionId": "rx3",
+            "medicineId": "m3",
+            "reportId": "r2"
+          },
+          "details": {
+            "hospital": "HeartCare Medical Center",
+            "diagnosis": "Essential Hypertension",
+            "followUp": "2026-07-24"
+          }
+        },
+        {
+          "id": "h2026-02",
+          "year": 2026,
+          "date": "2026-06-12",
+          "title": "Uploaded ECG Report",
+          "description": "Electrocardiogram results uploaded from cardiology visit. Normal sinus rhythm confirmed.",
+          "type": "upload",
+          "doctorId": "d2",
+          "doctorName": "Dr. Michael Chen",
+          "relatedIds": {
+            "reportId": "r2",
+            "appointmentId": "a4"
+          },
+          "details": {
+            "reportType": "ECG",
+            "status": "ready",
+            "findings": "Normal sinus rhythm, 72 bpm"
+          }
+        },
+        {
+          "id": "h2026-03",
+          "year": 2026,
+          "date": "2026-06-27",
+          "title": "Started Blood Pressure Medicine",
+          "description": "Began daily Amlodipine 5mg regimen as prescribed by cardiologist for hypertension control.",
+          "type": "medicine",
+          "doctorId": "d2",
+          "doctorName": "Dr. Michael Chen",
+          "relatedIds": {
+            "medicineId": "m3",
+            "prescriptionId": "rx3"
+          },
+          "details": {
+            "medicineName": "Amlodipine 5mg",
+            "frequency": "Once daily, morning",
+            "duration": "30 days"
+          }
+        }
+      ]
+    },
+    {
+      "year": 2025,
+      "events": [
+        {
+          "id": "h2025-01",
+          "year": 2025,
+          "date": "2025-11-15",
+          "title": "Diabetes Diagnosis",
+          "description": "Diagnosed with Type 2 Diabetes Mellitus following elevated HbA1c (7.2%) and fasting glucose (142 mg/dL).",
+          "type": "diagnosis",
+          "doctorId": "d3",
+          "doctorName": "Dr. Priya Sharma",
+          "relatedIds": {
+            "prescriptionId": "rx2",
+            "medicineId": "m2",
+            "reportId": "r5"
+          },
+          "details": {
+            "condition": "Type 2 Diabetes Mellitus",
+            "hba1c": "7.2%",
+            "fastingGlucose": "142 mg/dL"
+          }
+        },
+        {
+          "id": "h2025-02",
+          "year": 2025,
+          "date": "2025-08-14",
+          "title": "Blood Test",
+          "description": "Comprehensive metabolic panel and CBC performed during routine screening.",
+          "type": "lab",
+          "doctorId": "d1",
+          "doctorName": "Dr. Sandra Perry",
+          "relatedIds": {
+            "reportId": "r1"
+          },
+          "details": {
+            "tests": ["CBC", "CMP", "Lipid Panel"],
+            "hospital": "Springfield General Hospital"
+          }
+        },
+        {
+          "id": "h2025-03",
+          "year": 2025,
+          "date": "2025-11-20",
+          "title": "Prescription Uploaded",
+          "description": "Metformin 850mg prescription uploaded and verified for diabetes management.",
+          "type": "upload",
+          "doctorId": "d3",
+          "doctorName": "Dr. Priya Sharma",
+          "relatedIds": {
+            "prescriptionId": "rx2",
+            "medicineId": "m2"
+          },
+          "details": {
+            "medicineName": "Metformin 850mg",
+            "status": "verified"
+          }
+        }
+      ]
+    },
+    {
+      "year": 2024,
+      "events": [
+        {
+          "id": "h2024-01",
+          "year": 2024,
+          "date": "2024-03-22",
+          "title": "General Checkup",
+          "description": "Annual physical examination with chest X-ray and basic vitals assessment.",
+          "type": "checkup",
+          "doctorId": "d1",
+          "doctorName": "Dr. Sandra Perry",
+          "relatedIds": {
+            "reportId": "r4"
+          },
+          "details": {
+            "hospital": "Springfield General Hospital",
+            "vitals": {
+              "bp": "128/82 mmHg",
+              "heartRate": 74,
+              "weight": 80
+            }
+          }
+        },
+        {
+          "id": "h2024-02",
+          "year": 2024,
+          "date": "2024-09-10",
+          "title": "Vaccination",
+          "description": "Received annual influenza vaccine and COVID-19 booster at primary care clinic.",
+          "type": "vaccination",
+          "doctorId": "d1",
+          "doctorName": "Dr. Sandra Perry",
+          "relatedIds": {},
+          "details": {
+            "vaccines": ["Influenza (Flu)", "COVID-19 Booster"],
+            "lotNumbers": ["FLU-2024-A12", "COV-2024-B08"]
+          }
+        },
+        {
+          "id": "h2024-03",
+          "year": 2024,
+          "date": "2024-01-10",
+          "title": "Annual Health Package",
+          "description": "Enrolled in comprehensive annual health screening package including full body checkup.",
+          "type": "checkup",
+          "doctorId": "d1",
+          "doctorName": "Dr. Sandra Perry",
+          "relatedIds": {},
+          "details": {
+            "packageName": "Premium Wellness Package",
+            "includes": ["Full body checkup", "Blood panel", "ECG", "Chest X-Ray"],
+            "validUntil": "2024-12-31"
+          }
+        }
+      ]
+    }
+  ]
+}

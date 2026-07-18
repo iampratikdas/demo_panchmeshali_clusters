@@ -1,0 +1,54 @@
+{
+  "id": "p1",
+  "name": "John Doe",
+  "firstName": "John",
+  "lastName": "Doe",
+  "age": 34,
+  "dateOfBirth": "1992-03-15",
+  "gender": "male",
+  "bloodGroup": "O+",
+  "healthScore": 82,
+  "allergies": ["Penicillin", "Peanuts"],
+  "conditions": ["Hypertension", "Type 2 Diabetes"],
+  "height": 175,
+  "heightUnit": "cm",
+  "weight": 78,
+  "weightUnit": "kg",
+  "bmi": 25.5,
+  "avatar": "https://i.pravatar.cc/150?u=p1",
+  "email": "john.doe@email.com",
+  "phone": "+1 555-012-3456",
+  "address": {
+    "street": "742 Evergreen Terrace",
+    "city": "Springfield",
+    "state": "IL",
+    "zipCode": "62704",
+    "country": "USA"
+  },
+  "emergencyContact": {
+    "name": "Jane Doe",
+    "relationship": "Spouse",
+    "phone": "+1 555-012-7890",
+    "email": "jane.doe@email.com"
+  },
+  "insurance": {
+    "provider": "BlueCross Health Plus",
+    "policyNumber": "BCH-2024-789456",
+    "groupNumber": "GRP-33421",
+    "validUntil": "2026-12-31",
+    "coverageType": "Family PPO",
+    "copay": 25
+  },
+  "lifestyle": {
+    "smoking": false,
+    "alcohol": "occasional",
+    "exerciseFrequency": "3 times per week",
+    "diet": "Low sodium, diabetic-friendly",
+    "sleepHours": 7,
+    "stressLevel": "moderate",
+    "occupation": "Software Engineer"
+  },
+  "primaryDoctorId": "d1",
+  "memberSince": "2024-01-10",
+  "lastVisit": "2026-06-12"
+}

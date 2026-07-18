@@ -1,0 +1,104 @@
+{
+  "patientId": "p1",
+  "lastUpdated": "2026-07-17T08:00:00.000Z",
+  "metrics": {
+    "weight": {
+      "current": 78,
+      "unit": "kg",
+      "label": "Weight",
+      "target": 75,
+      "trend": "down",
+      "data": [
+        { "date": "2026-06-05", "value": 80.2, "label": "Jun 5" },
+        { "date": "2026-06-12", "value": 79.8, "label": "Jun 12" },
+        { "date": "2026-06-19", "value": 79.5, "label": "Jun 19" },
+        { "date": "2026-06-26", "value": 79.1, "label": "Jun 26" },
+        { "date": "2026-07-03", "value": 78.7, "label": "Jul 3" },
+        { "date": "2026-07-10", "value": 78.3, "label": "Jul 10" },
+        { "date": "2026-07-17", "value": 78.0, "label": "Jul 17" }
+      ]
+    },
+    "bloodPressure": {
+      "current": { "systolic": 128, "diastolic": 78 },
+      "unit": "mmHg",
+      "label": "Blood Pressure",
+      "target": { "systolic": 130, "diastolic": 80 },
+      "trend": "stable",
+      "data": [
+        { "date": "2026-06-05", "value": { "systolic": 142, "diastolic": 92 }, "label": "Jun 5" },
+        { "date": "2026-06-12", "value": { "systolic": 138, "diastolic": 88 }, "label": "Jun 12" },
+        { "date": "2026-06-19", "value": { "systolic": 135, "diastolic": 85 }, "label": "Jun 19" },
+        { "date": "2026-06-26", "value": { "systolic": 132, "diastolic": 82 }, "label": "Jun 26" },
+        { "date": "2026-07-03", "value": { "systolic": 130, "diastolic": 80 }, "label": "Jul 3" },
+        { "date": "2026-07-10", "value": { "systolic": 129, "diastolic": 79 }, "label": "Jul 10" },
+        { "date": "2026-07-17", "value": { "systolic": 128, "diastolic": 78 }, "label": "Jul 17" }
+      ]
+    },
+    "sugar": {
+      "current": 118,
+      "unit": "mg/dL",
+      "label": "Blood Sugar",
+      "target": 100,
+      "trend": "down",
+      "measurementType": "fasting",
+      "data": [
+        { "date": "2026-06-05", "value": 142, "label": "Jun 5" },
+        { "date": "2026-06-12", "value": 138, "label": "Jun 12" },
+        { "date": "2026-06-19", "value": 132, "label": "Jun 19" },
+        { "date": "2026-06-26", "value": 128, "label": "Jun 26" },
+        { "date": "2026-07-03", "value": 124, "label": "Jul 3" },
+        { "date": "2026-07-10", "value": 120, "label": "Jul 10" },
+        { "date": "2026-07-17", "value": 118, "label": "Jul 17" }
+      ]
+    },
+    "heartRate": {
+      "current": 72,
+      "unit": "bpm",
+      "label": "Heart Rate",
+      "target": { "min": 60, "max": 100 },
+      "trend": "stable",
+      "data": [
+        { "date": "2026-06-05", "value": 76, "label": "Jun 5" },
+        { "date": "2026-06-12", "value": 74, "label": "Jun 12" },
+        { "date": "2026-06-19", "value": 73, "label": "Jun 19" },
+        { "date": "2026-06-26", "value": 75, "label": "Jun 26" },
+        { "date": "2026-07-03", "value": 71, "label": "Jul 3" },
+        { "date": "2026-07-10", "value": 73, "label": "Jul 10" },
+        { "date": "2026-07-17", "value": 72, "label": "Jul 17" }
+      ]
+    },
+    "bmi": {
+      "current": 25.5,
+      "unit": "",
+      "label": "BMI",
+      "target": 24.9,
+      "trend": "down",
+      "category": "Overweight",
+      "data": [
+        { "date": "2026-06-05", "value": 26.2, "label": "Jun 5" },
+        { "date": "2026-06-12", "value": 26.0, "label": "Jun 12" },
+        { "date": "2026-06-19", "value": 25.9, "label": "Jun 19" },
+        { "date": "2026-06-26", "value": 25.8, "label": "Jun 26" },
+        { "date": "2026-07-03", "value": 25.7, "label": "Jul 3" },
+        { "date": "2026-07-10", "value": 25.6, "label": "Jul 10" },
+        { "date": "2026-07-17", "value": 25.5, "label": "Jul 17" }
+      ]
+    },
+    "water": {
+      "current": 6,
+      "unit": "glasses",
+      "label": "Water Intake",
+      "target": 8,
+      "trend": "up",
+      "data": [
+        { "date": "2026-06-05", "value": 4, "label": "Jun 5" },
+        { "date": "2026-06-12", "value": 5, "label": "Jun 12" },
+        { "date": "2026-06-19", "value": 5, "label": "Jun 19" },
+        { "date": "2026-06-26", "value": 6, "label": "Jun 26" },
+        { "date": "2026-07-03", "value": 6, "label": "Jul 3" },
+        { "date": "2026-07-10", "value": 7, "label": "Jul 10" },
+        { "date": "2026-07-17", "value": 6, "label": "Jul 17" }
+      ]
+    }
+  }
+}

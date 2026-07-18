@@ -1,0 +1,242 @@
+{
+  "patientId": "p1",
+  "chatThreads": [
+    {
+      "id": "c1",
+      "doctorId": "d2",
+      "doctorName": "Dr. Michael Chen",
+      "doctorAvatar": "https://i.pravatar.cc/150?u=d2",
+      "specialization": "Cardiologist",
+      "lastMessage": "Your ECG looks normal. Keep monitoring your BP daily.",
+      "lastMessageType": "text",
+      "lastMessageAt": "2026-07-16T14:22:00.000Z",
+      "unreadCount": 1,
+      "isOnline": true
+    },
+    {
+      "id": "c2",
+      "doctorId": "d3",
+      "doctorName": "Dr. Priya Sharma",
+      "doctorAvatar": "https://i.pravatar.cc/150?u=d3",
+      "specialization": "Endocrinologist",
+      "lastMessage": "Please find your updated prescription attached.",
+      "lastMessageType": "prescription",
+      "lastMessageAt": "2026-07-14T10:05:00.000Z",
+      "unreadCount": 0,
+      "isOnline": false
+    },
+    {
+      "id": "c3",
+      "doctorId": "d1",
+      "doctorName": "Dr. Sandra Perry",
+      "doctorAvatar": "https://i.pravatar.cc/150?u=d1",
+      "specialization": "General Physician",
+      "lastMessage": "Thanks for the report. Everything looks good!",
+      "lastMessageType": "text",
+      "lastMessageAt": "2026-07-10T16:30:00.000Z",
+      "unreadCount": 0,
+      "isOnline": true
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg1",
+      "chatId": "c1",
+      "senderType": "patient",
+      "senderId": "p1",
+      "senderName": "John Doe",
+      "type": "text",
+      "content": "Hi Dr. Chen, I've been experiencing occasional dizziness since starting Amlodipine. Is this normal?",
+      "timestamp": "2026-07-15T09:15:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg2",
+      "chatId": "c1",
+      "senderType": "doctor",
+      "senderId": "d2",
+      "senderName": "Dr. Michael Chen",
+      "type": "text",
+      "content": "Hello John, mild dizziness can occur when starting blood pressure medication. Please monitor your BP twice daily and stay well hydrated.",
+      "timestamp": "2026-07-15T09:42:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg3",
+      "chatId": "c1",
+      "senderType": "patient",
+      "senderId": "p1",
+      "senderName": "John Doe",
+      "type": "image",
+      "content": "Here's my home BP reading from this morning.",
+      "mediaUrl": "https://via.placeholder.com/300x200/93C5FD/FFFFFF?text=BP+128%2F78",
+      "timestamp": "2026-07-15T10:00:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg4",
+      "chatId": "c1",
+      "senderType": "doctor",
+      "senderId": "d2",
+      "senderName": "Dr. Michael Chen",
+      "type": "text",
+      "content": "128/78 is excellent! The medication is working well. Continue current dose.",
+      "timestamp": "2026-07-15T10:18:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg5",
+      "chatId": "c1",
+      "senderType": "doctor",
+      "senderId": "d2",
+      "senderName": "Dr. Michael Chen",
+      "type": "report",
+      "content": "Your ECG report from the last visit.",
+      "mediaUrl": "/reports/r2-ecg.pdf",
+      "relatedId": "r2",
+      "timestamp": "2026-07-16T11:00:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg6",
+      "chatId": "c1",
+      "senderType": "patient",
+      "senderId": "p1",
+      "senderName": "John Doe",
+      "type": "voice",
+      "content": "Voice message about ankle swelling",
+      "mediaUrl": "/audio/msg6-voice.mp3",
+      "duration": 18,
+      "timestamp": "2026-07-16T13:45:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg7",
+      "chatId": "c1",
+      "senderType": "doctor",
+      "senderId": "d2",
+      "senderName": "Dr. Michael Chen",
+      "type": "text",
+      "content": "Your ECG looks normal. Keep monitoring your BP daily. Ankle swelling is a known side effect — elevate legs when resting.",
+      "timestamp": "2026-07-16T14:22:00.000Z",
+      "status": "delivered"
+    },
+    {
+      "id": "msg8",
+      "chatId": "c2",
+      "senderType": "patient",
+      "senderId": "p1",
+      "senderName": "John Doe",
+      "type": "text",
+      "content": "Dr. Sharma, my fasting sugar was 118 mg/dL today. Should I adjust my Metformin dose?",
+      "timestamp": "2026-07-13T08:30:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg9",
+      "chatId": "c2",
+      "senderType": "doctor",
+      "senderId": "d3",
+      "senderName": "Dr. Priya Sharma",
+      "type": "text",
+      "content": "118 is within acceptable range for now. Do not adjust dose without consultation. Let's review at your August appointment.",
+      "timestamp": "2026-07-13T09:10:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg10",
+      "chatId": "c2",
+      "senderType": "patient",
+      "senderId": "p1",
+      "senderName": "John Doe",
+      "type": "pdf",
+      "content": "Uploaded my latest lab results.",
+      "mediaUrl": "/reports/r1-blood-test.pdf",
+      "relatedId": "r1",
+      "timestamp": "2026-07-13T14:20:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg11",
+      "chatId": "c2",
+      "senderType": "doctor",
+      "senderId": "d3",
+      "senderName": "Dr. Priya Sharma",
+      "type": "prescription",
+      "content": "Please find your updated prescription attached.",
+      "relatedId": "rx2",
+      "mediaUrl": "/prescriptions/rx2.pdf",
+      "timestamp": "2026-07-14T10:05:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg12",
+      "chatId": "c3",
+      "senderType": "patient",
+      "senderId": "p1",
+      "senderName": "John Doe",
+      "type": "text",
+      "content": "Good afternoon Dr. Perry. I wanted to share my recent blood work results.",
+      "timestamp": "2026-07-10T15:00:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg13",
+      "chatId": "c3",
+      "senderType": "patient",
+      "senderId": "p1",
+      "senderName": "John Doe",
+      "type": "report",
+      "content": "Blood test report from last week.",
+      "mediaUrl": "/reports/r1-blood-test.pdf",
+      "relatedId": "r1",
+      "timestamp": "2026-07-10T15:02:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg14",
+      "chatId": "c3",
+      "senderType": "doctor",
+      "senderId": "d1",
+      "senderName": "Dr. Sandra Perry",
+      "type": "text",
+      "content": "Thanks for the report. Everything looks good! Vitamin D is slightly low — continue the supplement we prescribed.",
+      "timestamp": "2026-07-10T16:30:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg15",
+      "chatId": "c3",
+      "senderType": "patient",
+      "senderId": "p1",
+      "senderName": "John Doe",
+      "type": "text",
+      "content": "Will do. Should I schedule a follow-up before my cardiology appointment?",
+      "timestamp": "2026-07-10T16:45:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg16",
+      "chatId": "c3",
+      "senderType": "doctor",
+      "senderId": "d1",
+      "senderName": "Dr. Sandra Perry",
+      "type": "text",
+      "content": "No need for now. Your cardiologist follow-up on July 24th should cover everything. Reach out if symptoms change.",
+      "timestamp": "2026-07-10T17:00:00.000Z",
+      "status": "read"
+    },
+    {
+      "id": "msg17",
+      "chatId": "c2",
+      "senderType": "patient",
+      "senderId": "p1",
+      "senderName": "John Doe",
+      "type": "image",
+      "content": "Photo of my glucose meter reading",
+      "mediaUrl": "https://via.placeholder.com/300x200/6BCB77/FFFFFF?text=Glucose+118",
+      "timestamp": "2026-07-12T07:15:00.000Z",
+      "status": "read"
+    }
+  ]
+}

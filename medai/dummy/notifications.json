@@ -1,0 +1,112 @@
+[
+  {
+    "id": "n1",
+    "patientId": "p1",
+    "type": "medicine",
+    "title": "Medicine Reminder",
+    "message": "Time to take Metformin 850mg — morning dose",
+    "timestamp": "2026-07-17T08:00:00.000Z",
+    "read": false,
+    "relatedId": "m2",
+    "actionRoute": "/medicines/m2"
+  },
+  {
+    "id": "n2",
+    "patientId": "p1",
+    "type": "medicine",
+    "title": "Medicine Reminder",
+    "message": "Time to take Amlodipine 5mg — morning dose",
+    "timestamp": "2026-07-17T07:30:00.000Z",
+    "read": true,
+    "relatedId": "m3",
+    "actionRoute": "/medicines/m3"
+  },
+  {
+    "id": "n3",
+    "patientId": "p1",
+    "type": "appointment",
+    "title": "Upcoming Appointment",
+    "message": "Cardiology follow-up with Dr. Michael Chen on July 24 at 10:30 AM",
+    "timestamp": "2026-07-17T09:00:00.000Z",
+    "read": false,
+    "relatedId": "a1",
+    "actionRoute": "/appointments/a1"
+  },
+  {
+    "id": "n4",
+    "patientId": "p1",
+    "type": "message",
+    "title": "New Message",
+    "message": "Dr. Michael Chen replied to your message about dizziness",
+    "timestamp": "2026-07-16T14:22:00.000Z",
+    "read": false,
+    "relatedId": "c1",
+    "actionRoute": "/chat/c1"
+  },
+  {
+    "id": "n5",
+    "patientId": "p1",
+    "type": "prescription",
+    "title": "Prescription Pending",
+    "message": "Your Atorvastatin 10mg prescription is awaiting verification",
+    "timestamp": "2026-07-16T10:00:00.000Z",
+    "read": true,
+    "relatedId": "rx4",
+    "actionRoute": "/prescriptions/rx4"
+  },
+  {
+    "id": "n6",
+    "patientId": "p1",
+    "type": "report",
+    "title": "Report Ready",
+    "message": "Your ECG report from June 12 is now available to view",
+    "timestamp": "2026-07-15T11:00:00.000Z",
+    "read": true,
+    "relatedId": "r2",
+    "actionRoute": "/reports/r2"
+  },
+  {
+    "id": "n7",
+    "patientId": "p1",
+    "type": "medicine",
+    "title": "Low Supply Alert",
+    "message": "Atorvastatin 10mg — only 15 days remaining. Request a refill soon.",
+    "timestamp": "2026-07-15T08:00:00.000Z",
+    "read": true,
+    "relatedId": "m5",
+    "actionRoute": "/medicines/m5"
+  },
+  {
+    "id": "n8",
+    "patientId": "p1",
+    "type": "appointment",
+    "title": "Appointment Confirmed",
+    "message": "Video consultation with Dr. Priya Sharma confirmed for August 5 at 2:00 PM",
+    "timestamp": "2026-07-14T16:30:00.000Z",
+    "read": true,
+    "relatedId": "a2",
+    "actionRoute": "/appointments/a2"
+  },
+  {
+    "id": "n9",
+    "patientId": "p1",
+    "type": "prescription",
+    "title": "Prescription Verified",
+    "message": "Metformin 850mg prescription has been verified by Metro Endocrine Clinic",
+    "timestamp": "2026-07-10T12:00:00.000Z",
+    "read": true,
+    "relatedId": "rx2",
+    "actionRoute": "/prescriptions/rx2"
+  },
+  {
+    "id": "n10",
+    "patientId": "p1",
+    "type": "report",
+    "title": "Lab Results Available",
+    "message": "Your blood test results from August 2025 are ready for review",
+    "timestamp": "2026-07-08T09:00:00.000Z",
+    "read": true,
+    "relatedId": "r1",
+    "actionRoute": "/reports/r1"
+  }
+]
