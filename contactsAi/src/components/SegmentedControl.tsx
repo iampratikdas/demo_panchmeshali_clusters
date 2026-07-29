@@ -4,6 +4,7 @@ import Animated, { useAnimatedStyle, withSpring, useSharedValue } from 'react-na
 import { Colors } from '../constants/Colors';
 import { Sparkles, Search } from 'lucide-react-native';
 
+
 interface SegmentedControlProps {
   options: { label: string; id: string; icon?: 'sparkles' | 'search' }[];
   selectedId: string;
@@ -41,17 +42,17 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({ options, sel
             onPress={() => onSelect(option.id)}
           >
             {option.icon === 'sparkles' && (
-              <Sparkles 
-                color={isSelected ? Colors.text : Colors.textMuted} 
-                size={16} 
-                style={styles.icon} 
+              <Sparkles
+                color={isSelected ? Colors.text : Colors.textMuted}
+                size={16}
+                style={styles.icon}
               />
             )}
             {option.icon === 'search' && (
-              <Search 
-                color={isSelected ? Colors.text : Colors.textMuted} 
-                size={16} 
-                style={styles.icon} 
+              <Search
+                color={isSelected ? Colors.text : Colors.textMuted}
+                size={16}
+                style={styles.icon}
               />
             )}
             <Text style={[styles.label, isSelected && styles.labelSelected]}>
