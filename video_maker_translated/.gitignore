@@ -1,0 +1,10 @@
+.env
+*.mp4
+*.wav
+*.ogg
+*.mp3
+*.json
+*.txt
+*.zip
+*.txt
+#  ../StickerSmash/
